@@ -27,11 +27,18 @@ export function rankCommandResults(query: string, items: CommandItem[]): Command
     .map(x => x.item)
 }
 
+/**
+ * Cmd+K on Mac; Ctrl+K elsewhere. Ctrl+K is readline's kill-line, so on Mac it is
+ * never ours, and elsewhere it stays with the terminal (.xterm).
+ */
 export function shouldOpenPalette(
   e: { key: string; metaKey: boolean; ctrlKey: boolean },
   target: { closest?: (sel: string) => unknown } | null,
+  isMac = false,
 ): boolean {
-  if (e.key.toLowerCase() !== 'k' || !(e.metaKey || e.ctrlKey)) return false
+  if (e.key.toLowerCase() !== 'k') return false
+  if (isMac ? !e.metaKey : !e.ctrlKey) return false
   if (target?.closest?.('[data-agent-search]')) return false
+  if (!isMac && target?.closest?.('.xterm')) return false
   return true
 }

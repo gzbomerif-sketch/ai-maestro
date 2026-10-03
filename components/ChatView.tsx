@@ -1403,7 +1403,7 @@ export default function ChatView({ agent, isActive = false, hideHeader = false, 
             value={input}
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
-            placeholder={isOnline ? `Message ${agent.label || agent.name || agent.alias || 'agent'}${ink ? ', or attach images' : '... (Enter to send)'}` : 'Agent is offline'}
+            placeholder={isOnline ? `Message ${agent.label || agent.name || agent.alias || 'agent'}${ink ? '' : '... (Enter to send)'}` : 'Agent is offline'}
             className={ink
               ? 'w-full bg-transparent text-[15px] text-ink placeholder:text-gray-500 resize-none focus:outline-none min-h-[44px] disabled:opacity-50'
               : 'flex-1 bg-gray-900 text-gray-200 text-sm rounded-lg px-4 py-3 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 border border-gray-700 disabled:opacity-50'}

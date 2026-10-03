@@ -34,7 +34,8 @@ export default function CommandPalette(p: CommandPaletteProps) {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (shouldOpenPalette(e, e.target as Element | null)) {
+      const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform)
+      if (shouldOpenPalette(e, e.target as Element | null, isMac)) {
         e.preventDefault()
         p.onOpenChange(!p.open)
       }

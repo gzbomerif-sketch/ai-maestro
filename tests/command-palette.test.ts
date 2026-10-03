@@ -31,16 +31,16 @@ describe('shouldOpenPalette', () => {
   const k = (over = {}) => ({ key: 'k', metaKey: true, ctrlKey: false, ...over })
   const el = (inSearch: boolean) => ({ closest: (sel: string) => (sel === '[data-agent-search]' && inSearch ? {} : null) })
 
-  it('opens on Cmd+K or Ctrl+K', () => {
-    expect(shouldOpenPalette(k(), null)).toBe(true)
-    expect(shouldOpenPalette(k({ metaKey: false, ctrlKey: true }), null)).toBe(true)
-    expect(shouldOpenPalette(k({ key: 'K' }), el(false))).toBe(true)
+  it('opens on Cmd+K (Mac) or Ctrl+K (elsewhere)', () => {
+    expect(shouldOpenPalette(k(), null, true)).toBe(true)
+    expect(shouldOpenPalette(k({ metaKey: false, ctrlKey: true }), null, false)).toBe(true)
+    expect(shouldOpenPalette(k({ key: 'K' }), el(false), true)).toBe(true)
   })
   it('ignores other keys and plain k', () => {
-    expect(shouldOpenPalette(k({ key: 'j' }), null)).toBe(false)
-    expect(shouldOpenPalette(k({ metaKey: false }), null)).toBe(false)
+    expect(shouldOpenPalette(k({ key: 'j' }), null, true)).toBe(false)
+    expect(shouldOpenPalette(k({ metaKey: false }), null, true)).toBe(false)
   })
   it('leaves Cmd+K to the agent search box', () => {
-    expect(shouldOpenPalette(k(), el(true))).toBe(false)
+    expect(shouldOpenPalette(k(), el(true), true)).toBe(false)
   })
 })

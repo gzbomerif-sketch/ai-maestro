@@ -20,12 +20,19 @@ export function mergeUnreadCounts(
   return next
 }
 
-async function fetchCount(agent: Agent): Promise<number> {
-  const base = getAgentBaseUrl(agent)
-  const res = await fetch(`${base}/api/messages?agent=${encodeURIComponent(agent.id)}&action=unread-count`)
-  if (!res.ok) throw new Error(`unread-count ${res.status}`)
-  const data = await res.json()
-  return typeof data.count === 'number' ? data.count : 0
+/** One agent's unread count; an unreachable host is abandoned after `timeoutMs`. */
+export async function fetchUnreadCount(agent: Agent, fetchImpl: typeof fetch = fetch, timeoutMs = 5_000): Promise<number> {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), timeoutMs)
+  try {
+    const base = getAgentBaseUrl(agent)
+    const res = await fetchImpl(`${base}/api/messages?agent=${encodeURIComponent(agent.id)}&action=unread-count`, { signal: controller.signal })
+    if (!res.ok) throw new Error(`unread-count ${res.status}`)
+    const data = await res.json()
+    return typeof data.count === 'number' ? data.count : 0
+  } finally {
+    clearTimeout(timer)
+  }
 }
 
 export function useUnreadCounts(agents: Agent[], intervalMs = 10_000): Record<string, number> {
@@ -36,11 +43,18 @@ export function useUnreadCounts(agents: Agent[], intervalMs = 10_000): Record<st
 
   useEffect(() => {
     let cancelled = false
+    let inFlight = false
     const tick = async () => {
-      const list = agentsRef.current
-      const outcomes = await Promise.allSettled(list.map(fetchCount))
-      if (cancelled) return
-      setCounts(prev => mergeUnreadCounts(prev, list.map((a, i) => ({ id: a.id, outcome: outcomes[i] }))))
+      if (inFlight) return  // a slow host must not stack up requests
+      inFlight = true
+      try {
+        const list = agentsRef.current
+        const outcomes = await Promise.allSettled(list.map(a => fetchUnreadCount(a)))
+        if (cancelled) return
+        setCounts(prev => mergeUnreadCounts(prev, list.map((a, i) => ({ id: a.id, outcome: outcomes[i] }))))
+      } finally {
+        inFlight = false
+      }
     }
     tick()
     const t = setInterval(tick, intervalMs)

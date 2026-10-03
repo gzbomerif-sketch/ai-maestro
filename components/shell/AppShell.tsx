@@ -6,6 +6,7 @@ import { useSessionActivity } from '@/hooks/useSessionActivity'
 import { useUnreadCounts } from '@/hooks/useUnreadCounts'
 import { groupByStatus, type StatusEntry } from '@/lib/agent-status'
 import { getRuntimeMode } from '@/lib/runtime-mode'
+import { resolveAgentTab } from '@/lib/shell-tabs'
 import { readBool, writePref, INBOX_KEY } from '@/lib/safe-storage'
 import AgentCreationWizard from '@/components/AgentCreationWizard'
 import StatusSidebar from './StatusSidebar'
@@ -82,7 +83,7 @@ export default function AppShell(p: AppShellProps) {
             <div className="flex-1 min-h-0 flex relative">
               <AgentTabContent
                 agent={agent}
-                activeTab={p.activeTab === 'messages' ? 'chat' : p.activeTab}
+                activeTab={resolveAgentTab(p.activeTab, getRuntimeMode(agent.id))}
                 setActiveTab={p.setActiveTab}
                 onlineAgents={p.onlineAgents}
                 wakingAgentId={p.wakingAgentId}

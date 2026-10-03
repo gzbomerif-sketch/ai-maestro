@@ -15,7 +15,7 @@ import MigrationBanner from '@/components/MigrationBanner'
 import { VersionChecker } from '@/components/VersionChecker'
 import AgentTabContent from '@/components/shell/AgentTabContent'
 import AppShell from '@/components/shell/AppShell'
-import { readPref, writePref, SHELL_KEY } from '@/lib/safe-storage'
+import { readPref, readNumber, readString, writePref, SHELL_KEY } from '@/lib/safe-storage'
 import { useAgents } from '@/hooks/useAgents'
 import { TerminalProvider } from '@/contexts/TerminalContext'
 import { useToast } from '@/contexts/ToastContext'
@@ -77,14 +77,13 @@ export default function DashboardPage() {
   const resizeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [sidebarWidth, setSidebarWidth] = useState(() => {
     if (typeof window === 'undefined') return 320
-    const saved = localStorage.getItem('sidebar-width')
-    return saved ? parseInt(saved, 10) : 320
+    return readNumber('sidebar-width', 320)
   })
   const [isResizing, setIsResizing] = useState(false)
   const { deviceType } = useDeviceType()
   const [layoutOverride, setLayoutOverride] = useState<'desktop' | 'tablet' | null>(() => {
     if (typeof window === 'undefined') return null
-    const saved = localStorage.getItem('aimaestro-layout-mode')
+    const saved = readString('aimaestro-layout-mode')
     return (saved === 'desktop' || saved === 'tablet') ? saved : null
   })
   const [shell, setShell] = useState<'command-center' | 'classic'>(() =>
@@ -96,17 +95,17 @@ export default function DashboardPage() {
   const toggleLayout = () => {
     const next = isTablet ? 'desktop' : 'tablet'
     setLayoutOverride(next)
-    localStorage.setItem('aimaestro-layout-mode', next)
+    writePref('aimaestro-layout-mode', next)
   }
   const [activeTab, setActiveTab] = useState<'terminal' | 'chat' | 'streaming' | 'messages' | 'worktree' | 'graph' | 'memory' | 'docs' | 'canvas' | 'search' | 'export' | 'playback'>(() => {
     if (typeof window === 'undefined') return 'chat'
-    const saved = localStorage.getItem('aimaestro-active-tab')
+    const saved = readString('aimaestro-active-tab')
     const validTabs = ['terminal', 'chat', 'messages', 'worktree', 'graph', 'memory', 'docs', 'canvas', 'search', 'export', 'playback']
     return (saved && validTabs.includes(saved) ? saved : 'chat') as any
   })
   // Persist tab choice in localStorage
   useEffect(() => {
-    localStorage.setItem('aimaestro-active-tab', activeTab)
+    writePref('aimaestro-active-tab', activeTab)
   }, [activeTab])
 
   const [unreadCount, setUnreadCount] = useState(0)
@@ -143,7 +142,7 @@ export default function DashboardPage() {
           setShowOrganizationSetup(true)
         } else {
           // Organization is set, check onboarding
-          const onboardingCompleted = localStorage.getItem('aimaestro-onboarding-completed')
+          const onboardingCompleted = readString('aimaestro-onboarding-completed')
           if (!onboardingCompleted) {
             setShowOnboarding(true)
           }
@@ -151,7 +150,7 @@ export default function DashboardPage() {
       } catch (error) {
         console.error('Failed to check organization:', error)
         // On error, proceed with normal onboarding check
-        const onboardingCompleted = localStorage.getItem('aimaestro-onboarding-completed')
+        const onboardingCompleted = readString('aimaestro-onboarding-completed')
         if (!onboardingCompleted) {
           setShowOnboarding(true)
         }
@@ -249,7 +248,7 @@ export default function DashboardPage() {
     const handleMouseUp = () => {
       if (isResizing) {
         setIsResizing(false)
-        localStorage.setItem('sidebar-width', sidebarWidth.toString())
+        writePref('sidebar-width', sidebarWidth.toString())
       }
     }
 
@@ -353,7 +352,8 @@ export default function DashboardPage() {
 
   // Fetch unread message count for active agent
   useEffect(() => {
-    if (!activeAgentId || !activeAgent) return
+    // The command-center shell polls every agent via useUnreadCounts instead
+    if (shell === 'command-center' || !activeAgentId || !activeAgent) return
 
     const fetchUnreadCount = async () => {
       try {
@@ -372,7 +372,7 @@ export default function DashboardPage() {
     fetchUnreadCount()
     const interval = setInterval(fetchUnreadCount, 10000)
     return () => clearInterval(interval)
-  }, [activeAgentId, activeAgent])
+  }, [activeAgentId, activeAgent, shell])
 
   // Agent-centric handlers
   const handleAgentSelect = (agent: Agent) => {
@@ -582,14 +582,14 @@ export default function DashboardPage() {
   }
 
   const handleOnboardingSkip = () => {
-    localStorage.setItem('aimaestro-onboarding-completed', 'true')
+    writePref('aimaestro-onboarding-completed', 'true')
     setShowOnboarding(false)
   }
 
   const handleOrganizationComplete = () => {
     setShowOrganizationSetup(false)
     // After organization is set, check if onboarding is needed
-    const onboardingCompleted = localStorage.getItem('aimaestro-onboarding-completed')
+    const onboardingCompleted = readString('aimaestro-onboarding-completed')
     if (!onboardingCompleted) {
       setShowOnboarding(true)
     }
