@@ -73,6 +73,10 @@ const config: Config = {
         ok: 'rgb(var(--c-ok) / <alpha-value>)',
         warn: 'rgb(var(--c-warn) / <alpha-value>)',
         danger: 'rgb(var(--c-danger) / <alpha-value>)',
+        'control-border': 'rgb(var(--c-control-border) / <alpha-value>)',
+        'control-off': 'rgb(var(--c-control-off) / <alpha-value>)',
+        'warn-surface': 'rgb(var(--c-warn-surface) / <alpha-value>)',
+        'warn-border': 'rgb(var(--c-warn-border) / <alpha-value>)',
 
         // Deliberately dark surfaces (terminal chrome, immersive rooms), named
         // so no component needs an arbitrary hex.

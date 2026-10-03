@@ -53,7 +53,7 @@ export default function AgentTopBar(p: AgentTopBarProps) {
           ? <Button onClick={p.onWake} disabled={p.busy}>{p.busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Power strokeWidth={1.5} className="w-4 h-4" />}Wake</Button>
           : <Button onClick={p.onSleep} disabled={p.busy}>{p.busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Moon strokeWidth={1.5} className="w-4 h-4" />}Sleep</Button>}
         <a href={`/zoom/agent?id=${encodeURIComponent(p.agent.id)}`} target="_blank" rel="noopener noreferrer" aria-label="Pop out" title="Pop out"
-          className="grid place-items-center w-[34px] h-[34px] rounded-[10px] border border-[rgb(42_42_47)] text-ink hover:bg-raised"><ExternalLink strokeWidth={1.5} className="w-4 h-4" /></a>
+          className="grid place-items-center w-[34px] h-[34px] rounded-[10px] border border-control-border text-ink hover:bg-raised"><ExternalLink strokeWidth={1.5} className="w-4 h-4" /></a>
         <div ref={ref} className="relative">
           <IconButton label="More actions" onClick={() => setMenu(m => !m)} active={menu}><MoreHorizontal strokeWidth={1.5} className="w-4 h-4" /></IconButton>
           {menu && (

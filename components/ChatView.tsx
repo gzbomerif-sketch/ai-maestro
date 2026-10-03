@@ -1396,7 +1396,7 @@ export default function ChatView({ agent, isActive = false, hideHeader = false, 
           </div>
         )}
 
-        <div className={ink ? 'rounded-[18px] border border-[rgb(38_38_43)] bg-[rgb(17_17_19)] px-4 pt-3.5 pb-3' : 'flex items-end gap-3'}>
+        <div className={ink ? 'rounded-[18px] border border-control-off bg-surface px-4 pt-3.5 pb-3' : 'flex items-end gap-3'}>
           <textarea
             ref={inputRef}
             data-chat-input

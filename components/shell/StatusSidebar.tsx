@@ -89,7 +89,7 @@ export default function StatusSidebar(p: StatusSidebarProps) {
       <div className="flex-1 overflow-y-auto min-h-0 -mx-1 px-1">
         {p.groups.needsYou.map(e => (
           <button type="button" key={e.agent.id} onClick={() => p.onSelectAgent(e.agent)}
-            className="w-full text-left mt-2.5 rounded-xl border border-[rgb(42_35_20)] bg-[rgb(22_19_13)] px-3.5 py-3 hover:border-warn/60">
+            className="w-full text-left mt-2.5 rounded-xl border border-warn-border bg-warn-surface px-3.5 py-3 hover:border-warn/60">
             <div className="flex items-center gap-2 text-[12px] text-warn"><StatusDot status="needs-you" />Needs you</div>
             <div className="mt-1 text-[15px] text-ink">Waiting for your input</div>
             <div className="text-[13px] text-ink-muted">{displayName(e.agent)} · {formatAge(e.since, p.now)}</div>
