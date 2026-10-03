@@ -37,6 +37,7 @@ export default function InboxPanel({ agent, onlineAgents, unread, onCollapse }: 
             allAgents={toRecipients(onlineAgents)}
             hostUrl={getAgentBaseUrl(agent)}
             isActive={true}
+            compact
           />
         </ErrorBoundary>
       </div>

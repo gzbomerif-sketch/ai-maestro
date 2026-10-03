@@ -21,9 +21,10 @@ interface MessageCenterProps {
   allAgents: AgentRecipient[]
   hostUrl?: string  // Base URL for remote hosts (e.g., http://100.80.12.6:23000)
   isActive?: boolean  // Only fetch data when active (prevents API flood with many agents)
+  compact?: boolean  // Narrow side panel: list OR message (with Back), slim header
 }
 
-export default function MessageCenter({ sessionName, agentId, allAgents, hostUrl, isActive = false }: MessageCenterProps) {
+export default function MessageCenter({ sessionName, agentId, allAgents, hostUrl, isActive = false, compact = false }: MessageCenterProps) {
   // Use agentId as primary identifier if available, fall back to sessionName
   const messageIdentifier = agentId || sessionName
   // Base URL for API calls - empty for local, full URL for remote hosts
@@ -548,8 +549,8 @@ export default function MessageCenter({ sessionName, agentId, allAgents, hostUrl
       )}
 
       {/* Header */}
-      <div className="flex items-center justify-between p-4 bg-gray-800 border-b border-gray-700">
-        <div className="flex items-center gap-3">
+      <div className={`flex items-center justify-between bg-gray-800 border-b border-gray-700 ${compact ? 'px-3 py-2' : 'p-4'}`}>
+        <div className={compact ? 'hidden' : 'flex items-center gap-3'}>
           <Mail className="w-5 h-5 text-gray-300" />
           <button
             onClick={() => setShowExternalAgentInfo(!showExternalAgentInfo)}
@@ -560,16 +561,16 @@ export default function MessageCenter({ sessionName, agentId, allAgents, hostUrl
             Agent Types
           </button>
         </div>
-        <div className="flex gap-2">
+        <div className={`flex ${compact ? 'gap-1 w-full' : 'gap-2'}`}>
           <button
             onClick={() => setView('inbox')}
-            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+            className={`${compact ? 'px-2 py-1 text-xs' : 'px-3 py-1.5 text-sm'} rounded-md font-medium transition-colors ${
               view === 'inbox'
                 ? 'bg-blue-600 text-white'
                 : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
             }`}
           >
-            <Inbox className="w-4 h-4 inline-block mr-1" />
+            {!compact && <Inbox className="w-4 h-4 inline-block mr-1" />}
             Inbox
             {unreadCount > 0 && (
               <span className="ml-1 px-1.5 py-0.5 text-xs font-bold text-white bg-red-500 rounded-full">
@@ -579,24 +580,24 @@ export default function MessageCenter({ sessionName, agentId, allAgents, hostUrl
           </button>
           <button
             onClick={() => setView('sent')}
-            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+            className={`${compact ? 'px-2 py-1 text-xs' : 'px-3 py-1.5 text-sm'} rounded-md font-medium transition-colors ${
               view === 'sent'
                 ? 'bg-blue-600 text-white'
                 : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
             }`}
           >
-            <Send className="w-4 h-4 inline-block mr-1" />
+            {!compact && <Send className="w-4 h-4 inline-block mr-1" />}
             Sent
           </button>
           <button
             onClick={() => setView('compose')}
-            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+            className={`${compact ? 'px-2 py-1 text-xs' : 'px-3 py-1.5 text-sm'} rounded-md font-medium transition-colors ${
               view === 'compose'
                 ? 'bg-blue-600 text-white'
                 : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
             }`}
           >
-            <Send className="w-4 h-4 inline-block mr-1" />
+            {!compact && <Send className="w-4 h-4 inline-block mr-1" />}
             Compose
           </button>
         </div>
@@ -675,7 +676,7 @@ export default function MessageCenter({ sessionName, agentId, allAgents, hostUrl
       {view === 'inbox' && (
         <div className="flex flex-1 overflow-hidden">
           {/* Message List */}
-          <div className="w-1/3 border-r border-gray-700 bg-gray-800 overflow-y-auto">
+          <div data-inbox-list className={`${compact ? (selectedMessage ? 'hidden' : 'w-full') : 'w-1/3 border-r border-gray-700'} bg-gray-800 overflow-y-auto`}>
             {messages.length === 0 ? (
               <div className="p-8 text-center text-gray-500">
                 <Inbox className="w-12 h-12 mx-auto mb-2 text-gray-300" />
@@ -748,9 +749,17 @@ export default function MessageCenter({ sessionName, agentId, allAgents, hostUrl
           </div>
 
           {/* Message Detail */}
-          <div className="flex-1 bg-gray-900 overflow-y-auto">
+          <div className={`${compact && !selectedMessage ? 'hidden' : 'flex-1'} bg-gray-900 overflow-y-auto`}>
             {selectedMessage ? (
-              <div className="p-6">
+              <div className={compact ? 'p-4' : 'p-6'}>
+                {compact && (
+                  <button
+                    onClick={() => setSelectedMessage(null)}
+                    className="mb-3 text-xs text-gray-400 hover:text-gray-200"
+                  >
+                    ← Back
+                  </button>
+                )}
                 <div className="flex items-start justify-between mb-4 gap-4">
                   <div className="flex-1 min-w-0">
                     <h2 className="text-xl font-bold text-gray-100 mb-3">
@@ -909,7 +918,7 @@ export default function MessageCenter({ sessionName, agentId, allAgents, hostUrl
       {view === 'sent' && (
         <div className="flex flex-1 overflow-hidden">
           {/* Message List */}
-          <div className="w-1/3 border-r border-gray-700 bg-gray-800 overflow-y-auto">
+          <div data-inbox-list className={`${compact ? (selectedMessage ? 'hidden' : 'w-full') : 'w-1/3 border-r border-gray-700'} bg-gray-800 overflow-y-auto`}>
             {sentMessages.length === 0 ? (
               <div className="p-8 text-center text-gray-500">
                 <Send className="w-12 h-12 mx-auto mb-2 text-gray-300" />
@@ -969,9 +978,17 @@ export default function MessageCenter({ sessionName, agentId, allAgents, hostUrl
           </div>
 
           {/* Message Detail */}
-          <div className="flex-1 bg-gray-900 overflow-y-auto">
+          <div className={`${compact && !selectedMessage ? 'hidden' : 'flex-1'} bg-gray-900 overflow-y-auto`}>
             {selectedMessage ? (
-              <div className="p-6">
+              <div className={compact ? 'p-4' : 'p-6'}>
+                {compact && (
+                  <button
+                    onClick={() => setSelectedMessage(null)}
+                    className="mb-3 text-xs text-gray-400 hover:text-gray-200"
+                  >
+                    ← Back
+                  </button>
+                )}
                 <div className="flex items-start justify-between mb-4 gap-4">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-2">
