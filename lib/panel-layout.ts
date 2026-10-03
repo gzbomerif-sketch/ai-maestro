@@ -2,6 +2,8 @@
  * Panel system layout: which tool panels are open, where, and how big.
  * Pure (no React, no storage) so it can be unit-tested. Spec: 2026-10-03-panel-system-design.md
  */
+import { isTeamTab, pruneMemberTabs } from '@/lib/team-panels'
+
 export type PanelType = 'terminal' | 'inbox' | 'files' | 'memory' | 'graph' | 'docs' | 'canvas' | 'search' | 'playback' | 'export'
 export type PanelPosition = 'right' | 'bottom'
 
@@ -27,6 +29,9 @@ export interface PanelState {
   maximized: boolean
   tabs: PanelType[]
   active: PanelType | null
+  /** Team workspace tabs (tools + member terminals); separate list, shared geometry */
+  teamTabs: string[]
+  teamActive: string | null
 }
 export interface LayoutState {
   sidebarW: number
@@ -43,14 +48,18 @@ export const LIMITS = {
 export const DEFAULT_LAYOUT: LayoutState = {
   sidebarW: LIMITS.sidebar.def,
   sidebarCollapsed: false,
-  panel: { open: true, position: 'right', rightW: LIMITS.right.def, bottomH: LIMITS.bottom.def, maximized: false, tabs: ['inbox'], active: 'inbox' },
+  panel: { open: true, position: 'right', rightW: LIMITS.right.def, bottomH: LIMITS.bottom.def, maximized: false, tabs: ['inbox'], active: 'inbox', teamTabs: ['kanban'], teamActive: 'kanban' },
 }
 
 export type LayoutAction =
   | { type: 'open'; panel: PanelType }
   | { type: 'close'; panel: PanelType }
   | { type: 'activate'; panel: PanelType }
-  | { type: 'toggle' }
+  | { type: 'toggle'; scope?: 'agent' | 'team' }
+  | { type: 'openTeam'; tab: string }
+  | { type: 'closeTeam'; tab: string }
+  | { type: 'activateTeam'; tab: string }
+  | { type: 'pruneTeam'; memberIds: string[] }
   | { type: 'setPosition'; position: PanelPosition }
   | { type: 'toggleMaximize' }
   | { type: 'restore' }
@@ -69,6 +78,13 @@ export function panelLimits(position: PanelPosition, container: number): { min: 
   return { min: l.min, max: Math.max(l.min, Math.round(container * l.ratio)) }
 }
 
+function closeIn<T extends string>(tabs: T[], active: T | null, tab: T): { tabs: T[]; active: T | null } {
+  const i = tabs.indexOf(tab)
+  if (i === -1) return { tabs, active }
+  const next = tabs.filter(t => t !== tab)
+  return { tabs: next, active: active === tab ? (next[i] ?? next[i - 1] ?? null) : active }
+}
+
 export function layoutReducer(s: LayoutState, a: LayoutAction): LayoutState {
   const p = s.panel
   switch (a.type) {
@@ -85,6 +101,10 @@ export function layoutReducer(s: LayoutState, a: LayoutAction): LayoutState {
       return p.tabs.includes(a.panel) ? { ...s, panel: { ...p, active: a.panel, open: true } } : s
     case 'toggle':
       if (p.open) return { ...s, panel: { ...p, open: false, maximized: false } }
+      if (a.scope === 'team') {
+        if (p.teamTabs.length === 0) return { ...s, panel: { ...p, open: true, teamTabs: ['kanban'], teamActive: 'kanban' } }
+        return { ...s, panel: { ...p, open: true, teamActive: p.teamActive ?? p.teamTabs[0] } }
+      }
       if (p.tabs.length === 0) return { ...s, panel: { ...p, open: true, tabs: ['terminal'], active: 'terminal' } }
       return { ...s, panel: { ...p, open: true, active: p.active ?? p.tabs[0] } }
     case 'setPosition':
@@ -93,6 +113,21 @@ export function layoutReducer(s: LayoutState, a: LayoutAction): LayoutState {
       return { ...s, panel: { ...p, open: true, maximized: !p.maximized } }
     case 'restore':
       return { ...s, panel: { ...p, maximized: false } }
+    case 'openTeam':
+      if (!isTeamTab(a.tab)) return s
+      return { ...s, panel: { ...p, open: true, teamTabs: p.teamTabs.includes(a.tab) ? p.teamTabs : [...p.teamTabs, a.tab], teamActive: a.tab } }
+    case 'closeTeam': {
+      const r = closeIn(p.teamTabs, p.teamActive, a.tab)
+      return { ...s, panel: { ...p, teamTabs: r.tabs, teamActive: r.active } }
+    }
+    case 'activateTeam':
+      return p.teamTabs.includes(a.tab) ? { ...s, panel: { ...p, open: true, teamActive: a.tab } } : s
+    case 'pruneTeam': {
+      const teamTabs = pruneMemberTabs(p.teamTabs, a.memberIds)
+      if (teamTabs.length === p.teamTabs.length) return s
+      const teamActive = p.teamActive && teamTabs.includes(p.teamActive) ? p.teamActive : (teamTabs[0] ?? null)
+      return { ...s, panel: { ...p, teamTabs, teamActive } }
+    }
     case 'resizeSidebar':
       return { ...s, sidebarW: clampSize(Math.round(a.width), LIMITS.sidebar.min, LIMITS.sidebar.max) }
     case 'resizePanel': {
@@ -123,6 +158,8 @@ export function parseLayout(raw: string | null): LayoutState | null {
     ? [...new Set(rp.tabs.filter((t): t is PanelType => typeof t === 'string' && TYPE_IDS.has(t)))]
     : d.tabs
   const active = typeof rp.active === 'string' && tabs.includes(rp.active as PanelType) ? (rp.active as PanelType) : (tabs[0] ?? null)
+  const teamTabs = Array.isArray(rp.teamTabs) ? [...new Set(rp.teamTabs.filter(isTeamTab))] : d.teamTabs
+  const teamActive = typeof rp.teamActive === 'string' && teamTabs.includes(rp.teamActive) ? rp.teamActive : (teamTabs[0] ?? null)
   return {
     sidebarW: num(r.sidebarW, LIMITS.sidebar.min, LIMITS.sidebar.max, LIMITS.sidebar.def),
     sidebarCollapsed: typeof r.sidebarCollapsed === 'boolean' ? r.sidebarCollapsed : false,
@@ -134,6 +171,8 @@ export function parseLayout(raw: string | null): LayoutState | null {
       maximized: typeof rp.maximized === 'boolean' ? rp.maximized : false,
       tabs,
       active,
+      teamTabs,
+      teamActive,
     },
   }
 }

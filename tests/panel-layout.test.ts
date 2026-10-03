@@ -160,3 +160,38 @@ describe('review fixes', () => {
     expect(panelOverlays(900, 480)).toBe(false)    // exactly 420 is fine
   })
 })
+
+describe('team tabs in layout', () => {
+  const T = (teamTabs: string[], teamActive: string | null): LayoutState =>
+    ({ ...DEFAULT_LAYOUT, panel: { ...DEFAULT_LAYOUT.panel, teamTabs, teamActive } })
+  it('defaults to Kanban', () => {
+    expect(DEFAULT_LAYOUT.panel.teamTabs).toEqual(['kanban'])
+    expect(DEFAULT_LAYOUT.panel.teamActive).toBe('kanban')
+  })
+  it('openTeam adds/focuses without duplicates and opens the panel', () => {
+    const s = layoutReducer({ ...T(['kanban'], 'kanban'), panel: { ...T(['kanban'], 'kanban').panel, open: false } }, { type: 'openTeam', tab: 'term:a1' })
+    expect(s.panel).toMatchObject({ open: true, teamTabs: ['kanban', 'term:a1'], teamActive: 'term:a1' })
+    expect(layoutReducer(s, { type: 'openTeam', tab: 'kanban' }).panel.teamTabs).toEqual(['kanban', 'term:a1'])
+  })
+  it('openTeam ignores invalid tabs', () => {
+    expect(layoutReducer(T(['kanban'], 'kanban'), { type: 'openTeam', tab: 'bogus' }).panel.teamTabs).toEqual(['kanban'])
+  })
+  it('closeTeam activates a neighbour; agent tabs untouched', () => {
+    const s = layoutReducer(T(['kanban', 'tasks', 'members'], 'tasks'), { type: 'closeTeam', tab: 'tasks' })
+    expect(s.panel).toMatchObject({ teamTabs: ['kanban', 'members'], teamActive: 'members', tabs: DEFAULT_LAYOUT.panel.tabs })
+  })
+  it('pruneTeam removes terminals of non-members and fixes the active tab', () => {
+    const s = layoutReducer(T(['kanban', 'term:a', 'term:b'], 'term:a'), { type: 'pruneTeam', memberIds: ['b'] })
+    expect(s.panel.teamTabs).toEqual(['kanban', 'term:b'])
+    expect(s.panel.teamActive).toBe('kanban')
+  })
+  it('toggle with team scope and no team tabs opens Kanban', () => {
+    const hidden = { ...DEFAULT_LAYOUT, panel: { ...DEFAULT_LAYOUT.panel, open: false, teamTabs: [], teamActive: null } }
+    expect(layoutReducer(hidden, { type: 'toggle', scope: 'team' }).panel).toMatchObject({ open: true, teamTabs: ['kanban'], teamActive: 'kanban' })
+  })
+  it('parseLayout validates team tabs', () => {
+    const s = parseLayout(JSON.stringify({ panel: { teamTabs: ['kanban', 'nope', 'term:x', 'kanban'], teamActive: 'nope' } }))!
+    expect(s.panel.teamTabs).toEqual(['kanban', 'term:x'])
+    expect(s.panel.teamActive).toBe('kanban')
+  })
+})

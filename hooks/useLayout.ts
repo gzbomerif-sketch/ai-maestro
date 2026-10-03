@@ -7,7 +7,7 @@ import { readString, writePref } from '@/lib/safe-storage'
 
 export const LAYOUT_KEY = 'aimaestro-layout'
 
-export function useLayout() {
+export function useLayout(scope: 'agent' | 'team' = 'agent') {
   const [layout, dispatch] = useReducer(layoutReducer, DEFAULT_LAYOUT)
   const [hydrated, setHydrated] = useState(false)
 
@@ -28,15 +28,15 @@ export function useLayout() {
     if (hydrated) writePref(LAYOUT_KEY, JSON.stringify(layout))
   }, [layout, hydrated])
 
-  const layoutRef = useRef(layout)
-  layoutRef.current = layout
+  const scopeRef = useRef(scope)
+  scopeRef.current = scope
   useEffect(() => {
     const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform)
     const onKey = (e: KeyboardEvent) => {
       const action = layoutShortcut(e, isMac)
       if (!action || isEditableTarget(e.target as Element | null)) return
       e.preventDefault()
-      if (action === 'togglePanel') dispatch({ type: 'toggle' })
+      if (action === 'togglePanel') dispatch({ type: 'toggle', scope: scopeRef.current })
       else if (action === 'toggleSidebar') dispatch({ type: 'toggleSidebar' })
       else dispatch({ type: 'toggleMaximize' })
     }
