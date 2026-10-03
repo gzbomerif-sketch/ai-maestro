@@ -1,17 +1,11 @@
 import type { Metadata, Viewport } from 'next'
-import { Archivo, JetBrains_Mono } from 'next/font/google'
+import { JetBrains_Mono } from 'next/font/google'
 import Providers from '@/components/Providers'
 import ClientDiagnostics from '@/components/ClientDiagnostics'
 import './globals.css'
 
-// Archivo: a signage grotesque with a real width axis, so one family covers UI
-// text and condensed labels without loading a second face.
-const sans = Archivo({
-  subsets: ['latin'],
-  axes: ['wdth'],
-  variable: '--font-sans',
-  display: 'swap',
-})
+// UI font: Stack Sans Text, loaded by <link> in <head> (next/font in Next 14
+// does not include it); .theme-ink sets --font-sans to it.
 
 // Mono is for code, terminal output, ids and quantities — not decoration.
 const mono = JetBrains_Mono({
@@ -46,7 +40,15 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${sans.variable} ${mono.variable} font-sans`}><ClientDiagnostics /><Providers>{children}</Providers></body>
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Stack+Sans+Text:wght@400;500&display=swap"
+        />
+      </head>
+      <body className={`theme-ink ${mono.variable} font-sans`}><ClientDiagnostics /><Providers>{children}</Providers></body>
     </html>
   )
 }

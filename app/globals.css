@@ -89,6 +89,38 @@
   --cat-7-text: 252 165 165;
 }
 
+/* ══ INK THEME ═══════════════════════════════════════════════════════════════
+   Flat near-black, T3-style. Spec: docs/superpowers/specs/2026-10-03-command-
+   center-redesign-design.md. Accent is only for toggles-on, Send, focus,
+   unread badges and "working". */
+.theme-ink {
+  --font-sans: 'Stack Sans Text', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
+
+  /* Neutrals: 900 = page, 800 = selected, 700 = border, 500 = dim, 400 = muted */
+  --g-50: 246 246 248;  --g-100: 236 236 239; --g-200: 220 220 224;
+  --g-300: 196 196 202; --g-400: 133 133 141; --g-500: 94 94 102;
+  --g-600: 58 58 64;    --g-700: 31 31 35;    --g-800: 28 28 32;
+  --g-900: 10 10 11;    --g-950: 7 7 8;
+
+  --s-50: 246 246 248;  --s-100: 236 236 239; --s-200: 220 220 224;
+  --s-300: 196 196 202; --s-400: 133 133 141; --s-500: 94 94 102;
+  --s-600: 58 58 64;    --s-700: 31 31 35;    --s-800: 28 28 32;
+  --s-900: 10 10 11;    --s-950: 7 7 8;
+
+  /* Accent ramp around #2f4bff (500) / brand #2236ff (600) */
+  --a-50: 238 241 255;  --a-100: 222 227 255; --a-200: 191 200 255;
+  --a-300: 154 166 255; --a-400: 108 126 255; --a-500: 47 75 255;
+  --a-600: 34 54 255;   --a-700: 26 42 214;   --a-800: 22 35 170;
+  --a-900: 20 30 130;   --a-950: 13 18 80;
+
+  --fg-white: 236 236 239;
+
+  --c-surface: 15 15 17;   --c-raised: 28 28 32;   --c-sunken: 10 10 11;
+  --c-hairline: 31 31 35;  --c-ink: 236 236 239;   --c-ink-muted: 133 133 141;
+  --c-accent: 154 166 255; --c-accent-fill: 47 75 255;
+  --c-warn: 214 162 67;
+}
+
 html {
   /* Prevent ALL scroll navigation gestures at root level */
   overscroll-behavior: none;
