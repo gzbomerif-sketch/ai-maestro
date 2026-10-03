@@ -79,7 +79,7 @@ export default function CommandPalette(p: CommandPaletteProps) {
         className="w-[560px] max-w-[92vw] rounded-[14px] border border-hairline bg-surface overflow-hidden">
         <div className="flex items-center gap-3 px-4 h-[52px] border-b border-hairline/70">
           <Search strokeWidth={1.5} className="w-4 h-4 text-ink-muted" />
-          <input ref={inputRef} value={query} onChange={e => { setQuery(e.target.value); setIndex(0) }} onKeyDown={onKeyDown}
+          <input ref={inputRef} autoFocus value={query} onChange={e => { setQuery(e.target.value); setIndex(0) }} onKeyDown={onKeyDown}
             placeholder="Jump to an agent or screen…" aria-label="Search"
             className="flex-1 bg-transparent text-[15px] text-ink placeholder:text-gray-500 focus:outline-none" />
           <span className="text-[12px] text-gray-500">Esc</span>
