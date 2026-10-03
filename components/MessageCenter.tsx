@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { Mail, Send, Inbox, Archive, Trash2, AlertCircle, Clock, CheckCircle, Forward, Copy, ChevronDown, Server, ShieldCheck, Globe, HelpCircle } from 'lucide-react'
+import { Mail, Send, Inbox, Archive, Trash2, AlertCircle, Clock, CheckCircle, Forward, Copy, ChevronDown, Server, ShieldCheck, Globe, HelpCircle, SquarePen } from 'lucide-react'
+import { Button, IconButton } from '@/components/shell/ui'
 import type { Message, MessageSummary } from '@/lib/messageQueue'
 
 /**
@@ -535,8 +536,14 @@ export default function MessageCenter({ sessionName, agentId, allAgents, hostUrl
     return !matchesAgent && toValue.length > 0
   }
 
+  // Compose field styles: ink controls in the narrow side panel, original otherwise
+  const composeLabel = compact ? 'block text-[13px] text-ink-muted mb-1.5' : 'block text-sm font-medium text-gray-300 mb-1'
+  const composeInput = compact
+    ? 'w-full h-[34px] px-3 bg-sunken border border-control-border rounded-[10px] text-[14px] text-ink placeholder:text-gray-500 focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-fill'
+    : 'w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500'
+
   return (
-    <div className="flex flex-col h-full w-full bg-gray-900 relative">
+    <div className={`flex flex-col h-full w-full relative ${compact ? '' : 'bg-gray-900'}`}>
       {/* Toast notification */}
       {toast && (
         <div className={`absolute top-2 right-2 z-50 px-4 py-2 rounded-md text-sm font-medium shadow-lg transition-opacity ${
@@ -549,6 +556,24 @@ export default function MessageCenter({ sessionName, agentId, allAgents, hostUrl
       )}
 
       {/* Header */}
+      {compact ? (
+        <div className="flex items-center gap-2 px-3 py-2.5 border-b border-hairline/70">
+          <div role="tablist" aria-label="Mailbox" className="flex rounded-full bg-raised/70 p-0.5">
+            {(['inbox', 'sent'] as const).map(v => (
+              <button key={v} type="button" role="tab" aria-selected={view === v} onClick={() => setView(v)}
+                className={`flex items-center gap-1.5 px-3 h-[26px] rounded-full text-[13px] capitalize transition-colors ${view === v ? 'bg-ink text-sunken' : 'text-ink-muted hover:text-ink'}`}>
+                {v}
+                {v === 'inbox' && unreadCount > 0 && <span className="min-w-[16px] px-1 rounded-full bg-accent-fill text-white text-[10px] leading-[16px] text-center">{unreadCount}</span>}
+              </button>
+            ))}
+          </div>
+          <span className="ml-auto">
+            <IconButton label="New message" active={view === 'compose'} onClick={() => setView('compose')}>
+              <SquarePen strokeWidth={1.5} className="w-4 h-4" />
+            </IconButton>
+          </span>
+        </div>
+      ) : (
       <div className={`flex items-center justify-between bg-gray-800 border-b border-gray-700 ${compact ? 'px-3 py-2' : 'p-4'}`}>
         <div className={compact ? 'hidden' : 'flex items-center gap-3'}>
           <Mail className="w-5 h-5 text-gray-300" />
@@ -602,6 +627,7 @@ export default function MessageCenter({ sessionName, agentId, allAgents, hostUrl
           </button>
         </div>
       </div>
+      )}
 
       {/* Agent Types Info Panel */}
       {showExternalAgentInfo && (
@@ -676,11 +702,11 @@ export default function MessageCenter({ sessionName, agentId, allAgents, hostUrl
       {view === 'inbox' && (
         <div className="flex flex-1 overflow-hidden">
           {/* Message List */}
-          <div data-inbox-list className={`${compact ? (selectedMessage ? 'hidden' : 'w-full') : 'w-1/3 border-r border-gray-700'} bg-gray-800 overflow-y-auto`}>
+          <div data-inbox-list className={`${compact ? (selectedMessage ? 'hidden' : 'w-full') : 'w-1/3 border-r border-gray-700 bg-gray-800'} overflow-y-auto`}>
             {messages.length === 0 ? (
               <div className="p-8 text-center text-gray-500">
-                <Inbox className="w-12 h-12 mx-auto mb-2 text-gray-300" />
-                <p>No inbox messages</p>
+                <Inbox strokeWidth={1.5} className={`${compact ? 'w-6 h-6 text-ink-muted' : 'w-12 h-12 text-gray-300'} mx-auto mb-2`} />
+                <p className={compact ? 'text-[14px] text-ink-muted' : ''}>No inbox messages</p>
               </div>
             ) : (
               <>
@@ -749,7 +775,7 @@ export default function MessageCenter({ sessionName, agentId, allAgents, hostUrl
           </div>
 
           {/* Message Detail */}
-          <div className={`${compact && !selectedMessage ? 'hidden' : 'flex-1'} bg-gray-900 overflow-y-auto`}>
+          <div className={`${compact && !selectedMessage ? 'hidden' : 'flex-1'} ${compact ? '' : 'bg-gray-900'} overflow-y-auto`}>
             {selectedMessage ? (
               <div className={compact ? 'p-4' : 'p-6'}>
                 {compact && (
@@ -918,11 +944,11 @@ export default function MessageCenter({ sessionName, agentId, allAgents, hostUrl
       {view === 'sent' && (
         <div className="flex flex-1 overflow-hidden">
           {/* Message List */}
-          <div data-inbox-list className={`${compact ? (selectedMessage ? 'hidden' : 'w-full') : 'w-1/3 border-r border-gray-700'} bg-gray-800 overflow-y-auto`}>
+          <div data-inbox-list className={`${compact ? (selectedMessage ? 'hidden' : 'w-full') : 'w-1/3 border-r border-gray-700 bg-gray-800'} overflow-y-auto`}>
             {sentMessages.length === 0 ? (
               <div className="p-8 text-center text-gray-500">
-                <Send className="w-12 h-12 mx-auto mb-2 text-gray-300" />
-                <p>No sent messages</p>
+                <Send strokeWidth={1.5} className={`${compact ? 'w-6 h-6 text-ink-muted' : 'w-12 h-12 text-gray-300'} mx-auto mb-2`} />
+                <p className={compact ? 'text-[14px] text-ink-muted' : ''}>No sent messages</p>
               </div>
             ) : (
               <>
@@ -978,7 +1004,7 @@ export default function MessageCenter({ sessionName, agentId, allAgents, hostUrl
           </div>
 
           {/* Message Detail */}
-          <div className={`${compact && !selectedMessage ? 'hidden' : 'flex-1'} bg-gray-900 overflow-y-auto`}>
+          <div className={`${compact && !selectedMessage ? 'hidden' : 'flex-1'} ${compact ? '' : 'bg-gray-900'} overflow-y-auto`}>
             {selectedMessage ? (
               <div className={compact ? 'p-4' : 'p-6'}>
                 {compact && (
@@ -1090,10 +1116,10 @@ export default function MessageCenter({ sessionName, agentId, allAgents, hostUrl
 
       {/* Compose View */}
       {view === 'compose' && (
-        <div className="flex-1 bg-gray-900 p-6 overflow-y-auto">
-          <h2 className="text-xl font-bold text-gray-100 mb-6">
-            {isForwarding ? 'Forward Message' : 'Compose Message'}
-          </h2>
+        <div className={`flex-1 overflow-y-auto ${compact ? 'p-4' : 'bg-gray-900 p-6'}`}>
+          {compact
+            ? isForwarding && <div className="text-[15px] font-medium text-ink mb-3">Forward message</div>
+            : <h2 className="text-xl font-bold text-gray-100 mb-6">{isForwarding ? 'Forward Message' : 'Compose Message'}</h2>}
 
           {isForwarding && (
             <div className="mb-4 p-3 bg-blue-900/30 border border-blue-700 rounded-md">
@@ -1107,10 +1133,10 @@ export default function MessageCenter({ sessionName, agentId, allAgents, hostUrl
             </div>
           )}
 
-          <div className="space-y-4 max-w-2xl">
+          <div className={compact ? 'space-y-3.5' : 'space-y-4 max-w-2xl'}>
             <div className="relative">
-              <label htmlFor="compose-to" className="block text-sm font-medium text-gray-300 mb-1">
-                To (Agent Name):
+              <label htmlFor="compose-to" className={composeLabel}>
+                {compact ? 'To' : 'To (Agent Name):'}
               </label>
               <input
                 ref={toInputRef}
@@ -1125,7 +1151,7 @@ export default function MessageCenter({ sessionName, agentId, allAgents, hostUrl
                 onKeyDown={handleToKeyDown}
                 onFocus={() => composeTo && filteredAgents.length > 0 && setShowAgentSuggestions(true)}
                 autoComplete="off"
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className={composeInput}
                 placeholder="Type agent name or agent@host"
               />
 
@@ -1175,15 +1201,15 @@ export default function MessageCenter({ sessionName, agentId, allAgents, hostUrl
                   </div>
                 </div>
               ) : (
-                <p className="mt-1 text-xs text-gray-500">
-                  Type to search AI Maestro agents, or enter <code className="bg-gray-800 px-1 rounded">agent@host</code> for external agents.
+                <p className={`mt-1 ${compact ? 'text-[12px] text-gray-500' : 'text-xs text-gray-500'}`}>
+                  {compact ? <>Agent name, or <code className="font-mono">agent@host</code> for external agents.</> : <>Type to search AI Maestro agents, or enter <code className="bg-gray-800 px-1 rounded">agent@host</code> for external agents.</>}
                 </p>
               )}
             </div>
 
             <div>
-              <label htmlFor="compose-subject" className="block text-sm font-medium text-gray-300 mb-1">
-                Subject:
+              <label htmlFor="compose-subject" className={composeLabel}>
+                {compact ? 'Subject' : 'Subject:'}
               </label>
               <input
                 id="compose-subject"
@@ -1192,20 +1218,20 @@ export default function MessageCenter({ sessionName, agentId, allAgents, hostUrl
                 aria-label="Message subject"
                 value={composeSubject}
                 onChange={(e) => setComposeSubject(e.target.value)}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className={composeInput}
                 placeholder="Enter subject"
               />
             </div>
 
-            <div className="flex gap-4">
+            <div className={`flex ${compact ? 'gap-2.5' : 'gap-4'}`}>
               <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-300 mb-1">
-                  Priority:
+                <label className={composeLabel}>
+                  {compact ? 'Priority' : 'Priority:'}
                 </label>
                 <select
                   value={composePriority}
                   onChange={(e) => setComposePriority(e.target.value as any)}
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className={composeInput}
                 >
                   <option value="low">Low</option>
                   <option value="normal">Normal</option>
@@ -1215,13 +1241,13 @@ export default function MessageCenter({ sessionName, agentId, allAgents, hostUrl
               </div>
 
               <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-300 mb-1">
-                  Type:
+                <label className={composeLabel}>
+                  {compact ? 'Type' : 'Type:'}
                 </label>
                 <select
                   value={composeType}
                   onChange={(e) => setComposeType(e.target.value as any)}
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className={composeInput}
                 >
                   <option value="request">Request</option>
                   <option value="response">Response</option>
@@ -1232,8 +1258,8 @@ export default function MessageCenter({ sessionName, agentId, allAgents, hostUrl
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">
-                Message:
+              <label className={composeLabel}>
+                {compact ? 'Message' : 'Message:'}
               </label>
               <textarea
                 id="compose-message"
@@ -1241,12 +1267,25 @@ export default function MessageCenter({ sessionName, agentId, allAgents, hostUrl
                 aria-label="Message body"
                 value={composeMessage}
                 onChange={(e) => setComposeMessage(e.target.value)}
-                rows={10}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+                rows={compact ? 8 : 10}
+                className={compact ? `${composeInput} h-auto py-2 leading-relaxed resize-y` : 'w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm'}
                 placeholder="Enter your message..."
               />
             </div>
 
+            {compact ? (
+              <div className="flex justify-end gap-2 pt-1">
+                <Button onClick={() => {
+                  setView('inbox')
+                  setIsForwarding(false)
+                  setForwardingOriginalMessage(null)
+                }}>Cancel</Button>
+                <Button variant="accent" onClick={sendMessage} disabled={loading}>
+                  <Send strokeWidth={1.5} className="w-4 h-4" />
+                  {loading ? (isForwarding ? 'Forwarding…' : 'Sending…') : (isForwarding ? 'Forward' : 'Send')}
+                </Button>
+              </div>
+            ) : (
             <div className="flex gap-3">
               <button
                 onClick={sendMessage}
@@ -1266,6 +1305,7 @@ export default function MessageCenter({ sessionName, agentId, allAgents, hostUrl
                 Cancel
               </button>
             </div>
+            )}
           </div>
         </div>
       )}
