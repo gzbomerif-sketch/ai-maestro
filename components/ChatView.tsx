@@ -61,6 +61,8 @@ type ChatMode = 'power' | 'assisted'
 interface ChatViewProps {
   agent: Agent
   isActive?: boolean  // Only connect WebSocket when active (prevents resource waste with many agents)
+  hideHeader?: boolean  // Command-center shell shows its own top bar
+  variant?: 'classic' | 'ink'
 }
 
 interface Message {
@@ -123,7 +125,8 @@ const PENDING_EXPIRY_MS = 30000
 /** Let the TUI open its free-text field before the answer is pasted into it. */
 const QUESTION_OTHER_SETTLE_MS = 400
 
-export default function ChatView({ agent, isActive = false }: ChatViewProps) {
+export default function ChatView({ agent, isActive = false, hideHeader = false, variant = 'classic' }: ChatViewProps) {
+  const ink = variant === 'ink'
   // What the sidebar and terminal read: one status for every view
   const { presenceOf } = useSessionActivity()
   const [messages, setMessages] = useState<Message[]>([])
@@ -878,38 +881,40 @@ export default function ChatView({ agent, isActive = false }: ChatViewProps) {
   return (
     <div className="flex-1 flex flex-col min-h-0 bg-gray-900">
       {/* Header: which agent, where, what it is doing (shared with the terminal tab) */}
-      <AgentHeaderBar
-        hostId={agent.hostId}
-        remote={getAgentBaseUrl(agent) !== ''}
-        name={agent.label || agent.name || agent.alias || 'Agent'}
-        workingDirectory={agentWorkingDirectory(agent)}
-        presence={presence}
-        avatar={{ agentId: agent.id, src: agent.avatar, hostUrl: getAgentBaseUrl(agent), state: avatarStateForPresence(presence) }}
-        status={
-          presence === 'working'
-            ? (liveActivity ? `Working · ${liveActivity.label}${liveActivity.detail ? ` · ${liveActivity.detail}` : ''}…` : 'Working…')
-            : presence === 'needs-you'
-              ? (activityState === 'permission' ? 'Needs you · approval' : 'Needs you')
-              : presenceStyle.label
-        }
-        actions={
-          // X-Ray changes what the chat shows (thinking and tool calls), so it
-          // stays, with a label. Refresh went: the chat is live and reconnects.
-          <button
-            onClick={toggleChatMode}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
-              chatMode === 'power'
-                ? 'text-amber-300 bg-amber-400/15 hover:bg-amber-400/25'
-                : 'text-gray-300 hover:bg-gray-700'
-            }`}
-            title={chatMode === 'power' ? 'X-Ray on: showing thinking and tool calls. Click to hide them' : 'X-Ray off: click to show thinking and tool calls'}
-            aria-pressed={chatMode === 'power'}
-          >
-            <ScanEye className="w-4 h-4" />
-            X-Ray
-          </button>
-        }
-      />
+      {!hideHeader && (
+        <AgentHeaderBar
+          hostId={agent.hostId}
+          remote={getAgentBaseUrl(agent) !== ''}
+          name={agent.label || agent.name || agent.alias || 'Agent'}
+          workingDirectory={agentWorkingDirectory(agent)}
+          presence={presence}
+          avatar={{ agentId: agent.id, src: agent.avatar, hostUrl: getAgentBaseUrl(agent), state: avatarStateForPresence(presence) }}
+          status={
+            presence === 'working'
+              ? (liveActivity ? `Working · ${liveActivity.label}${liveActivity.detail ? ` · ${liveActivity.detail}` : ''}…` : 'Working…')
+              : presence === 'needs-you'
+                ? (activityState === 'permission' ? 'Needs you · approval' : 'Needs you')
+                : presenceStyle.label
+          }
+          actions={
+            // X-Ray changes what the chat shows (thinking and tool calls), so it
+            // stays, with a label. Refresh went: the chat is live and reconnects.
+            <button
+              onClick={toggleChatMode}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                chatMode === 'power'
+                  ? 'text-amber-300 bg-amber-400/15 hover:bg-amber-400/25'
+                  : 'text-gray-300 hover:bg-gray-700'
+              }`}
+              title={chatMode === 'power' ? 'X-Ray on: showing thinking and tool calls. Click to hide them' : 'X-Ray off: click to show thinking and tool calls'}
+              aria-pressed={chatMode === 'power'}
+            >
+              <ScanEye className="w-4 h-4" />
+              X-Ray
+            </button>
+          }
+        />
+      )}
 
       {/* Messages Area */}
       <div
@@ -1014,16 +1019,24 @@ export default function ChatView({ agent, isActive = false }: ChatViewProps) {
               <div className={`max-w-[85%] min-w-0 overflow-hidden ${(isUser || isQueued) ? 'order-1' : ''}`}>
                 {/* Message bubble */}
                 <div
-                  className={`rounded-2xl px-4 py-3 ${
-                    isQueued
-                      ? 'bg-yellow-600/80 text-white border border-yellow-500'
-                      : isUser
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-800 text-gray-200'
-                  }`}
+                  className={
+                    ink
+                      ? isQueued
+                        ? 'rounded-2xl px-4 py-2.5 bg-warn/15 text-ink border border-warn/40'
+                        : isUser
+                        ? 'rounded-2xl px-4 py-2.5 bg-raised text-ink'
+                        : 'px-0 py-1 text-[15px] leading-relaxed text-ink'
+                      : `rounded-2xl px-4 py-3 ${
+                          isQueued
+                            ? 'bg-yellow-600/80 text-white border border-yellow-500'
+                            : isUser
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-gray-800 text-gray-200'
+                        }`
+                  }
                 >
-                  {/* Header with icon — hide if grouped */}
-                  {!isGrouped && (
+                  {/* Header with icon — hide if grouped (ink style drops it) */}
+                  {!isGrouped && !ink && (
                     <div className="flex items-center gap-2 mb-1">
                       {isQueued ? (
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -1370,7 +1383,7 @@ export default function ChatView({ agent, isActive = false }: ChatViewProps) {
       )}
 
       {/* Input Area */}
-      <div className="border-t border-gray-700 bg-gray-800 p-4 flex-shrink-0">
+      <div className={ink ? 'px-8 pb-6 pt-2 flex-shrink-0' : 'border-t border-gray-700 bg-gray-800 p-4 flex-shrink-0'}>
         {!isOnline && (
           <div className="mb-3 px-3 py-2 bg-yellow-900/20 border border-yellow-800 rounded-lg text-xs text-yellow-400">
             Agent is offline. Wake the session to send messages.
@@ -1383,35 +1396,41 @@ export default function ChatView({ agent, isActive = false }: ChatViewProps) {
           </div>
         )}
 
-        <div className="flex items-end gap-3">
+        <div className={ink ? 'rounded-[18px] border border-[rgb(38_38_43)] bg-[rgb(17_17_19)] px-4 pt-3.5 pb-3' : 'flex items-end gap-3'}>
           <textarea
             ref={inputRef}
             data-chat-input
             value={input}
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
-            placeholder={isOnline ? `Message ${agent.label || agent.name || agent.alias || 'agent'}... (Enter to send)` : "Agent is offline"}
-            className="flex-1 bg-gray-900 text-gray-200 text-sm rounded-lg px-4 py-3 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 border border-gray-700 disabled:opacity-50"
+            placeholder={isOnline ? `Message ${agent.label || agent.name || agent.alias || 'agent'}${ink ? ', or attach images' : '... (Enter to send)'}` : 'Agent is offline'}
+            className={ink
+              ? 'w-full bg-transparent text-[15px] text-ink placeholder:text-gray-500 resize-none focus:outline-none min-h-[44px] disabled:opacity-50'
+              : 'flex-1 bg-gray-900 text-gray-200 text-sm rounded-lg px-4 py-3 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 border border-gray-700 disabled:opacity-50'}
             rows={1}
             style={{ maxHeight: '160px' }}
             disabled={!isOnline || isSending}
           />
-          <button
-            onClick={handleSend}
-            disabled={!isOnline || isSending || !input.trim()}
-            className="px-4 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-lg"
-          >
-            {isSending ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : (
-              <Send className="w-5 h-5" />
-            )}
-          </button>
+          <div className={ink ? 'flex items-center gap-5 mt-1 text-[14px] text-ink-muted' : 'contents'}>
+            {ink && <span className="text-[12px] text-gray-500">Enter to send · Shift+Enter for a new line</span>}
+            <button
+              onClick={handleSend}
+              disabled={!isOnline || isSending || !input.trim()}
+              aria-label="Send"
+              className={ink
+                ? 'ml-auto grid place-items-center w-[34px] h-[34px] rounded-full bg-accent-fill text-white disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent'
+                : 'px-4 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-lg'}
+            >
+              {isSending ? <Loader2 className={ink ? 'w-4 h-4 animate-spin' : 'w-5 h-5 animate-spin'} /> : <Send className={ink ? 'w-4 h-4' : 'w-5 h-5'} />}
+            </button>
+          </div>
         </div>
 
-        <div className="mt-2 text-xs text-gray-500">
-          Enter = Send &bull; Shift+Enter = New Line
-        </div>
+        {!ink && (
+          <div className="mt-2 text-xs text-gray-500">
+            Enter = Send &bull; Shift+Enter = New Line
+          </div>
+        )}
       </div>
     </div>
   )

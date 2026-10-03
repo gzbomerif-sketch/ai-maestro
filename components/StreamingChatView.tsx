@@ -18,6 +18,7 @@ import type { Agent } from '@/types/agent'
 interface StreamingChatViewProps {
   agent: Agent
   isActive?: boolean
+  hideHeader?: boolean  // Command-center shell shows its own top bar
 }
 
 interface Turn {
@@ -56,7 +57,7 @@ interface QuestionReq {
 let idCounter = 0
 const nextId = () => `t${++idCounter}`
 
-export default function StreamingChatView({ agent, isActive = false }: StreamingChatViewProps) {
+export default function StreamingChatView({ agent, isActive = false, hideHeader = false }: StreamingChatViewProps) {
   // Status from the shared store, the same value every other view shows
   const { presenceOf } = useSessionActivity()
   const [turns, setTurns] = useState<Turn[]>([])
@@ -280,20 +281,22 @@ export default function StreamingChatView({ agent, isActive = false }: Streaming
   return (
     <div className="flex-1 flex flex-col min-h-0 bg-gray-900">
       {/* Header: which agent, where, what it is doing (shared with the terminal and chat tabs) */}
-      <AgentHeaderBar
-        hostId={agent.hostId}
-        remote={getAgentBaseUrl(agent) !== ''}
-        name={agent.label || agent.name || agent.alias || 'Agent'}
-        workingDirectory={agentWorkingDirectory(agent)}
-        presence={presenceOf(agent, { online: connected })}
-        avatar={{ agentId: agent.id, src: agent.avatar, hostUrl: getAgentBaseUrl(agent), state: avatarStateForPresence(presenceOf(agent, { online: connected })) }}
-        status={!connected ? 'Connecting…' : undefined}
-        actions={
-          <span className="flex items-center gap-1 text-[10px] uppercase tracking-wide text-amber-400/70 border border-amber-400/30 rounded px-1.5 py-0.5" title="Streaming mode is experimental">
-            <Zap className="w-3 h-3" /> PoC
-          </span>
-        }
-      />
+      {!hideHeader && (
+        <AgentHeaderBar
+          hostId={agent.hostId}
+          remote={getAgentBaseUrl(agent) !== ''}
+          name={agent.label || agent.name || agent.alias || 'Agent'}
+          workingDirectory={agentWorkingDirectory(agent)}
+          presence={presenceOf(agent, { online: connected })}
+          avatar={{ agentId: agent.id, src: agent.avatar, hostUrl: getAgentBaseUrl(agent), state: avatarStateForPresence(presenceOf(agent, { online: connected })) }}
+          status={!connected ? 'Connecting…' : undefined}
+          actions={
+            <span className="flex items-center gap-1 text-[10px] uppercase tracking-wide text-amber-400/70 border border-amber-400/30 rounded px-1.5 py-0.5" title="Streaming mode is experimental">
+              <Zap className="w-3 h-3" /> PoC
+            </span>
+          }
+        />
+      )}
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-4" style={{ minHeight: 0 }}>

@@ -113,7 +113,7 @@ export default function AgentTabContent({
           </div>
         ) : (
           <ErrorBoundary fallbackLabel="Terminal">
-            <TerminalView session={session} isVisible={isActive && activeTab === 'terminal'} avatar={{ src: agent.avatar, hostUrl: getAgentBaseUrl(agent) }} />
+            <TerminalView hideHeader={hideHeaders} session={session} isVisible={isActive && activeTab === 'terminal'} avatar={{ src: agent.avatar, hostUrl: getAgentBaseUrl(agent) }} />
           </ErrorBoundary>
         )
       ) : !isActive ? (
@@ -150,7 +150,7 @@ export default function AgentTabContent({
           </div>
         ) : (
           <ErrorBoundary fallbackLabel="Chat">
-            <ChatView agent={agent} isActive={true} />
+            <ChatView agent={agent} isActive={true} hideHeader={hideHeaders} variant={chatVariant} />
           </ErrorBoundary>
         )
       ) : activeTab === 'streaming' ? (
@@ -158,7 +158,7 @@ export default function AgentTabContent({
         // connect and resumes the agent's latest conversation —
         // no tmux/wake needed, works even when tmux-hibernated.
         <ErrorBoundary fallbackLabel="Streaming">
-          <StreamingChatView agent={agent} isActive={true} />
+          <StreamingChatView agent={agent} isActive={true} hideHeader={hideHeaders} />
         </ErrorBoundary>
       ) : activeTab === 'messages' ? (
         <ErrorBoundary fallbackLabel="Messages">
