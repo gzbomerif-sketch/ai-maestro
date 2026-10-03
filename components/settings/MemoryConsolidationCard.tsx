@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import { Moon, Pause, Play, Loader2, CheckCircle2, AlertCircle, ChevronDown, ChevronRight } from 'lucide-react'
+import { useState, useEffect, useCallback, type ReactNode } from 'react'
+import { Pause, Play, Loader2, ChevronDown, ChevronRight } from 'lucide-react'
+import { Card, Row, Button, Select, NumberField, Toggle, Notice, GroupLabel } from '@/components/shell/ui'
 
 /**
  * Settings → Memory: when and how much consolidation runs on this host.
@@ -64,9 +65,9 @@ const scheduleOf = (c: Consolidation): Omit<Consolidation, 'paused'> => ({
 })
 
 const STATE_PILL: Record<Status['state'], { label: string; cls: string }> = {
-  paused: { label: 'Paused', cls: 'bg-orange-500/10 text-orange-400' },
-  in_window: { label: 'Window open', cls: 'bg-green-500/10 text-green-400' },
-  scheduled: { label: 'Scheduled', cls: 'bg-blue-500/10 text-blue-400' },
+  paused: { label: 'Paused', cls: 'text-warn' },
+  in_window: { label: 'Window open', cls: 'text-ok' },
+  scheduled: { label: 'Scheduled', cls: 'text-accent' },
 }
 
 export default function MemoryConsolidationCard() {
@@ -117,9 +118,10 @@ export default function MemoryConsolidationCard() {
 
   if (!form || !stored || !status) {
     return (
-      <div className="rounded-xl border border-gray-700 bg-gray-800/50 p-5 text-sm text-gray-400 flex items-center gap-2">
-        {message ? <><AlertCircle className="w-4 h-4 text-red-400" />{message.text}</> : <><Loader2 className="w-4 h-4 animate-spin" />Loading…</>}
-      </div>
+      <>
+        <GroupLabel>Consolidation</GroupLabel>
+        <Card><div className="px-[22px] py-4">{message ? <Notice tone="error">{message.text}</Notice> : <Notice><span className="inline-flex items-center gap-2"><Loader2 className="w-3.5 h-3.5 animate-spin" />Loading…</span></Notice>}</div></Card>
+      </>
     )
   }
 
@@ -128,151 +130,84 @@ export default function MemoryConsolidationCard() {
   const dirty = JSON.stringify(scheduleForm) !== JSON.stringify(scheduleOf(stored))
   const pill = STATE_PILL[status.state]
   const set = (patch: Partial<Consolidation>) => setForm({ ...form, ...patch })
-  const inputClass = 'px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-sm text-gray-100 focus:outline-none focus:border-blue-500'
   const hours = Array.from({ length: 24 }, (_, h) => h)
+  const stat = (value: ReactNode, sub?: ReactNode) => <span className="text-[14px] text-ink">{value}{sub && <span className="text-ink-muted"> {sub}</span>}</span>
 
   return (
-    <div className="rounded-xl border border-gray-700 bg-gray-800/50 p-5 space-y-5">
-      {/* State and the one button you need most */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <h3 className="text-lg font-semibold text-white">Consolidation</h3>
-            <span className={`text-xs px-2 py-1 rounded-full ${pill.cls}`}>{pill.label}</span>
-            {status.backlogRunning && <span className="text-xs px-2 py-1 rounded-full bg-green-500/10 text-green-400">Catching up history</span>}
-          </div>
-          <p className="text-xs text-gray-500 mt-1 max-w-xl">
-            Turns conversations into memories. This is the part of memory that costs money: it calls the classifier (your key)
-            and the summarizer (your Claude subscription). Indexing, search and recall are local and keep working while paused.
-          </p>
-        </div>
-        <button
-          onClick={() => put({ paused: !stored.paused }, 'pause', stored.paused ? 'Resumed' : 'Paused')}
-          disabled={busy !== null || status.pausedByEnvironment}
-          className={`shrink-0 px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 disabled:opacity-50 ${
-            stored.paused ? 'bg-green-600 hover:bg-green-500 text-white' : 'border border-gray-600 text-gray-200 hover:border-orange-500/60 hover:text-orange-300'
-          }`}
-        >
-          {busy === 'pause' ? <Loader2 className="w-4 h-4 animate-spin" /> : stored.paused ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
-          {stored.paused ? 'Resume' : 'Pause'}
-        </button>
-      </div>
+    <>
+      <GroupLabel action={
+        <span className="flex items-center gap-3 text-[13px]">
+          <span className={pill.cls}>{pill.label}</span>
+          {status.backlogRunning && <span className="text-ok">Catching up history</span>}
+        </span>
+      }>Consolidation</GroupLabel>
+      <Card>
+        <Row wrap title={stored.paused ? 'Paused' : 'Running on schedule'}
+          description={status.pausedByEnvironment
+            ? 'Paused by MEMORY_CONSOLIDATION_PAUSED on this host. Remove it to resume.'
+            : paused
+              ? "No new runs start: not the nightly schedule, the history catch-up, or an agent's Consolidate button. A run in progress finishes."
+              : 'Turns conversations into memories. This is the part that costs money (classifier key, Claude summarizer). Search and recall stay local.'}
+          control={
+            <Button variant={stored.paused ? 'accent' : 'outline'} disabled={busy !== null || status.pausedByEnvironment}
+              onClick={() => put({ paused: !stored.paused }, 'pause', stored.paused ? 'Resumed' : 'Paused')}>
+              {busy === 'pause' ? <Loader2 className="w-4 h-4 animate-spin" /> : stored.paused ? <Play strokeWidth={1.5} className="w-4 h-4" /> : <Pause strokeWidth={1.5} className="w-4 h-4" />}
+              {stored.paused ? 'Resume' : 'Pause'}
+            </Button>
+          } />
+        <Row title="Agents building memory" control={stat(status.agents.building, `of ${status.agents.memoryOn} with memory`)} />
+        <Row title="History still waiting" control={stat(status.agents.historyWaiting, 'agents')} />
+        <Row title="Last run" control={stat(status.lastRunAt ? ago(status.lastRunAt) : 'never')} />
+        <Row title="Last 24 hours" control={stat(`${status.last24h.memories} memories`, `from ${status.last24h.conversations} conversations, ${status.last24h.agents} agents`)} />
+      </Card>
 
-      {status.pausedByEnvironment && (
-        <p className="text-xs text-orange-300">Paused by the environment variable MEMORY_CONSOLIDATION_PAUSED on this host. Remove it to resume.</p>
-      )}
-      {paused && !status.pausedByEnvironment && (
-        <p className="text-xs text-gray-400">
-          No new runs start, on any path: the nightly schedule, the history catch-up, or an agent&apos;s Consolidate button.
-          A run already in progress finishes.
-        </p>
-      )}
-
-      {/* What it has been doing */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div className="rounded-lg bg-gray-900/60 p-3">
-          <div className="text-xs text-gray-500">Agents building memory</div>
-          <div className="text-lg text-white font-semibold">{status.agents.building}<span className="text-xs text-gray-500 font-normal"> of {status.agents.memoryOn} with memory</span></div>
-        </div>
-        <div className="rounded-lg bg-gray-900/60 p-3">
-          <div className="text-xs text-gray-500">History still waiting</div>
-          <div className="text-lg text-white font-semibold">{status.agents.historyWaiting}<span className="text-xs text-gray-500 font-normal"> agents</span></div>
-        </div>
-        <div className="rounded-lg bg-gray-900/60 p-3">
-          <div className="text-xs text-gray-500">Last run</div>
-          <div className="text-lg text-white font-semibold">{status.lastRunAt ? ago(status.lastRunAt) : 'never'}</div>
-        </div>
-        <div className="rounded-lg bg-gray-900/60 p-3">
-          <div className="text-xs text-gray-500">Last 24 hours</div>
-          <div className="text-sm text-white font-semibold">
-            {status.last24h.memories} memories
-            <span className="block text-xs text-gray-500 font-normal">from {status.last24h.conversations} conversations, {status.last24h.agents} agents</span>
-          </div>
-        </div>
-      </div>
-
-      {/* When */}
-      <div className="space-y-3">
-        <div className="flex items-center gap-2 text-sm text-gray-200">
-          <Moon className="w-4 h-4 text-purple-400" />
-          <span>Runs every night from</span>
-          <select className={inputClass} value={form.startHour} onChange={e => set({ startHour: Number(e.target.value) })}>
-            {hours.map(h => <option key={h} value={h}>{hourLabel(h)}</option>)}
-          </select>
-          <span>to</span>
-          <select className={inputClass} value={form.endHour} onChange={e => set({ endHour: Number(e.target.value) })}>
-            {hours.map(h => <option key={h} value={h}>{hourLabel(h)}</option>)}
-          </select>
-        </div>
-        <p className="text-xs text-gray-500 pl-6">
-          {windowHours(form)} hours.{' '}
-          {!stored.paused && status.nextWindowAt && !dirty && (status.inWindow ? 'Open now.' : `Next ${when(status.nextWindowAt)}.`)}{' '}
-          Each agent with memory consolidates once at the start; heavy work stays out of the working day.
-        </p>
-        <label className="flex items-start gap-3 pl-6 cursor-pointer">
-          <input type="checkbox" className="mt-0.5" checked={form.backlog} onChange={e => set({ backlog: e.target.checked })} />
-          <span className="text-sm text-gray-200">
-            Catch up older history during the window
-            <span className="block text-xs text-gray-500">
-              Agents with months of conversations keep consolidating, newest first, one agent at a time, until the window
-              closes. Off: one run per agent per night.
+      <GroupLabel>Schedule</GroupLabel>
+      <Card>
+        <Row wrap title="Nightly window"
+          description={<>{windowHours(form)} hours. {!stored.paused && status.nextWindowAt && !dirty && (status.inWindow ? 'Open now. ' : `Next ${when(status.nextWindowAt)}. `)}Each agent with memory consolidates once at the start.</>}
+          control={
+            <span className="flex items-center gap-2 text-[14px] text-ink-muted">
+              <Select value={form.startHour} onChange={e => set({ startHour: Number(e.target.value) })} aria-label="Window start">
+                {hours.map(h => <option key={h} value={h}>{hourLabel(h)}</option>)}
+              </Select>
+              to
+              <Select value={form.endHour} onChange={e => set({ endHour: Number(e.target.value) })} aria-label="Window end">
+                {hours.map(h => <option key={h} value={h}>{hourLabel(h)}</option>)}
+              </Select>
             </span>
-          </span>
-        </label>
-      </div>
-
-      {/* How much */}
-      <div>
-        <button onClick={() => setAdvanced(!advanced)} className="flex items-center gap-1 text-sm text-gray-400 hover:text-gray-200">
-          {advanced ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-          Limits per run
+          } />
+        <Row wrap title="Catch up older history"
+          description="Agents with months of conversations keep consolidating, newest first, until the window closes. Off: one run per agent per night."
+          control={<Toggle checked={form.backlog} onChange={v => set({ backlog: v })} label="Catch up older history" />} />
+        <button type="button" onClick={() => setAdvanced(!advanced)}
+          className="w-full flex items-center gap-1.5 px-[22px] py-3 border-t border-hairline/70 text-[14px] text-ink-muted hover:text-ink">
+          {advanced ? <ChevronDown strokeWidth={1.5} className="w-4 h-4" /> : <ChevronRight strokeWidth={1.5} className="w-4 h-4" />}Limits per run
         </button>
         {advanced && (
-          <div className="grid md:grid-cols-3 gap-4 mt-3 pl-5">
-            <div>
-              <label className="block text-xs font-medium text-gray-300 mb-1">Classifier calls (passages)</label>
-              <input type="number" min={50} max={10000} step={50} className={`${inputClass} w-full`} value={form.maxPassagesPerRun}
-                onChange={e => set({ maxPassagesPerRun: Number(e.target.value) })} />
-              <p className="text-xs text-gray-500 mt-1">Jev calls per agent per run (50–10,000). The next run continues.</p>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-300 mb-1">Summarizer calls</label>
-              <input type="number" min={0} max={50} className={`${inputClass} w-full`} value={form.maxSummaryCallsPerRun}
-                onChange={e => set({ maxSummaryCallsPerRun: Number(e.target.value) })} />
-              <p className="text-xs text-gray-500 mt-1">Claude calls per agent per run (0–50). 0 keeps verbatim memories only.</p>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-300 mb-1">Agents per pass</label>
-              <input type="number" min={1} max={200} className={`${inputClass} w-full`} value={form.agentsPerSweep}
-                onChange={e => set({ agentsPerSweep: Number(e.target.value) })} />
-              <p className="text-xs text-gray-500 mt-1">Agents the night sweep visits every 15 minutes (1–200).</p>
-            </div>
-          </div>
-        )}
-      </div>
-
-      <div className="flex items-center gap-3">
-        {dirty && (
           <>
-            <button onClick={() => put(scheduleForm, 'save', 'Saved')} disabled={busy !== null}
-              className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium disabled:opacity-50">
-              {busy === 'save' ? 'Saving…' : 'Save schedule'}
-            </button>
-            <button onClick={() => setForm(stored)} className="px-3 py-2 text-sm text-gray-400 hover:text-gray-200">Discard</button>
+            <Row wrap title="Classifier calls" description="Jev calls per agent per run (50–10,000). The next run continues."
+              control={<NumberField min={50} max={10000} step={50} value={form.maxPassagesPerRun} onChange={e => set({ maxPassagesPerRun: Number(e.target.value) })} aria-label="Classifier calls" />} />
+            <Row wrap title="Summarizer calls" description="Claude calls per agent per run (0–50). 0 keeps verbatim memories only."
+              control={<NumberField min={0} max={50} value={form.maxSummaryCallsPerRun} onChange={e => set({ maxSummaryCallsPerRun: Number(e.target.value) })} aria-label="Summarizer calls" />} />
+            <Row wrap title="Agents per pass" description="Agents the night sweep visits every 15 minutes (1–200)."
+              control={<NumberField min={1} max={200} value={form.agentsPerSweep} onChange={e => set({ agentsPerSweep: Number(e.target.value) })} aria-label="Agents per pass" />} />
           </>
         )}
-        {message && (
-          <span className={`flex items-center gap-1.5 text-sm ${message.ok ? 'text-green-400' : 'text-red-400'}`}>
-            {message.ok ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
-            {message.text}
-          </span>
+        {(dirty || message) && (
+          <div className="flex items-center gap-3 px-[22px] py-4 border-t border-hairline/70">
+            {message && <Notice tone={message.ok ? 'success' : 'error'}>{message.text}</Notice>}
+            {dirty && (
+              <span className="ml-auto flex gap-2">
+                <Button onClick={() => setForm(stored)}>Discard</Button>
+                <Button variant="accent" onClick={() => put(scheduleForm, 'save', 'Saved')} disabled={busy !== null}>{busy === 'save' ? 'Saving…' : 'Save schedule'}</Button>
+              </span>
+            )}
+          </div>
         )}
-      </div>
-
-      <p className="text-xs text-gray-500">
-        These apply to every agent on this host. Per agent, memory, recall and building new memories are switched in the
-        agent&apos;s Skills tab.
+      </Card>
+      <p className="mt-3 text-[13px] text-gray-500">
+        These apply to every agent on this host. Per agent, memory and recall are switched in the agent&apos;s Skills tab.
       </p>
-    </div>
+    </>
   )
 }

@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Brain, KeyRound, CheckCircle2, AlertCircle, Loader2, Trash2 } from 'lucide-react'
+import { Loader2, Trash2 } from 'lucide-react'
+import { Card, Row, Field, NumberField, Button, IconButton, Notice, GroupLabel } from '@/components/shell/ui'
 import MemoryConsolidationCard from './MemoryConsolidationCard'
 
 interface ClassifierView {
@@ -98,98 +99,44 @@ export default function MemorySection() {
     }
   }
 
-  const inputClass = 'w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-sm text-gray-100 focus:outline-none focus:border-blue-500'
-
   return (
-    <div className="p-6 max-w-4xl mx-auto">
-      <div className="mb-8">
-        <div className="flex items-center gap-3 mb-2">
-          <Brain className="w-6 h-6 text-purple-400" />
-          <h1 className="text-2xl font-bold text-white">Memory</h1>
-        </div>
-        <p className="text-gray-400">
-          Long-term memory classifies passages of each conversation (your messages, and each paragraph of the agent&apos;s replies)
-          with a System One model (Jev by default). It keeps the ones that are decisions, facts, preferences, patterns,
-          insights or reasoning, word for word.
-          Use your own API key. It is stored only on this host and never sent back to the browser.
-        </p>
-      </div>
+    <>
+      <p className="text-[14px] text-ink-muted max-w-[75ch] mb-2">
+        Long-term memory classifies passages of each conversation (your messages, and each paragraph of the agent&apos;s replies)
+        with a System One model (Jev by default). It keeps decisions, facts, preferences, patterns, insights and reasoning, word for word.
+      </p>
 
-      <div className="mb-6">
-        <MemoryConsolidationCard />
-      </div>
+      <MemoryConsolidationCard />
 
-      <div className="rounded-xl border border-gray-700 bg-gray-800/50 p-5 space-y-5">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-white">Classifier</h3>
-          {stored && (
-            <span className={`text-xs px-2 py-1 rounded-full ${stored.configured ? 'bg-green-500/10 text-green-400' : 'bg-yellow-500/10 text-yellow-400'}`}>
-              {stored.configured ? 'Configured' : 'No API key: memory consolidation is off'}
+      <GroupLabel action={stored ? (
+        <span className={`text-[13px] ${stored.configured ? 'text-ok' : 'text-warn'}`}>
+          {stored.configured ? 'Configured' : 'No API key: memory consolidation is off'}
+        </span>
+      ) : undefined}>Classifier</GroupLabel>
+      <Card>
+        <Row wrap title="API URL" description={<>Any Jev-compatible endpoint. Requests go to <code className="font-mono text-[13px]">{'{url}'}/v1/systemone</code>.</>}
+          control={<Field mono value={url} onChange={e => setUrl(e.target.value)} placeholder="https://api.typesafe.ai" aria-label="API URL" />} />
+        <Row title="Model" control={<Field mono value={model} onChange={e => setModel(e.target.value)} placeholder="jev-latest" aria-label="Model" />} />
+        <Row wrap title="API key" description="Stored only on this host and never sent back to the browser."
+          control={
+            <span className="flex items-center gap-2">
+              <Field type="password" autoComplete="off" mono value={apiKey} onChange={e => setApiKey(e.target.value)} aria-label="API key"
+                placeholder={stored?.apiKeyHint ? `Stored ${stored.apiKeyHint} · blank keeps it` : 'Paste your API key'} />
+              {stored?.apiKeyHint && <IconButton label="Remove stored key" onClick={removeKey}><Trash2 strokeWidth={1.5} className="w-4 h-4" /></IconButton>}
             </span>
-          )}
+          } />
+        <Row wrap title="Minimum “worth remembering” probability" description="0 to 1. Higher keeps fewer, surer passages."
+          control={<NumberField step="0.05" min="0" max="1" value={minDurable} onChange={e => setMinDurable(Number(e.target.value))} aria-label="Minimum probability" />} />
+        <Row wrap title="Minimum importance" description="0 to 4."
+          control={<NumberField step="0.5" min="0" max="4" value={minImportance} onChange={e => setMinImportance(Number(e.target.value))} aria-label="Minimum importance" />} />
+        <div className="flex items-center gap-3 px-[22px] py-4 border-t border-hairline/70">
+          {status && <Notice tone={status.ok ? 'success' : 'error'}>{status.message}</Notice>}
+          <span className="ml-auto flex gap-2">
+            <Button onClick={test} disabled={testing}>{testing && <Loader2 className="w-4 h-4 animate-spin" />}Test connection</Button>
+            <Button variant="accent" onClick={save} disabled={saving}>{saving ? 'Saving…' : 'Save'}</Button>
+          </span>
         </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-300 mb-1">API URL</label>
-          <input className={inputClass} value={url} onChange={e => setUrl(e.target.value)} placeholder="https://api.typesafe.ai" />
-          <p className="text-xs text-gray-500 mt-1">Any Jev-compatible endpoint. Requests go to <code>{'{url}'}/v1/systemone</code>.</p>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-300 mb-1">Model</label>
-          <input className={inputClass} value={model} onChange={e => setModel(e.target.value)} placeholder="jev-latest" />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-300 mb-1">API key</label>
-          <div className="flex gap-2">
-            <div className="relative flex-1">
-              <KeyRound className="w-4 h-4 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                type="password"
-                autoComplete="off"
-                className={`${inputClass} pl-9`}
-                value={apiKey}
-                onChange={e => setApiKey(e.target.value)}
-                placeholder={stored?.apiKeyHint ? `Stored key ${stored.apiKeyHint}. Leave blank to keep it.` : 'Paste your API key'}
-              />
-            </div>
-            {stored?.apiKeyHint && (
-              <button onClick={removeKey} className="px-3 py-2 rounded-lg border border-gray-700 text-gray-400 hover:text-red-400 hover:border-red-500/40" title="Remove stored key">
-                <Trash2 className="w-4 h-4" />
-              </button>
-            )}
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">Minimum &ldquo;worth remembering&rdquo; probability</label>
-            <input type="number" step="0.05" min="0" max="1" className={inputClass} value={minDurable} onChange={e => setMinDurable(Number(e.target.value))} />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">Minimum importance (0 to 4)</label>
-            <input type="number" step="0.5" min="0" max="4" className={inputClass} value={minImportance} onChange={e => setMinImportance(Number(e.target.value))} />
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3 pt-2">
-          <button onClick={save} disabled={saving} className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium disabled:opacity-50">
-            {saving ? 'Saving…' : 'Save'}
-          </button>
-          <button onClick={test} disabled={testing} className="px-4 py-2 rounded-lg border border-gray-600 text-gray-200 hover:border-gray-500 text-sm font-medium disabled:opacity-50 flex items-center gap-2">
-            {testing && <Loader2 className="w-4 h-4 animate-spin" />}
-            Test connection
-          </button>
-          {status && (
-            <span className={`flex items-center gap-1.5 text-sm ${status.ok ? 'text-green-400' : 'text-red-400'}`}>
-              {status.ok ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
-              {status.message}
-            </span>
-          )}
-        </div>
-      </div>
-
-    </div>
+      </Card>
+    </>
   )
 }
