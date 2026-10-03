@@ -175,3 +175,19 @@ export function keyboardStep(key: string, shift: boolean): number {
   if (key === 'ArrowLeft' || key === 'ArrowUp') return -step
   return 0
 }
+
+/** Esc restores a maximized panel only when nothing else used it (menu, palette, dialog) and focus isn't in a field or the terminal. */
+export function shouldRestoreOnEscape(e: { key: string; defaultPrevented: boolean; target: Parameters<typeof isEditableTarget>[0] }): boolean {
+  return e.key === 'Escape' && !e.defaultPrevented && !isEditableTarget(e.target)
+}
+
+/** The size a panel is actually drawn at; resize handles must start from this, not the stored value. */
+export function shownSize(stored: number, limits: { min: number; max: number }): number {
+  return clampSize(stored, limits.min, limits.max)
+}
+
+/** Overlay the right panel only when docking it would leave the chat under 420px. */
+export const MIN_CHAT_W = 420
+export function panelOverlays(workW: number, rightW: number): boolean {
+  return workW - rightW < MIN_CHAT_W
+}

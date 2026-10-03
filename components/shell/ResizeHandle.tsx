@@ -19,12 +19,21 @@ export default function ResizeHandle({ orientation, value, min, max, invert = fa
   const [hover, setHover] = useState(false)
   const [tip, setTip] = useState<{ x: number; y: number } | null>(null)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  useEffect(() => () => { if (timer.current) clearTimeout(timer.current) }, [])
+  // If the handle disappears mid-drag (⌘J, ⌘B, agent switch), never leave the app in drag mode
+  const stopDragging = () => {
+    drag.current = null
+    document.body.classList.remove('is-resizing')
+    document.body.style.cursor = ''
+  }
+  useEffect(() => () => {
+    if (timer.current) clearTimeout(timer.current)
+    if (drag.current) stopDragging()
+  }, [])
 
   const sign = invert ? -1 : 1
   const onPointerDown = (e: React.PointerEvent) => {
     e.preventDefault()
-    ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
+    ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
     drag.current = { start: vertical ? e.clientX : e.clientY, value }
     document.body.classList.add('is-resizing')
     document.body.style.cursor = vertical ? 'col-resize' : 'row-resize'
@@ -40,10 +49,8 @@ export default function ResizeHandle({ orientation, value, min, max, invert = fa
   }
   const end = (e: React.PointerEvent) => {
     if (!drag.current) return
-    drag.current = null
-    ;(e.target as HTMLElement).releasePointerCapture?.(e.pointerId)
-    document.body.classList.remove('is-resizing')
-    document.body.style.cursor = ''
+    ;(e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId)
+    stopDragging()
   }
 
   return (
@@ -59,6 +66,7 @@ export default function ResizeHandle({ orientation, value, min, max, invert = fa
       onPointerMove={onPointerMove}
       onPointerUp={end}
       onPointerCancel={end}
+      onLostPointerCapture={() => { if (drag.current) stopDragging() }}
       onDoubleClick={onReset}
       onKeyDown={e => {
         const step = keyboardStep(e.key, e.shiftKey)

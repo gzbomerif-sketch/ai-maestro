@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { Plus, X, Maximize2, Minimize2, PanelBottom, PanelRight, PanelRightClose } from 'lucide-react'
 import type { Agent } from '@/types/agent'
 import { PANEL_TYPES, type LayoutAction, type LayoutState } from '@/lib/panel-layout'
@@ -20,6 +20,8 @@ export default function PanelDock({ layout, dispatch, agent, onlineAgents, unrea
   onShowProfile: (a: Agent) => void
 }) {
   const [menuOpen, setMenuOpen] = useState(false)
+  const plusRef = useRef<HTMLDivElement>(null)
+  const closeMenu = useCallback(() => setMenuOpen(false), [])
   const p = layout.panel
   const labelOf = (t: string) => PANEL_TYPES.find(x => x.id === t)?.label ?? t
 
@@ -45,9 +47,9 @@ export default function PanelDock({ layout, dispatch, agent, onlineAgents, unrea
             )
           })}
         </div>
-        <div className="relative flex-none">
+        <div ref={plusRef} className="relative flex-none">
           <IconButton label="Open a tool" active={menuOpen} onClick={() => setMenuOpen(o => !o)}><Plus strokeWidth={1.5} className="w-4 h-4" /></IconButton>
-          <PanelMenu open={menuOpen} onClose={() => setMenuOpen(false)} openTypes={p.tabs} onPick={t => dispatch({ type: 'open', panel: t })} />
+          <PanelMenu open={menuOpen} onClose={closeMenu} anchorRef={plusRef} openTypes={p.tabs} onPick={t => dispatch({ type: 'open', panel: t })} />
         </div>
         <div className="ml-auto flex items-center gap-0.5 flex-none">
           <IconButton label={p.maximized ? 'Restore panel' : 'Maximize panel'} onClick={() => dispatch({ type: 'toggleMaximize' })}>

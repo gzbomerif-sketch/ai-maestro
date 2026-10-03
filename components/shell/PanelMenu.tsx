@@ -10,20 +10,34 @@ export const PANEL_ICONS: Record<PanelType, LucideIcon> = {
 }
 
 /** The ＋ menu: one row per tool, single-letter shortcuts while open. */
-export default function PanelMenu({ open, onClose, onPick, openTypes }: {
+export default function PanelMenu({ open, onClose, onPick, openTypes, anchorRef }: {
   open: boolean; onClose: () => void; onPick: (t: PanelType) => void; openTypes: PanelType[]
+  /** The toggle button: clicks on it must not count as "outside" (it toggles the menu itself) */
+  anchorRef?: React.RefObject<HTMLElement>
 }) {
   const [index, setIndex] = useState(0)
   const ref = useRef<HTMLDivElement>(null)
 
+  const onCloseRef = useRef(onClose)
+  onCloseRef.current = onClose
+
+  // Reset the highlight and take focus only when the menu opens, not on every parent re-render
   useEffect(() => {
     if (!open) return
     setIndex(0)
     ref.current?.focus()
-    const onDown = (e: MouseEvent) => { if (!ref.current?.contains(e.target as Node)) onClose() }
+  }, [open])
+
+  useEffect(() => {
+    if (!open) return
+    const onDown = (e: MouseEvent) => {
+      const t = e.target as Node
+      if (ref.current?.contains(t) || anchorRef?.current?.contains(t)) return
+      onCloseRef.current()
+    }
     window.addEventListener('mousedown', onDown)
     return () => window.removeEventListener('mousedown', onDown)
-  }, [open, onClose])
+  }, [open, anchorRef])
 
   if (!open) return null
   const pick = (t: PanelType) => { onPick(t); onClose() }

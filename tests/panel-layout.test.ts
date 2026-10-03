@@ -136,3 +136,27 @@ describe('keys and shortcuts', () => {
     expect(keyboardStep('Enter', false)).toBe(0)
   })
 })
+
+describe('review fixes', () => {
+  it('I1 Esc restores only when not typing and not already handled', async () => {
+    const { shouldRestoreOnEscape } = await import('@/lib/panel-layout')
+    const div = { tagName: 'DIV', isContentEditable: false, closest: () => null }
+    const term = { tagName: 'TEXTAREA', isContentEditable: false, closest: (s: string) => (s === '.xterm' ? {} : null) }
+    expect(shouldRestoreOnEscape({ key: 'Escape', defaultPrevented: false, target: div as any })).toBe(true)
+    expect(shouldRestoreOnEscape({ key: 'Escape', defaultPrevented: false, target: term as any })).toBe(false)
+    expect(shouldRestoreOnEscape({ key: 'Escape', defaultPrevented: true, target: div as any })).toBe(false)
+    expect(shouldRestoreOnEscape({ key: 'Enter', defaultPrevented: false, target: div as any })).toBe(false)
+  })
+  it('I5 handles drive from the size actually shown', async () => {
+    const { shownSize } = await import('@/lib/panel-layout')
+    expect(shownSize(4000, { min: 320, max: 700 })).toBe(700)
+    expect(shownSize(480, { min: 320, max: 700 })).toBe(480)
+    expect(shownSize(100, { min: 320, max: 700 })).toBe(320)
+  })
+  it('I6 overlay only when the chat would drop under 420px', async () => {
+    const { panelOverlays } = await import('@/lib/panel-layout')
+    expect(panelOverlays(1011, 480)).toBe(false)   // 1280px laptop with sidebar: chat keeps 531px
+    expect(panelOverlays(850, 480)).toBe(true)     // chat would get 370px
+    expect(panelOverlays(900, 480)).toBe(false)    // exactly 420 is fine
+  })
+})
