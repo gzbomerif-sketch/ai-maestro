@@ -301,3 +301,8 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .live-avatar-breathe, .live-avatar-work, .live-avatar-sleep, .live-avatar-ring-pulse, .live-avatar-ring-pulse-orange { animation: none; }
 }
+
+/* While a ResizeHandle is dragged: no text selection, and terminals/iframes
+   must not swallow pointer events (the drag would stall over them). */
+.is-resizing, .is-resizing * { user-select: none !important; }
+.is-resizing iframe, .is-resizing .xterm { pointer-events: none; }
