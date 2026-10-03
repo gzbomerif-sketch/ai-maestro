@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
-import { readPref, writePref, readBool } from '@/lib/safe-storage'
+import { readPref, writePref, readBool, removePref } from '@/lib/safe-storage'
 
 function stubStorage(store: Record<string, string>) {
   vi.stubGlobal('localStorage', {
@@ -38,5 +38,16 @@ describe('readBool / writePref', () => {
     expect(readBool('nope', true)).toBe(true)
     store.b = 'x'
     expect(readBool('b', false)).toBe(false)
+  })
+})
+
+describe('removePref', () => {
+  it('removes a key and never throws', () => {
+    const store: Record<string, string> = { a: '1' }
+    vi.stubGlobal('localStorage', { getItem: (k: string) => store[k] ?? null, setItem: () => {}, removeItem: (k: string) => { delete store[k] } })
+    removePref('a')
+    expect(store).toEqual({})
+    vi.stubGlobal('localStorage', { removeItem: () => { throw new Error('denied') } })
+    expect(() => removePref('a')).not.toThrow()
   })
 })

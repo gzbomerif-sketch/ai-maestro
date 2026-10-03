@@ -53,3 +53,11 @@ export function writePref(key: string, value: string): void {
     /* storage unavailable: preference just won't persist */
   }
 }
+
+export function removePref(key: string): void {
+  try {
+    storage()?.removeItem(key)
+  } catch {
+    /* storage unavailable */
+  }
+}

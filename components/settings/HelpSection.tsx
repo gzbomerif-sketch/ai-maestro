@@ -1,6 +1,7 @@
 'use client'
 
-import { Book, ExternalLink, Terminal, Server, MessageSquare, FileText, GitBranch, Search } from 'lucide-react'
+import { ExternalLink, Terminal, Server, MessageSquare, FileText, GitBranch, Search } from 'lucide-react'
+import { Card, Row, GroupLabel } from '@/components/shell/ui'
 
 export default function HelpSection() {
   const guides = [
@@ -91,110 +92,42 @@ export default function HelpSection() {
     },
   ]
 
+  const tips: [string, string][] = [
+    ['Keyboard shortcuts', 'Use Shift+PageUp/Down to scroll in the terminal.'],
+    ['Naming convention', 'Use level1-level2-name (e.g. apps-notify-batman) for automatic grouping.'],
+    ['Agent notes', 'Use the notes section below the terminal to document your work.'],
+    ['Remote hosts', 'Use Tailscale for secure remote access to peers across the internet.'],
+  ]
+
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-8">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-semibold text-white mb-2">Help & Documentation</h1>
-        <p className="text-sm text-gray-400">
-          Learn how to use AI Maestro to manage your Claude Code sessions
-        </p>
-      </div>
+    <>
+      <GroupLabel>Guides</GroupLabel>
+      <Card>
+        {guides.map(guide => {
+          const Icon = guide.icon
+          return (
+            <Row key={guide.title} wrap
+              title={<span className="flex items-center gap-2.5"><Icon strokeWidth={1.5} className="w-4 h-4 text-ink-muted" />{guide.title}</span>}
+              description={<>{guide.description}<span className="block mt-1 text-gray-500">{guide.topics.join(' · ')}</span></>} />
+          )
+        })}
+      </Card>
 
-      {/* Guides */}
-      <div className="space-y-4">
-        <h2 className="text-lg font-medium text-white flex items-center gap-2">
-          <Book className="w-5 h-5 text-blue-400" />
-          Guides
-        </h2>
-        <div className="grid gap-4">
-          {guides.map((guide) => {
-            const Icon = guide.icon
-            return (
-              <div
-                key={guide.title}
-                className="p-5 bg-gray-800/30 border border-gray-700 rounded-lg hover:bg-gray-800/50 transition-colors"
-              >
-                <div className="flex items-start gap-4 mb-3">
-                  <div className="p-2 bg-blue-500/10 border border-blue-500/30 rounded-lg">
-                    <Icon className="w-5 h-5 text-blue-400" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-lg font-medium text-white mb-1">{guide.title}</h3>
-                    <p className="text-sm text-gray-400">{guide.description}</p>
-                  </div>
-                </div>
-                <ul className="ml-14 space-y-1.5">
-                  {guide.topics.map((topic) => (
-                    <li key={topic} className="text-sm text-gray-300 flex items-start gap-2">
-                      <span className="text-blue-400 mt-1">•</span>
-                      <span>{topic}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )
-          })}
-        </div>
-      </div>
+      <GroupLabel>Resources</GroupLabel>
+      <Card>
+        {links.map(link => (
+          <a key={link.url} href={link.url} target="_blank" rel="noopener noreferrer"
+            className="block hover:bg-raised/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-fill">
+            <Row title={link.label} description={link.description}
+              control={<ExternalLink strokeWidth={1.5} className="w-4 h-4 text-ink-muted" />} />
+          </a>
+        ))}
+      </Card>
 
-      {/* External Links */}
-      <div className="space-y-4">
-        <h2 className="text-lg font-medium text-white flex items-center gap-2">
-          <ExternalLink className="w-5 h-5 text-blue-400" />
-          Resources
-        </h2>
-        <div className="grid gap-3">
-          {links.map((link) => (
-            <a
-              key={link.url}
-              href={link.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-between p-4 bg-gray-800/30 border border-gray-700 rounded-lg hover:bg-gray-800/50 hover:border-blue-500/50 transition-all group"
-            >
-              <div>
-                <div className="font-medium text-white group-hover:text-blue-400 transition-colors">
-                  {link.label}
-                </div>
-                <div className="text-sm text-gray-400">{link.description}</div>
-              </div>
-              <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-blue-400 transition-colors" />
-            </a>
-          ))}
-        </div>
-      </div>
-
-      {/* Quick Tips */}
-      <div className="p-5 bg-blue-500/5 border border-blue-500/20 rounded-lg">
-        <h3 className="text-lg font-medium text-blue-400 mb-3">💡 Quick Tips</h3>
-        <ul className="space-y-2 text-sm text-gray-300">
-          <li className="flex items-start gap-2">
-            <span className="text-blue-400 mt-1">•</span>
-            <span>
-              <strong>Keyboard shortcuts:</strong> Use Shift+PageUp/Down to scroll in the terminal
-            </span>
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="text-blue-400 mt-1">•</span>
-            <span>
-              <strong>Naming convention:</strong> Use format level1-level2-name (e.g., apps-notify-batman) for automatic grouping
-            </span>
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="text-blue-400 mt-1">•</span>
-            <span>
-              <strong>Agent notes:</strong> Click the notes section below the terminal to document your work
-            </span>
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="text-blue-400 mt-1">•</span>
-            <span>
-              <strong>Remote hosts:</strong> Use Tailscale for secure remote access to peers across the internet
-            </span>
-          </li>
-        </ul>
-      </div>
-    </div>
+      <GroupLabel>Quick tips</GroupLabel>
+      <Card>
+        {tips.map(([title, text]) => <Row key={title} wrap title={title} description={text} />)}
+      </Card>
+    </>
   )
 }

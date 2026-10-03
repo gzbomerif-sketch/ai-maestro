@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
-import SettingsSidebar from '@/components/SettingsSidebar'
+import { Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import SettingsShell from '@/components/settings/SettingsShell'
 import HostsSection from '@/components/settings/HostsSection'
 import DomainsSection from '@/components/settings/DomainsSection'
 import WebhooksSection from '@/components/settings/WebhooksSection'
@@ -12,77 +13,39 @@ import ExperimentsSection from '@/components/settings/ExperimentsSection'
 import MarketplaceSection from '@/components/settings/MarketplaceSection'
 import MemorySection from '@/components/settings/MemorySection'
 import TerminalSection from '@/components/settings/TerminalSection'
-import { VersionChecker } from '@/components/VersionChecker'
-import Link from 'next/link'
-import { ArrowLeft } from 'lucide-react'
+import { parseSection, type SettingsSectionId } from '@/lib/settings-sections'
 
-export default function SettingsPage() {
-  const [activeSection, setActiveSection] = useState<'hosts' | 'domains' | 'webhooks' | 'memory' | 'terminal' | 'help' | 'about' | 'onboarding' | 'experiments' | 'marketplace'>('hosts')
+const SECTIONS: Record<SettingsSectionId, () => JSX.Element> = {
+  hosts: HostsSection,
+  domains: DomainsSection,
+  webhooks: WebhooksSection,
+  memory: MemorySection,
+  terminal: TerminalSection,
+  marketplace: MarketplaceSection,
+  experiments: ExperimentsSection,
+  onboarding: OnboardingSection,
+  help: HelpSection,
+  about: AboutSection,
+}
+
+function SettingsContent() {
+  const router = useRouter()
+  const params = useSearchParams()
+  const section = parseSection(params)
+  const Section = SECTIONS[section]
 
   return (
-    <div className="flex flex-col h-screen bg-gray-950 text-white">
-      {/* Header Navigation */}
-      <div className="border-b border-gray-800 bg-gray-900/50 backdrop-blur flex-shrink-0">
-        <div className="px-6 py-4">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back to Dashboard
-          </Link>
-        </div>
-      </div>
+    <SettingsShell section={section} onSectionChange={id => router.replace(`/settings?section=${id}`)} wide={section === 'marketplace'}>
+      <Section />
+    </SettingsShell>
+  )
+}
 
-      {/* Main Content */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar */}
-        <SettingsSidebar activeSection={activeSection} onSectionChange={setActiveSection} />
-
-        {/* Content Area */}
-        <div className="flex-1 overflow-y-auto">
-          {activeSection === 'hosts' && <HostsSection />}
-          {activeSection === 'domains' && <DomainsSection />}
-          {activeSection === 'webhooks' && <WebhooksSection />}
-          {activeSection === 'memory' && <MemorySection />}
-          {activeSection === 'terminal' && <TerminalSection />}
-          {activeSection === 'marketplace' && <MarketplaceSection />}
-          {activeSection === 'experiments' && <ExperimentsSection />}
-          {activeSection === 'onboarding' && <OnboardingSection />}
-          {activeSection === 'help' && <HelpSection />}
-          {activeSection === 'about' && <AboutSection />}
-        </div>
-      </div>
-
-      {/* Footer */}
-      <footer className="border-t border-gray-800 bg-gray-950 px-4 py-2 flex-shrink-0">
-        <div className="flex flex-col md:flex-row justify-between items-center gap-1 md:gap-0 md:h-5">
-          <p className="text-xs md:text-sm text-white leading-none">
-            <VersionChecker /> • Made with <span className="text-red-500 text-lg inline-block scale-x-125">♥</span> in Boulder Colorado
-          </p>
-          <p className="text-xs md:text-sm text-white leading-none">
-            Concept by{' '}
-            <a
-              href="https://x.com/jkpelaez"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-gray-300 transition-colors"
-            >
-              Juan Peláez
-            </a>{' '}
-            @{' '}
-            <a
-              href="https://23blocks.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-semibold text-red-500 hover:text-red-400 transition-colors"
-            >
-              23blocks
-            </a>
-            . Coded by Claude
-          </p>
-        </div>
-      </footer>
-    </div>
+export default function SettingsPage() {
+  // useSearchParams needs a Suspense boundary in the app router
+  return (
+    <Suspense fallback={null}>
+      <SettingsContent />
+    </Suspense>
   )
 }
