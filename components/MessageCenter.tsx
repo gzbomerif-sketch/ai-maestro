@@ -1228,32 +1228,38 @@ export default function MessageCenter({ sessionName, agentId, allAgents, hostUrl
                 <label className={composeLabel}>
                   {compact ? 'Priority' : 'Priority:'}
                 </label>
+                <div className="relative">
                 <select
                   value={composePriority}
                   onChange={(e) => setComposePriority(e.target.value as any)}
-                  className={composeInput}
+                  className={compact ? `${composeInput} appearance-none pr-8 cursor-pointer` : composeInput}
                 >
                   <option value="low">Low</option>
                   <option value="normal">Normal</option>
                   <option value="high">High</option>
                   <option value="urgent">Urgent</option>
                 </select>
+                  {compact && <ChevronDown strokeWidth={1.5} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-ink-muted" />}
+                </div>
               </div>
 
               <div className="flex-1">
                 <label className={composeLabel}>
                   {compact ? 'Type' : 'Type:'}
                 </label>
+                <div className="relative">
                 <select
                   value={composeType}
                   onChange={(e) => setComposeType(e.target.value as any)}
-                  className={composeInput}
+                  className={compact ? `${composeInput} appearance-none pr-8 cursor-pointer` : composeInput}
                 >
                   <option value="request">Request</option>
                   <option value="response">Response</option>
                   <option value="notification">Notification</option>
                   <option value="update">Update</option>
                 </select>
+                  {compact && <ChevronDown strokeWidth={1.5} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-ink-muted" />}
+                </div>
               </div>
             </div>
 
