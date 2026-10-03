@@ -1,4 +1,5 @@
 /** ⌘K palette: search ranking and the shortcut guard. Pure. */
+import { SETTINGS_SECTIONS } from '@/lib/settings-sections'
 export interface CommandItem {
   id: string
   kind: 'agent' | 'screen' | 'action'
@@ -42,3 +43,11 @@ export function shouldOpenPalette(
   if (!isMac && target?.closest?.('.xterm')) return false
   return true
 }
+
+/** One ⌘K destination per Settings section (/settings?section=…). */
+export const SETTINGS_COMMANDS: CommandItem[] = SETTINGS_SECTIONS.map(s => ({
+  id: `screen:/settings?section=${s.id}`,
+  kind: 'screen',
+  label: `Settings · ${s.label}`,
+  keywords: ['settings', ...s.keywords],
+}))

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Search } from 'lucide-react'
 import type { Agent } from '@/types/agent'
 import { displayName } from '@/lib/agent-status'
-import { rankCommandResults, shouldOpenPalette, type CommandItem } from '@/lib/command-palette'
+import { rankCommandResults, shouldOpenPalette, SETTINGS_COMMANDS, type CommandItem } from '@/lib/command-palette'
 
 export interface CommandPaletteProps {
   open: boolean
@@ -51,6 +51,7 @@ export default function CommandPalette(p: CommandPaletteProps) {
   const items = useMemo<CommandItem[]>(() => [
     ...p.agents.map(a => ({ id: `agent:${a.id}`, kind: 'agent' as const, label: displayName(a), keywords: [a.name, a.alias || '', a.hostId, ...(a.tags || [])].filter(Boolean), hint: p.statusOf(a) })),
     ...SCREENS,
+    ...SETTINGS_COMMANDS,
   ], [p])
   const results = rankCommandResults(query, items).slice(0, 12)
 
