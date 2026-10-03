@@ -25,7 +25,7 @@ export default function PanelDock({ layout, dispatch, agent, onlineAgents, unrea
 
   return (
     <div className={`h-full w-full min-w-0 min-h-0 flex flex-col bg-sunken ${p.position === 'bottom' ? '' : ''}`}>
-      <div className="h-[52px] flex-none flex items-center gap-1.5 px-2.5 border-b border-hairline/70">
+      <div className="h-[60px] flex-none flex items-center gap-1.5 px-2.5 border-b border-hairline/70">
         <div role="tablist" aria-label="Open tools" className="flex items-center gap-1 min-w-0 overflow-x-auto">
           {p.tabs.map(t => {
             const Icon = PANEL_ICONS[t]

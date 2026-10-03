@@ -1,18 +1,21 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { PanelLeft } from 'lucide-react'
 import type { Agent } from '@/types/agent'
 import { useSessionActivity } from '@/hooks/useSessionActivity'
 import { useUnreadCounts } from '@/hooks/useUnreadCounts'
 import { groupByStatus, type StatusEntry } from '@/lib/agent-status'
 import { getRuntimeMode } from '@/lib/runtime-mode'
 import { resolveAgentTab } from '@/lib/shell-tabs'
-import { readBool, writePref, INBOX_KEY } from '@/lib/safe-storage'
+import { useLayout } from '@/hooks/useLayout'
+import { LIMITS, panelLimits } from '@/lib/panel-layout'
 import AgentCreationWizard from '@/components/AgentCreationWizard'
 import StatusSidebar from './StatusSidebar'
 import AgentTopBar from './AgentTopBar'
-import TabBar from './TabBar'
-import InboxPanel from './InboxPanel'
+import ResizeHandle from './ResizeHandle'
+import PanelDock from './PanelDock'
+import { IconButton } from './ui'
 import HomeScreen from './HomeScreen'
 import CommandPalette from './CommandPalette'
 import AgentTabContent, { type AgentTab } from './AgentTabContent'
@@ -51,8 +54,6 @@ export default function AppShell(p: AppShellProps) {
     return m
   }, [groups])
 
-  const [inboxCollapsed, setInboxCollapsed] = useState(() => readBool(INBOX_KEY, false))
-  const toggleInbox = () => setInboxCollapsed(c => { writePref(INBOX_KEY, String(!c)); return !c })
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [wizardOpen, setWizardOpen] = useState(false)
   const [sleepingId, setSleepingId] = useState<string | null>(null)
@@ -60,44 +61,100 @@ export default function AppShell(p: AppShellProps) {
   const agent = p.activeAgentId ? p.agents.find(a => a.id === p.activeAgentId) : undefined
   const sleep = async (a: Agent) => { setSleepingId(a.id); try { await p.onSleep(a) } finally { setSleepingId(null) } }
 
+  const { layout, dispatch } = useLayout()
+  const workRef = useRef<HTMLDivElement>(null)
+  const [work, setWork] = useState({ w: 1200, h: 800 })
+  useEffect(() => {
+    const el = workRef.current
+    if (!el) return
+    const ro = new ResizeObserver(([e]) => setWork({ w: e.contentRect.width, h: e.contentRect.height }))
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [agent])
+  const P = layout.panel
+  const container = P.position === 'right' ? work.w : work.h
+  const lim = panelLimits(P.position, container)
+  const overlay = P.position === 'right' && work.w < 1100
+  useEffect(() => {
+    if (!P.maximized) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') dispatch({ type: 'restore' }) }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [P.maximized, dispatch])
+
   return (
     <div className="fixed inset-0 flex bg-sunken text-ink overflow-hidden">
-      <StatusSidebar
-        agents={p.agents} groups={groups} activeAgentId={agent ? agent.id : null} unread={unread} now={now}
-        statusConnected={connected} error={p.error} onRetry={p.onRetry}
-        onSelectAgent={p.onSelectAgent} onSelectHome={p.onSelectHome}
-        onOpenPalette={() => setPaletteOpen(true)} onNewAgent={() => setWizardOpen(true)}
-      />
+      {!layout.sidebarCollapsed && (
+        <>
+          <StatusSidebar
+            width={layout.sidebarW} onCollapse={() => dispatch({ type: 'toggleSidebar' })}
+            agents={p.agents} groups={groups} activeAgentId={agent ? agent.id : null} unread={unread} now={now}
+            statusConnected={connected} error={p.error} onRetry={p.onRetry}
+            onSelectAgent={p.onSelectAgent} onSelectHome={p.onSelectHome}
+            onOpenPalette={() => setPaletteOpen(true)} onNewAgent={() => setWizardOpen(true)}
+          />
+          <ResizeHandle orientation="vertical" label="Drag to resize sidebar" value={layout.sidebarW}
+            min={LIMITS.sidebar.min} max={LIMITS.sidebar.max}
+            onResize={w => dispatch({ type: 'resizeSidebar', width: w })}
+            onReset={() => dispatch({ type: 'resizeSidebar', width: LIMITS.sidebar.def })} />
+        </>
+      )}
 
       {agent ? (
-        <>
-          <section className="flex-1 min-w-0 flex flex-col">
-            <AgentTopBar
-              agent={agent} entry={entryById[agent.id]} now={now}
-              busy={p.wakingAgentId === agent.id || sleepingId === agent.id}
-              onSleep={() => sleep(agent)} onWake={() => p.onWake(agent)}
-              onProfile={() => p.onShowProfile(agent)} onExport={() => p.setActiveTab('export')}
-              onToggleInbox={toggleInbox} inboxCollapsed={inboxCollapsed}
-            />
-            <TabBar activeTab={p.activeTab} onChange={p.setActiveTab} streaming={getRuntimeMode(agent.id) === 'streaming'} />
-            <div className="flex-1 min-h-0 flex relative">
-              <AgentTabContent
-                agent={agent}
-                activeTab={resolveAgentTab(p.activeTab, getRuntimeMode(agent.id))}
-                setActiveTab={p.setActiveTab}
-                onlineAgents={p.onlineAgents}
-                wakingAgentId={p.wakingAgentId}
-                onWake={p.onWake}
-                onShowProfile={p.onShowProfile}
-                hideHeaders
-                chatVariant="ink"
-              />
-            </div>
-          </section>
-          {!inboxCollapsed && <InboxPanel agent={agent} onlineAgents={p.onlineAgents} unread={unread[agent.id] ?? 0} onCollapse={toggleInbox} />}
-        </>
+        <div ref={workRef} className="flex-1 min-w-0 flex relative">
+          {P.open && P.maximized ? (
+            <PanelDock layout={layout} dispatch={dispatch} agent={agent} onlineAgents={p.onlineAgents} unread={unread[agent.id] ?? 0}
+              wakingAgentId={p.wakingAgentId} onWake={p.onWake} onShowProfile={p.onShowProfile} />
+          ) : (
+            <>
+              <section className="flex-1 min-w-0 flex flex-col">
+                <AgentTopBar
+                  agent={agent} entry={entryById[agent.id]} now={now}
+                  busy={p.wakingAgentId === agent.id || sleepingId === agent.id}
+                  onSleep={() => sleep(agent)} onWake={() => p.onWake(agent)}
+                  onProfile={() => p.onShowProfile(agent)} onExport={() => dispatch({ type: 'open', panel: 'export' })}
+                  panelOpen={P.open} onTogglePanel={() => dispatch({ type: 'toggle' })}
+                  sidebarCollapsed={layout.sidebarCollapsed} onToggleSidebar={() => dispatch({ type: 'toggleSidebar' })}
+                />
+                <div className="flex-1 min-h-0 flex relative border-t border-hairline/70">
+                  <AgentTabContent agent={agent} activeTab={resolveAgentTab('chat', getRuntimeMode(agent.id))} setActiveTab={p.setActiveTab}
+                    onlineAgents={p.onlineAgents} wakingAgentId={p.wakingAgentId} onWake={p.onWake} onShowProfile={p.onShowProfile}
+                    hideHeaders chatVariant="ink" />
+                </div>
+                {P.open && P.position === 'bottom' && (
+                  <>
+                    <ResizeHandle orientation="horizontal" invert label="Drag to resize panel" value={P.bottomH} min={lim.min} max={lim.max}
+                      onResize={h => dispatch({ type: 'resizePanel', size: h, container })}
+                      onReset={() => dispatch({ type: 'resizePanel', size: LIMITS.bottom.def, container })} />
+                    <div style={{ height: Math.min(P.bottomH, lim.max) }} className="flex-none flex min-h-0">
+                      <PanelDock layout={layout} dispatch={dispatch} agent={agent} onlineAgents={p.onlineAgents} unread={unread[agent.id] ?? 0}
+                        wakingAgentId={p.wakingAgentId} onWake={p.onWake} onShowProfile={p.onShowProfile} />
+                    </div>
+                  </>
+                )}
+              </section>
+              {P.open && P.position === 'right' && (
+                <div className={overlay ? 'absolute inset-y-0 right-0 z-20 flex' : 'flex flex-none'}>
+                  <ResizeHandle orientation="vertical" invert label="Drag to resize panel" value={P.rightW} min={lim.min} max={lim.max}
+                    onResize={w => dispatch({ type: 'resizePanel', size: w, container })}
+                    onReset={() => dispatch({ type: 'resizePanel', size: LIMITS.right.def, container })} />
+                  <div style={{ width: overlay ? Math.min(P.rightW, work.w - 40) : Math.min(P.rightW, lim.max) }} className="flex min-w-0">
+                    <PanelDock layout={layout} dispatch={dispatch} agent={agent} onlineAgents={p.onlineAgents} unread={unread[agent.id] ?? 0}
+                      wakingAgentId={p.wakingAgentId} onWake={p.onWake} onShowProfile={p.onShowProfile} />
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
       ) : (
         <HomeScreen groups={groups} agents={p.agents} unread={unread} now={now} onSelectAgent={p.onSelectAgent} onNewAgent={() => setWizardOpen(true)} />
+      )}
+
+      {layout.sidebarCollapsed && !agent && (
+        <div className="absolute top-3 left-3 z-10">
+          <IconButton label="Expand sidebar (⌘B)" onClick={() => dispatch({ type: 'toggleSidebar' })}><PanelLeft strokeWidth={1.5} className="w-4 h-4" /></IconButton>
+        </div>
       )}
 
       <CommandPalette

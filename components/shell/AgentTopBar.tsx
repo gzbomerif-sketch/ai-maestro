@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Moon, Power, ExternalLink, MoreHorizontal, PanelRight, Loader2 } from 'lucide-react'
+import { Moon, Power, ExternalLink, MoreHorizontal, PanelRight, PanelLeft, Loader2 } from 'lucide-react'
 import type { Agent } from '@/types/agent'
 import { displayName, formatAge, type StatusEntry } from '@/lib/agent-status'
 import { Button, IconButton } from './ui'
@@ -15,8 +15,10 @@ export interface AgentTopBarProps {
   onWake: () => void
   onProfile: () => void
   onExport: () => void
-  onToggleInbox: () => void
-  inboxCollapsed: boolean
+  panelOpen: boolean
+  onTogglePanel: () => void
+  sidebarCollapsed: boolean
+  onToggleSidebar: () => void
 }
 
 const LABEL: Record<string, string> = { 'needs-you': 'Needs you', working: 'Working', idle: 'Idle', asleep: 'Asleep', offline: 'Offline' }
@@ -40,15 +42,16 @@ export default function AgentTopBar(p: AgentTopBarProps) {
 
   return (
     <header className="h-[60px] flex-none flex items-center gap-3 px-6">
+      {p.sidebarCollapsed && <IconButton label="Expand sidebar (⌘B)" onClick={p.onToggleSidebar}><PanelLeft strokeWidth={1.5} className="w-4 h-4" /></IconButton>}
       <div className="flex items-center gap-2.5 text-[16px] text-ink-muted min-w-0">
         <span className="truncate">{host === 'local' ? 'this Mac' : host}</span>
         <span>/</span>
         <span className="text-ink font-medium truncate">{displayName(p.agent)}</span>
       </div>
-      <span className={`flex items-center gap-2 text-[13px] ml-2 ${tone}`}>
+      <span className={`flex items-center gap-2 text-[13px] ml-2 whitespace-nowrap flex-none ${tone}`}>
         <span className={`w-[7px] h-[7px] rounded-full ${dot}`} />{LABEL[status]}{age && status !== 'offline' ? ` · ${age}` : ''}
       </span>
-      <div className="ml-auto flex items-center gap-2">
+      <div className="ml-auto flex items-center gap-2 flex-none">
         {asleep
           ? <Button onClick={p.onWake} disabled={p.busy}>{p.busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Power strokeWidth={1.5} className="w-4 h-4" />}Wake</Button>
           : <Button onClick={p.onSleep} disabled={p.busy}>{p.busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Moon strokeWidth={1.5} className="w-4 h-4" />}Sleep</Button>}
@@ -63,7 +66,7 @@ export default function AgentTopBar(p: AgentTopBarProps) {
             </div>
           )}
         </div>
-        <IconButton label={p.inboxCollapsed ? 'Show inbox' : 'Hide inbox'} onClick={p.onToggleInbox} active={!p.inboxCollapsed}><PanelRight strokeWidth={1.5} className="w-4 h-4" /></IconButton>
+        <IconButton label={p.panelOpen ? 'Hide panel (⌘J)' : 'Show panel (⌘J)'} onClick={p.onTogglePanel} active={p.panelOpen}><PanelRight strokeWidth={1.5} className="w-4 h-4" /></IconButton>
       </div>
     </header>
   )

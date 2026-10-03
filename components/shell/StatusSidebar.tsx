@@ -22,6 +22,8 @@ export interface StatusSidebarProps {
   onSelectHome: () => void
   onOpenPalette: () => void
   onNewAgent: () => void
+  width: number
+  onCollapse: () => void
 }
 
 const initials = (name: string) => name.replace(/[^a-zA-Z0-9]+/g, ' ').trim().split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || '?'
@@ -64,9 +66,12 @@ export default function StatusSidebar(p: StatusSidebarProps) {
   )
 
   return (
-    <aside className="w-[268px] flex-none flex flex-col bg-surface border-r border-hairline px-3 pt-4 pb-3 min-h-0">
+    <aside style={{ width: p.width }} className="flex-none flex flex-col bg-surface border-r border-hairline px-3 pt-4 pb-3 min-h-0">
       <div className="flex items-center gap-3 px-2.5 pb-4 text-[15px] font-medium text-ink">
-        <PanelLeft strokeWidth={1.5} className="w-4 h-4" />AI Maestro
+        <button type="button" aria-label="Collapse sidebar" title="Collapse sidebar (⌘B)" onClick={p.onCollapse}
+          className="grid place-items-center w-6 h-6 -ml-1 rounded-[6px] text-ink-muted hover:text-ink hover:bg-raised">
+          <PanelLeft strokeWidth={1.5} className="w-4 h-4" />
+        </button>AI Maestro
       </div>
 
       <button type="button" onClick={p.onOpenPalette} className="flex items-center gap-3 px-2.5 py-2 rounded-[10px] text-[15px] text-ink-muted hover:bg-raised/60">
