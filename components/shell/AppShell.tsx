@@ -17,6 +17,7 @@ import AgentTopBar from './AgentTopBar'
 import ResizeHandle from './ResizeHandle'
 import PanelDock from './PanelDock'
 import WorkArea from './WorkArea'
+import TeamWorkspace from './TeamWorkspace'
 import { IconButton } from './ui'
 import HomeScreen from './HomeScreen'
 import CommandPalette from './CommandPalette'
@@ -67,6 +68,13 @@ export default function AppShell(p: AppShellProps) {
   const { teams, createTeam } = useTeams()
   const { meetings, startMeeting, endMeeting } = useActiveMeetings()
   const { layout, dispatch } = useLayout(teamId ? 'team' : 'agent')
+  useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get('team')
+    if (id) { setTeamId(id); p.onSelectHome(); window.history.replaceState(null, '', '/') }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  const selectAgent = (a: Agent) => { setTeamId(null); p.onSelectAgent(a) }
+  const selectHome = () => { setTeamId(null); p.onSelectHome() }
+  const selectTeam = (id: string) => { setTeamId(id); p.onSelectHome() }
 
   return (
     <div className="fixed inset-0 flex bg-sunken text-ink overflow-hidden">
@@ -74,10 +82,10 @@ export default function AppShell(p: AppShellProps) {
         <>
           <StatusSidebar
             width={layout.sidebarW} onCollapse={() => dispatch({ type: 'toggleSidebar' })}
-            teams={teams} meetings={meetings} activeTeamId={teamId} onSelectTeam={id => { setTeamId(id); p.onSelectHome() }} onCreateTeam={createTeam}
+            teams={teams} meetings={meetings} activeTeamId={teamId} onSelectTeam={selectTeam} onCreateTeam={createTeam}
             agents={p.agents} groups={groups} activeAgentId={agent ? agent.id : null} unread={unread} now={now}
             statusConnected={connected} error={p.error} onRetry={p.onRetry}
-            onSelectAgent={p.onSelectAgent} onSelectHome={p.onSelectHome}
+            onSelectAgent={selectAgent} onSelectHome={selectHome}
             onOpenPalette={() => setPaletteOpen(true)} onNewAgent={() => setWizardOpen(true)}
           />
           <ResizeHandle orientation="vertical" label="Drag to resize sidebar" value={layout.sidebarW}
@@ -87,7 +95,11 @@ export default function AppShell(p: AppShellProps) {
         </>
       )}
 
-      {agent ? (
+      {teamId ? (
+        <TeamWorkspace teamId={teamId} layout={layout} dispatch={dispatch} allAgents={p.agents} onlineAgents={p.onlineAgents}
+          meetings={meetings} startMeeting={startMeeting} endMeeting={endMeeting}
+          wakingAgentId={p.wakingAgentId} onWake={p.onWake} onShowProfile={p.onShowProfile} now={now} />
+      ) : agent ? (
         <WorkArea layout={layout} dispatch={dispatch} depKey={agent.id}
           top={
             <AgentTopBar
@@ -110,7 +122,7 @@ export default function AppShell(p: AppShellProps) {
           }
         />
       ) : (
-        <HomeScreen groups={groups} agents={p.agents} unread={unread} now={now} onSelectAgent={p.onSelectAgent} onNewAgent={() => setWizardOpen(true)} />
+        <HomeScreen groups={groups} agents={p.agents} unread={unread} now={now} onSelectAgent={selectAgent} onNewAgent={() => setWizardOpen(true)} />
       )}
 
       {layout.sidebarCollapsed && !agent && (
@@ -122,7 +134,8 @@ export default function AppShell(p: AppShellProps) {
       <CommandPalette
         open={paletteOpen} onOpenChange={setPaletteOpen} agents={p.agents}
         statusOf={a => LABEL[entryById[a.id]?.status ?? 'offline']}
-        onSelectAgent={p.onSelectAgent} onSelectHome={p.onSelectHome} onSwitchClassic={p.onSwitchClassic}
+        onSelectAgent={selectAgent} onSelectHome={selectHome} onSwitchClassic={p.onSwitchClassic}
+        teams={teams} onSelectTeam={selectTeam}
       />
       {wizardOpen && <AgentCreationWizard onClose={() => setWizardOpen(false)} onComplete={() => { setWizardOpen(false); p.onAgentsChanged() }} />}
     </div>

@@ -1,11 +1,12 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Send, Loader2, Users } from 'lucide-react'
+import { Send, Loader2, Users, ChevronDown } from 'lucide-react'
 import type { Agent } from '@/types/agent'
 import type { Team, Meeting } from '@/types/team'
 import { useMeetingMessages } from '@/hooks/useMeetingMessages'
 import { displayName, formatAge } from '@/lib/agent-status'
+import { meetingText } from '@/lib/team-panels'
 import { Button, EmptyState, Notice } from './ui'
 
 /** The team's meeting chat: everyone's messages, and a composer that broadcasts or targets one member. */
@@ -63,12 +64,12 @@ export default function TeamChat({ team, meeting, members, onStart, starting }: 
         {messages.length === 0 && <p className="text-[14px] text-ink-muted">No messages yet. Say hi to the team.</p>}
         {messages.map(m => m.isMine ? (
           <div key={m.id} className="flex justify-end">
-            <div className="max-w-[70%] rounded-2xl px-4 py-2.5 bg-raised text-ink text-[15px] whitespace-pre-wrap">{m.preview}</div>
+            <div className="max-w-[70%] rounded-2xl px-4 py-2.5 bg-raised text-ink text-[15px] whitespace-pre-wrap">{meetingText(m.preview)}</div>
           </div>
         ) : (
           <div key={m.id} className="max-w-[80%]">
             <div className="text-[12px] text-ink-muted"><span className="text-ink font-medium">{m.displayFrom}</span> · {formatAge(m.timestamp, now) || 'now'}</div>
-            <div className="text-[15px] text-ink whitespace-pre-wrap mt-0.5">{m.preview}</div>
+            <div className="text-[15px] text-ink whitespace-pre-wrap mt-0.5">{meetingText(m.preview)}</div>
           </div>
         ))}
         <div ref={endRef} />
@@ -80,11 +81,14 @@ export default function TeamChat({ team, meeting, members, onStart, starting }: 
             placeholder={to === 'all' ? 'Message the team' : `Message ${displayName(members.find(m => m.id === to) ?? members[0])}`}
             className="w-full bg-transparent text-[15px] text-ink placeholder:text-gray-500 resize-none focus:outline-none min-h-[44px]" style={{ maxHeight: 160 }} />
           <div className="flex items-center gap-3 mt-1">
+            <span className="relative inline-flex">
             <select value={to} onChange={e => setTo(e.target.value)} aria-label="Send to"
-              className="h-[28px] rounded-[8px] border border-control-border bg-sunken px-2 text-[13px] text-ink-muted focus:outline-none">
+              className="h-[28px] appearance-none rounded-[8px] border border-control-border bg-sunken pl-2.5 pr-7 text-[13px] text-ink-muted cursor-pointer focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-fill">
               <option value="all">To: Everyone</option>
               {members.map(m => <option key={m.id} value={m.id}>To: {displayName(m)}</option>)}
             </select>
+            <ChevronDown strokeWidth={1.5} className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-ink-muted" />
+            </span>
             {error && <Notice tone="error">{error}</Notice>}
             <button type="button" onClick={send} disabled={sending || !text.trim()} aria-label="Send"
               className="ml-auto grid place-items-center w-[34px] h-[34px] rounded-full bg-accent-fill text-white disabled:opacity-40">

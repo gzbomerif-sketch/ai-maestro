@@ -1,5 +1,6 @@
 'use client'
 
+import ShellRedirect from '@/components/shell/ShellRedirect'
 import { Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
@@ -25,7 +26,7 @@ function TeamMeetingContent() {
   )
 }
 
-export default function TeamMeetingPage() {
+function LegacyTeamMeetingPage() {
   return (
     <Suspense
       fallback={
@@ -39,4 +40,8 @@ export default function TeamMeetingPage() {
       </ErrorBoundary>
     </Suspense>
   )
+}
+
+export default function TeamMeetingPage() {
+  return <ShellRedirect><LegacyTeamMeetingPage /></ShellRedirect>
 }

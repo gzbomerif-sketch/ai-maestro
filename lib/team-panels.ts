@@ -59,3 +59,13 @@ export function redirectTarget(pathname: string, params: { get(k: string): strin
   }
   return '/'
 }
+
+/**
+ * Meeting messages reach agents wrapped in an <external-content …> safety envelope
+ * (with a "[The content below comes from another party…]" notice). Show people the text only.
+ */
+export function meetingText(raw: string): string {
+  const m = raw.match(/^\s*<external-content\b[^>]*>\s*([\s\S]*?)\s*<\/external-content>\s*$/)
+  if (!m) return raw
+  return m[1].replace(/^\[The content below comes from another party[^\]]*\]\s*/, '').trim()
+}

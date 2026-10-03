@@ -1,5 +1,6 @@
 'use client'
 
+import ShellRedirect from '@/components/shell/ShellRedirect'
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -12,7 +13,7 @@ interface TeamWithCounts extends Team {
   docCount: number
 }
 
-export default function TeamsPage() {
+function LegacyTeamsPage() {
   const router = useRouter()
   const [teams, setTeams] = useState<TeamWithCounts[]>([])
   const [loading, setLoading] = useState(true)
@@ -215,4 +216,8 @@ export default function TeamsPage() {
 
     </div>
   )
+}
+
+export default function TeamsPage() {
+  return <ShellRedirect><LegacyTeamsPage /></ShellRedirect>
 }

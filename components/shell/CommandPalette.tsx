@@ -15,6 +15,8 @@ export interface CommandPaletteProps {
   onSelectAgent: (agent: Agent) => void
   onSelectHome: () => void
   onSwitchClassic: () => void
+  teams?: { id: string; name: string }[]
+  onSelectTeam?: (id: string) => void
 }
 
 const SCREENS: CommandItem[] = [
@@ -50,6 +52,7 @@ export default function CommandPalette(p: CommandPaletteProps) {
 
   const items = useMemo<CommandItem[]>(() => [
     ...p.agents.map(a => ({ id: `agent:${a.id}`, kind: 'agent' as const, label: displayName(a), keywords: [a.name, a.alias || '', a.hostId, ...(a.tags || [])].filter(Boolean), hint: p.statusOf(a) })),
+    ...(p.teams ?? []).map(t => ({ id: `team:${t.id}`, kind: 'screen' as const, label: `Team · ${t.name}`, keywords: ['team', t.name] })),
     ...SCREENS,
     ...SETTINGS_COMMANDS,
   ], [p])
@@ -63,7 +66,8 @@ export default function CommandPalette(p: CommandPaletteProps) {
     if (item.kind === 'agent') {
       const a = p.agents.find(x => `agent:${x.id}` === item.id)
       if (a) p.onSelectAgent(a)
-    } else if (item.id === 'screen:home') p.onSelectHome()
+    } else if (item.id.startsWith('team:')) p.onSelectTeam?.(item.id.slice(5))
+    else if (item.id === 'screen:home') p.onSelectHome()
     else if (item.id === 'action:classic') p.onSwitchClassic()
     else router.push(item.id.slice('screen:'.length))
   }

@@ -1,5 +1,6 @@
 'use client'
 
+import ShellRedirect from '@/components/shell/ShellRedirect'
 import { useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -16,7 +17,7 @@ import TeamDocumentsSection from '@/components/teams/TeamDocumentsSection'
 import TeamInstructionsSection from '@/components/teams/TeamInstructionsSection'
 import type { TeamDashboardTab } from '@/components/teams/TeamDashboardSidebar'
 
-export default function TeamDashboardPage() {
+function LegacyTeamDashboardPage() {
   const params = useParams()
   const router = useRouter()
   const teamId = params.id as string
@@ -124,4 +125,8 @@ export default function TeamDashboardPage() {
 
     </div>
   )
+}
+
+export default function TeamDashboardPage() {
+  return <ShellRedirect><LegacyTeamDashboardPage /></ShellRedirect>
 }
