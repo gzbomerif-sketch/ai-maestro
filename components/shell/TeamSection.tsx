@@ -20,7 +20,7 @@ export default function TeamSection({ teams, meetings, activeTeamId, onSelectTea
   const [error, setError] = useState<string | null>(null)
   const close = () => { setCreating(false); setName(''); setError(null) }
   const create = async () => {
-    if (!name.trim()) return
+    if (!name.trim() || busy) return
     setBusy(true)
     const id = await onCreateTeam(name.trim()).catch(() => null)
     setBusy(false)
@@ -55,7 +55,7 @@ export default function TeamSection({ teams, meetings, activeTeamId, onSelectTea
           <label className="block">
             <span className="block text-[14px] text-ink mb-1.5">Name</span>
             <Field className="w-full" value={name} onChange={e => setName(e.target.value)} placeholder="e.g., Web launch"
-              onKeyDown={e => { if (e.key === 'Enter') create() }} />
+              onKeyDown={e => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) create() }} />
           </label>
           <p className="text-[13px] text-ink-muted">Add members afterwards from the team&apos;s Members panel.</p>
           {error && <Notice tone="error">{error}</Notice>}

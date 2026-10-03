@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Search } from 'lucide-react'
 import type { Agent } from '@/types/agent'
 import { displayName } from '@/lib/agent-status'
-import { rankCommandResults, shouldOpenPalette, SETTINGS_COMMANDS, type CommandItem } from '@/lib/command-palette'
+import { rankCommandResults, shouldOpenPalette, SETTINGS_COMMANDS, SHELL_SCREENS, type CommandItem } from '@/lib/command-palette'
 
 export interface CommandPaletteProps {
   open: boolean
@@ -19,14 +19,6 @@ export interface CommandPaletteProps {
   onSelectTeam?: (id: string) => void
 }
 
-const SCREENS: CommandItem[] = [
-  { id: 'screen:home', kind: 'screen', label: 'Home', keywords: ['dashboard'] },
-  { id: 'screen:/teams', kind: 'screen', label: 'Teams', keywords: [] },
-  { id: 'screen:/team-meeting', kind: 'screen', label: 'Meetings', keywords: ['war room'] },
-  { id: 'screen:/plugin-builder', kind: 'screen', label: 'Plugins', keywords: ['skills'] },
-  { id: 'screen:/settings', kind: 'screen', label: 'Settings', keywords: ['hosts', 'preferences'] },
-  { id: 'action:classic', kind: 'action', label: 'Switch to classic layout', keywords: ['old', 'layout'] },
-]
 
 export default function CommandPalette(p: CommandPaletteProps) {
   const router = useRouter()
@@ -53,7 +45,7 @@ export default function CommandPalette(p: CommandPaletteProps) {
   const items = useMemo<CommandItem[]>(() => [
     ...p.agents.map(a => ({ id: `agent:${a.id}`, kind: 'agent' as const, label: displayName(a), keywords: [a.name, a.alias || '', a.hostId, ...(a.tags || [])].filter(Boolean), hint: p.statusOf(a) })),
     ...(p.teams ?? []).map(t => ({ id: `team:${t.id}`, kind: 'screen' as const, label: `Team · ${t.name}`, keywords: ['team', t.name] })),
-    ...SCREENS,
+    ...SHELL_SCREENS,
     ...SETTINGS_COMMANDS,
   ], [p])
   const results = rankCommandResults(query, items).slice(0, 12)

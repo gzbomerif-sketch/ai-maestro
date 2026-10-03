@@ -25,8 +25,8 @@ export type MeetingChatPanelMode = 'sidebar' | 'overlay'
 interface MeetingChatPanelProps {
   agents: Agent[]
   messages: ChatMessage[]
-  onSendToAgent: (agentId: string, message: string) => Promise<void>
-  onBroadcastToAll: (message: string) => Promise<void>
+  onSendToAgent: (agentId: string, message: string) => Promise<unknown>
+  onBroadcastToAll: (message: string) => Promise<unknown>
   mode?: MeetingChatPanelMode
   meetingId?: string
   onClose?: () => void

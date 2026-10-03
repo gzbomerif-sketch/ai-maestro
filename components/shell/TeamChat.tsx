@@ -47,9 +47,9 @@ export default function TeamChat({ team, meeting, members, onStart, starting }: 
     if (!body || sending) return
     setSending(true); setError(null)
     try {
-      if (to === 'all') await broadcastToAll(body)
-      else await sendToAgent(to, body)
-      setText('')
+      const result = to === 'all' ? await broadcastToAll(body) : await sendToAgent(to, body)
+      if (result.ok) setText('')
+      else setError(result.message)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not send')
     } finally {
@@ -77,7 +77,7 @@ export default function TeamChat({ team, meeting, members, onStart, starting }: 
       <div className="px-8 pb-6 pt-2">
         <div className="rounded-[18px] border border-control-off bg-surface px-4 pt-3.5 pb-3">
           <textarea value={text} onChange={e => setText(e.target.value)} rows={1} aria-label="Message the team"
-            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() } }}
+            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); send() } }}
             placeholder={to === 'all' ? 'Message the team' : `Message ${displayName(members.find(m => m.id === to) ?? members[0])}`}
             className="w-full bg-transparent text-[15px] text-ink placeholder:text-gray-500 resize-none focus:outline-none min-h-[44px]" style={{ maxHeight: 160 }} />
           <div className="flex items-center gap-3 mt-1">

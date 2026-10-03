@@ -25,8 +25,8 @@ interface MeetingRightPanelProps {
   // Chat props
   chatMessages: Array<{ id: string; from: string; fromAlias?: string; fromLabel?: string; to: string; toAlias?: string; timestamp: string; subject: string; preview: string; isMine: boolean; displayFrom: string }>
   chatUnreadCount: number
-  onSendToAgent: (agentId: string, message: string) => Promise<void>
-  onBroadcastToAll: (message: string) => Promise<void>
+  onSendToAgent: (agentId: string, message: string) => Promise<unknown>
+  onBroadcastToAll: (message: string) => Promise<unknown>
   onMarkChatRead?: () => void
   onExpandChat?: () => void
   chatOverlayOpen?: boolean

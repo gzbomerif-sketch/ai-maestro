@@ -69,3 +69,12 @@ export function meetingText(raw: string): string {
   if (!m) return raw
   return m[1].replace(/^\[The content below comes from another party[^\]]*\]\s*/, '').trim()
 }
+
+/** Turn per-recipient delivery results into what the chat should tell the user. */
+export function summarizeDelivery(results: boolean[]): { ok: boolean; message: string | null } {
+  if (results.length === 0) return { ok: false, message: 'No members to message' }
+  const delivered = results.filter(Boolean).length
+  if (delivered === results.length) return { ok: true, message: null }
+  if (delivered === 0) return { ok: false, message: 'Message not delivered' }
+  return { ok: false, message: `Delivered to ${delivered} of ${results.length} members` }
+}

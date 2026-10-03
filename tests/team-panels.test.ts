@@ -80,3 +80,13 @@ describe('meetingText', () => {
     expect(meetingText('')).toBe('')
   })
 })
+
+describe('summarizeDelivery', () => {
+  it('reports full, partial and failed delivery', async () => {
+    const { summarizeDelivery } = await import('@/lib/team-panels')
+    expect(summarizeDelivery([true, true])).toEqual({ ok: true, message: null })
+    expect(summarizeDelivery([true, false, true])).toEqual({ ok: false, message: 'Delivered to 2 of 3 members' })
+    expect(summarizeDelivery([false])).toEqual({ ok: false, message: 'Message not delivered' })
+    expect(summarizeDelivery([])).toEqual({ ok: false, message: 'No members to message' })
+  })
+})

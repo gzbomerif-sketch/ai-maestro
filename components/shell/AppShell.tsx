@@ -83,7 +83,7 @@ export default function AppShell(p: AppShellProps) {
           <StatusSidebar
             width={layout.sidebarW} onCollapse={() => dispatch({ type: 'toggleSidebar' })}
             teams={teams} meetings={meetings} activeTeamId={teamId} onSelectTeam={selectTeam} onCreateTeam={createTeam}
-            agents={p.agents} groups={groups} activeAgentId={agent ? agent.id : null} unread={unread} now={now}
+            agents={p.agents} groups={groups} activeAgentId={teamId ? null : agent ? agent.id : null} unread={unread} now={now}
             statusConnected={connected} error={p.error} onRetry={p.onRetry}
             onSelectAgent={selectAgent} onSelectHome={selectHome}
             onOpenPalette={() => setPaletteOpen(true)} onNewAgent={() => setWizardOpen(true)}
@@ -96,7 +96,7 @@ export default function AppShell(p: AppShellProps) {
       )}
 
       {teamId ? (
-        <TeamWorkspace teamId={teamId} layout={layout} dispatch={dispatch} allAgents={p.agents} onlineAgents={p.onlineAgents}
+        <TeamWorkspace key={teamId} teamId={teamId} layout={layout} dispatch={dispatch} allAgents={p.agents} onlineAgents={p.onlineAgents}
           meetings={meetings} startMeeting={startMeeting} endMeeting={endMeeting}
           wakingAgentId={p.wakingAgentId} onWake={p.onWake} onShowProfile={p.onShowProfile} now={now} />
       ) : agent ? (

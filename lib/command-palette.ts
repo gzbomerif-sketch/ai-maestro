@@ -51,3 +51,11 @@ export const SETTINGS_COMMANDS: CommandItem[] = SETTINGS_SECTIONS.map(s => ({
   label: `Settings · ${s.label}`,
   keywords: ['settings', ...s.keywords],
 }))
+
+/** Screens offered by ⌘K in the command-center shell (Teams live in the sidebar and as "Team · …" items). */
+export const SHELL_SCREENS: CommandItem[] = [
+  { id: 'screen:home', kind: 'screen', label: 'Home', keywords: ['dashboard'] },
+  { id: 'screen:/plugin-builder', kind: 'screen', label: 'Plugins', keywords: ['skills'] },
+  { id: 'screen:/settings', kind: 'screen', label: 'Settings', keywords: ['hosts', 'preferences'] },
+  { id: 'action:classic', kind: 'action', label: 'Switch to classic layout', keywords: ['old', 'layout'] },
+]

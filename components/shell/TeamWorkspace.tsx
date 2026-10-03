@@ -28,20 +28,34 @@ export default function TeamWorkspace({ teamId, layout, dispatch, allAgents, onl
 }) {
   const { team, updateTeam, error } = useTeam(teamId)
   const [starting, setStarting] = useState(false)
+  const [failure, setFailure] = useState<string | null>(null)
   if (!team) {
     return <div className="flex-1 grid place-items-center">{error ? <Notice tone="error">Team not found.</Notice> : <Notice>Loading team…</Notice>}</div>
   }
   const members = team.agentIds.map(id => allAgents.find(a => a.id === id)).filter((a): a is Agent => !!a)
   const meeting = activeMeetingFor(team.id, meetings)
-  const start = async () => { setStarting(true); try { await startMeeting(team) } finally { setStarting(false) } }
+  const start = async () => {
+    setStarting(true); setFailure(null)
+    try { if (!(await startMeeting(team))) setFailure('Could not start the meeting. Try again.') } finally { setStarting(false) }
+  }
+  const end = async () => {
+    if (!meeting) return
+    setFailure(null)
+    if (!(await endMeeting(meeting.id))) setFailure('Could not end the meeting. Try again.')
+  }
 
   return (
     <WorkArea layout={layout} dispatch={dispatch} depKey={team.id}
       top={<TeamTopBar team={team} meeting={meeting} members={members} now={now} starting={starting} onStart={start}
-        onEnd={() => { if (meeting) endMeeting(meeting.id) }}
+        onEnd={end}
         panelOpen={layout.panel.open} onTogglePanel={() => dispatch({ type: 'toggle', scope: 'team' })}
         sidebarCollapsed={layout.sidebarCollapsed} onToggleSidebar={() => dispatch({ type: 'toggleSidebar' })} />}
-      center={<TeamChat key={team.id} team={team} meeting={meeting} members={members} onStart={start} starting={starting} />}
+      center={
+        <div className="flex-1 min-w-0 flex flex-col">
+          {failure && <div className="px-8 pt-3"><Notice tone="error">{failure}</Notice></div>}
+          <TeamChat key={team.id} team={team} meeting={meeting} members={members} onStart={start} starting={starting} />
+        </div>
+      }
       dock={<TeamPanelDock layout={layout} dispatch={dispatch} team={team} members={members} allAgents={allAgents} onlineAgents={onlineAgents}
         updateTeam={updateTeam} wakingAgentId={wakingAgentId} onWake={onWake} onShowProfile={onShowProfile} />}
     />

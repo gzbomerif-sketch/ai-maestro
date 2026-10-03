@@ -53,3 +53,13 @@ describe('settings commands', () => {
     expect(hit).toMatchObject({ id: 'screen:/settings?section=webhooks', label: 'Settings · Webhooks', kind: 'screen' })
   })
 })
+
+describe('shell screens', () => {
+  it('no longer link to the old full-screen Teams/Meetings pages', async () => {
+    const { SHELL_SCREENS } = await import('@/lib/command-palette')
+    const ids = SHELL_SCREENS.map(s => s.id)
+    expect(ids).not.toContain('screen:/teams')
+    expect(ids).not.toContain('screen:/team-meeting')
+    expect(ids).toContain('screen:/settings')
+  })
+})

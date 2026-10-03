@@ -2,6 +2,9 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import type { MessageSummary } from '@/lib/messageQueue'
+import { summarizeDelivery } from '@/lib/team-panels'
+
+export type SendResult = { ok: boolean; message: string | null }
 
 interface MeetingMessage extends MessageSummary {
   isMine: boolean       // Sent by Maestro
@@ -18,8 +21,8 @@ interface UseMeetingMessagesOptions {
 interface UseMeetingMessagesResult {
   messages: MeetingMessage[]
   unreadCount: number
-  sendToAgent: (agentId: string, message: string) => Promise<void>
-  broadcastToAll: (message: string) => Promise<void>
+  sendToAgent: (agentId: string, message: string) => Promise<SendResult>
+  broadcastToAll: (message: string) => Promise<SendResult>
   markAsRead: () => void
   loading: boolean
 }
@@ -133,11 +136,12 @@ export function useMeetingMessages({
   }, [meetingId])
 
   const sendToAgent = useCallback(async (agentId: string, message: string) => {
-    if (!meetingId) return
+    if (!meetingId) return { ok: false, message: 'No meeting running' }
     const pIds = stableParticipantIds.current
     addOptimistic(message, agentId)
+    let delivered = false
     try {
-      await fetch('/api/messages', {
+      const res = await fetch('/api/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -159,20 +163,22 @@ export function useMeetingMessages({
           },
         }),
       })
+      delivered = res.ok
     } catch (err) {
       console.error('Failed to send message:', err)
     }
     // Refresh after a short delay to let file I/O settle
     setTimeout(() => fetchMessages(), 300)
+    return summarizeDelivery([delivered])
   }, [meetingId, teamName, participantKey, fetchMessages, addOptimistic])
 
   const broadcastToAll = useCallback(async (message: string) => {
-    if (!meetingId) return
+    if (!meetingId) return { ok: false, message: 'No meeting running' }
     const pIds = stableParticipantIds.current
     // Show one optimistic message for the broadcast (not N copies)
     addOptimistic(message)
     // Send individual messages to each participant
-    await Promise.all(
+    const results = await Promise.all(
       pIds.map(agentId =>
         fetch('/api/messages', {
           method: 'POST',
@@ -195,11 +201,12 @@ export function useMeetingMessages({
               },
             },
           }),
-        }).catch(err => console.error(`Failed to send to ${agentId}:`, err))
+        }).then(r => r.ok).catch(err => { console.error(`Failed to send to ${agentId}:`, err); return false })
       )
     )
     // Refresh after a short delay to let file I/O settle
     setTimeout(() => fetchMessages(), 300)
+    return summarizeDelivery(results)
   }, [meetingId, teamName, participantKey, fetchMessages, addOptimistic])
 
   const markAsRead = useCallback(() => {
