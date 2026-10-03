@@ -6,7 +6,7 @@
  * reference, not live data.
  */
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Card, Row, Toggle, GroupLabel } from '@/components/shell/ui'
 import { readBool, writePref } from '@/lib/safe-storage'
 
@@ -20,7 +20,9 @@ const SCROLL_KEYS: [string, string][] = [
 ]
 
 export default function TerminalSection() {
-  const [copyOnSelect, setCopyOnSelect] = useState(() => readBool(COPY_ON_SELECT_KEY, false))
+  const [copyOnSelect, setCopyOnSelect] = useState(false)
+  // Read after mount: the server render has no localStorage
+  useEffect(() => { setCopyOnSelect(readBool(COPY_ON_SELECT_KEY, false)) }, [])
   const toggle = (next: boolean) => {
     setCopyOnSelect(next)
     writePref(COPY_ON_SELECT_KEY, String(next))

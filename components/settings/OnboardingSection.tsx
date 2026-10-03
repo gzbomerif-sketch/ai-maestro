@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Compass, Loader2 } from 'lucide-react'
 import { Card, Row, Button, GroupLabel } from '@/components/shell/ui'
@@ -9,8 +9,13 @@ import { readString, removePref } from '@/lib/safe-storage'
 export default function OnboardingSection() {
   const router = useRouter()
   const [restarting, setRestarting] = useState(false)
-  const [completed] = useState(() => !!readString('aimaestro-onboarding-completed'))
-  const [useCase] = useState(() => readString('aimaestro-onboarding-use-case'))
+  const [completed, setCompleted] = useState(false)
+  const [useCase, setUseCase] = useState<string | null>(null)
+  // Read after mount: the server render has no localStorage
+  useEffect(() => {
+    setCompleted(!!readString('aimaestro-onboarding-completed'))
+    setUseCase(readString('aimaestro-onboarding-use-case'))
+  }, [])
 
   const restart = () => {
     setRestarting(true)

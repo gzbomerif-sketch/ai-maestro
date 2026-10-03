@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { FlaskConical } from 'lucide-react'
 import { Card, Row, Toggle, GroupLabel, EmptyState, Notice } from '@/components/shell/ui'
 import { readBool, writePref } from '@/lib/safe-storage'
@@ -19,8 +19,9 @@ const FEATURE_FLAGS: FeatureFlag[] = [
 ]
 
 export default function ExperimentsSection() {
-  const [flags, setFlags] = useState<Record<string, boolean>>(() =>
-    Object.fromEntries(FEATURE_FLAGS.map(f => [f.id, readBool(f.storageKey, false)])))
+  const [flags, setFlags] = useState<Record<string, boolean>>({})
+  // Read after mount: the server render has no localStorage
+  useEffect(() => { setFlags(Object.fromEntries(FEATURE_FLAGS.map(f => [f.id, readBool(f.storageKey, false)]))) }, [])
   const [changed, setChanged] = useState(false)
 
   const setFlag = (flag: FeatureFlag, value: boolean) => {

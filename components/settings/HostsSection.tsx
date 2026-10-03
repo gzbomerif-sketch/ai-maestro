@@ -253,7 +253,7 @@ export default function HostsSection() {
       {error && <div className="mb-3"><Notice tone="error">{error}</Notice></div>}
 
       <div className="flex bg-surface border border-hairline rounded-[14px] overflow-hidden min-h-[520px]">
-        {loading ? (
+        {loading && hosts.length === 0 ? (  // later refetches keep the list (and HostDetail state) mounted
           <div className="p-6"><Notice>Loading hosts…</Notice></div>
         ) : hosts.length === 0 ? (
           <div className="flex-1"><EmptyState icon={<Server strokeWidth={1.5} className="w-6 h-6" />} title="No hosts configured"

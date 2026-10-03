@@ -31,7 +31,8 @@ export default function HostDetail({ host, health, version, sessions, onSave, on
   const [form, setForm] = useState(() => editable(host))
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
-  useEffect(() => { setForm(editable(host)); setSaved(false) }, [host])
+  useEffect(() => { setForm(editable(host)) }, [host])
+  useEffect(() => { setSaved(false) }, [host.id])  // the post-save refetch must not hide "Saved"
 
   const original = editable(host)
   const dirty = JSON.stringify(form) !== JSON.stringify(original)
