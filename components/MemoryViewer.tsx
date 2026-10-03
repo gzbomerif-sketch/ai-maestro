@@ -4,9 +4,11 @@ import React, { useState, useEffect, useRef, useCallback } from 'react'
 import {
   Brain, List, Share2, Search, Filter, Edit2, Trash2, Save, X,
   ChevronDown, RefreshCw, Lightbulb, Settings, FileText, Heart,
-  GitBranch, Zap, ArrowRight, Clock, TrendingUp, AlertCircle, Play
+  GitBranch, Zap, ArrowRight, Clock, TrendingUp, Play
 } from 'lucide-react'
 import MemoryEntityGraph, { type EntityNode, type EntityLink } from '@/components/memory/MemoryEntityGraph'
+import { Card, Row, Button, IconButton, Field, Notice } from '@/components/shell/ui'
+import { formatConfidence } from '@/lib/memory-format'
 
 // Types
 interface Memory {
@@ -366,55 +368,27 @@ export default function MemoryViewer({ agentId, hostUrl = '', isActive = false }
 
   const categories = Object.keys(CATEGORY_COLORS)
 
-  return (
-    <div className="space-y-4">
-      {/* Consolidate Action Bar */}
-      <div className="flex items-center justify-between p-4 bg-gradient-to-r from-purple-500/10 to-blue-500/10 rounded-lg border border-purple-500/20">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center">
-            <Brain className="w-5 h-5 text-purple-400" />
-          </div>
-          <div>
-            <div className="text-sm font-medium text-gray-200">Memory Consolidation</div>
-            <div className="text-xs text-gray-400">
-              Extract long-term memories from your conversations
-            </div>
-          </div>
-        </div>
-        <button
-          onClick={triggerConsolidation}
-          disabled={consolidating}
-          className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-500 disabled:bg-purple-600/50 text-white rounded-lg font-medium text-sm transition-all"
-        >
-          {consolidating ? (
-            <>
-              {/* Wrap SVG in div for hardware-accelerated animation */}
-              <div className="animate-spin">
-                <RefreshCw className="w-4 h-4" />
-              </div>
-              Consolidating...
-            </>
-          ) : (
-            <>
-              <Play className="w-4 h-4" />
-              Consolidate Now
-            </>
-          )}
-        </button>
-      </div>
+  const segment = (on: boolean) =>
+    `flex items-center gap-1.5 px-3 h-[28px] rounded-full text-[13px] transition-colors ${on ? 'bg-ink text-sunken' : 'text-ink-muted hover:text-ink'}`
 
-      {/* Consolidation Result */}
-      {consolidationResult && (
-        <div className={`p-3 rounded-lg border ${
-          consolidationResult.success
-            ? 'bg-green-500/10 border-green-500/30'
-            : 'bg-red-500/10 border-red-500/30'
-        }`}>
-          {consolidationResult.success ? (
-            <div className="space-y-1 text-sm">
-              <div className="flex items-center gap-2 text-green-400">
-                <TrendingUp className="w-4 h-4" />
-                <span>
+  return (
+    // Fills the tab (flex row in the dashboard, absolute box in Zoom) and scrolls itself
+    <div className="h-full w-full flex-1 min-w-0 overflow-y-auto px-6 py-5 space-y-5">
+      {/* Consolidate */}
+      <Card>
+        <Row wrap title="Memory consolidation" description="Extract long-term memories from this agent's conversations."
+          control={
+            <Button variant="accent" onClick={triggerConsolidation} disabled={consolidating}>
+              {consolidating
+                ? <><RefreshCw className="w-4 h-4 animate-spin" />Consolidating…</>
+                : <><Play strokeWidth={1.5} className="w-4 h-4" />Consolidate now</>}
+            </Button>
+          } />
+        {consolidationResult && (
+          <div className="px-[22px] py-3.5 border-t border-hairline/70 space-y-1.5">
+            {consolidationResult.success ? (
+              <>
+                <Notice tone="success">
                   {consolidationResult.notice || (
                     <>
                       {consolidationResult.memoriesCreated || 0} new memories, {consolidationResult.memoriesReinforced || 0} came up again
@@ -425,157 +399,89 @@ export default function MemoryViewer({ agentId, hostUrl = '', isActive = false }
                       {consolidationResult.provider && ` (${consolidationResult.provider})`}
                     </>
                   )}
-                </span>
-              </div>
-              {consolidationResult.cardsDeferred && (
-                <div className="text-gray-400 pl-6">Card writing paused (Claude usage limit or not available); those exchanges are read again on the next run.</div>
-              )}
-              {consolidationResult.moreRemaining && (
-                <div className="text-gray-400 pl-6">More history left to process. It continues on the next run, or click Consolidate again.</div>
-              )}
-              {consolidationResult.error && (
-                <div className="flex items-start gap-2 text-amber-400 pl-6">
-                  <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                  <span>{consolidationResult.error}</span>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="flex items-center gap-2 text-sm text-red-400">
-              <AlertCircle className="w-4 h-4" />
-              <span>{consolidationResult.error || 'Consolidation failed'}</span>
-            </div>
-          )}
-        </div>
-      )}
+                </Notice>
+                {consolidationResult.cardsDeferred && <Notice>Card writing paused (Claude usage limit or not available); those exchanges are read again on the next run.</Notice>}
+                {consolidationResult.moreRemaining && <Notice>More history left to process. It continues on the next run, or click Consolidate again.</Notice>}
+                {consolidationResult.error && <Notice tone="error">{consolidationResult.error}</Notice>}
+              </>
+            ) : (
+              <Notice tone="error">{consolidationResult.error || 'Consolidation failed'}</Notice>
+            )}
+          </div>
+        )}
+      </Card>
 
-      {/* Stats Bar */}
+      {/* Stats */}
       {stats && (
-        <div className="grid grid-cols-4 gap-3">
-          <div className="bg-gray-800/50 rounded-lg p-3 border border-gray-700">
-            {/* Faded memories (raw passages, one-offs) are hidden from the list, so count them apart */}
-            <div className="text-2xl font-bold text-gray-100">{stats.total_memories - (stats.by_tier?.faded || 0)}</div>
-            <div className="text-xs text-gray-400">
-              Memories{stats.by_tier?.faded ? ` · ${stats.by_tier.faded} faded` : ''}
+        <Card className="grid grid-cols-2 md:grid-cols-4 divide-x divide-hairline/70">
+          {[
+            // Faded memories (raw passages, one-offs) are hidden from the list, so count them apart
+            { value: String(stats.total_memories - (stats.by_tier?.faded || 0)), label: `Memories${stats.by_tier?.faded ? ` · ${stats.by_tier.faded} faded` : ''}` },
+            { value: String(stats.total_reinforcements ?? 0), label: 'Reinforcements' },
+            { value: formatConfidence(stats.average_confidence), label: 'Avg confidence' },
+            { value: stats.last_consolidation ? new Date(stats.last_consolidation.timestamp).toLocaleDateString() : 'Never', label: 'Last consolidation' },
+          ].map(st => (
+            <div key={st.label} className="px-[22px] py-4">
+              <div className="text-[20px] font-medium text-ink">{st.value}</div>
+              <div className="text-[13px] text-ink-muted">{st.label}</div>
             </div>
-          </div>
-          <div className="bg-gray-800/50 rounded-lg p-3 border border-gray-700">
-            <div className="text-2xl font-bold text-gray-100">{stats.total_reinforcements}</div>
-            <div className="text-xs text-gray-400">Reinforcements</div>
-          </div>
-          <div className="bg-gray-800/50 rounded-lg p-3 border border-gray-700">
-            <div className="text-2xl font-bold text-gray-100">{(stats.average_confidence * 100).toFixed(0)}%</div>
-            <div className="text-xs text-gray-400">Avg Confidence</div>
-          </div>
-          <div className="bg-gray-800/50 rounded-lg p-3 border border-gray-700">
-            <div className="text-2xl font-bold text-gray-100">
-              {stats.last_consolidation ? new Date(stats.last_consolidation.timestamp).toLocaleDateString() : 'Never'}
-            </div>
-            <div className="text-xs text-gray-400">Last Consolidation</div>
-          </div>
-        </div>
+          ))}
+        </Card>
       )}
 
-      {/* View Toggle & Controls */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setView('list')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all ${
-              view === 'list'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
-            }`}
-          >
-            <List className="w-4 h-4" />
-            List
+      {/* View toggle & controls */}
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div role="tablist" aria-label="Memory view" className="flex rounded-full bg-raised/70 p-0.5">
+          <button type="button" role="tab" aria-selected={view === 'list'} onClick={() => setView('list')} className={segment(view === 'list')}>
+            <List strokeWidth={1.5} className="w-3.5 h-3.5" />List
           </button>
-          <button
-            onClick={() => setView('graph')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all ${
-              view === 'graph'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
-            }`}
-          >
-            <Share2 className="w-4 h-4" />
-            Graph
+          <button type="button" role="tab" aria-selected={view === 'graph'} onClick={() => setView('graph')} className={segment(view === 'graph')}>
+            <Share2 strokeWidth={1.5} className="w-3.5 h-3.5" />Graph
           </button>
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Search */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && fetchMemories()}
-              placeholder="Search memories..."
-              className="pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-gray-100 text-sm placeholder-gray-500 focus:outline-none focus:border-blue-500 w-64"
-            />
+            <Search strokeWidth={1.5} className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-muted pointer-events-none" />
+            <Field value={searchQuery} onChange={e => setSearchQuery(e.target.value)} onKeyDown={e => e.key === 'Enter' && fetchMemories()}
+              placeholder="Search memories…" aria-label="Search memories" className="pl-9 w-64" />
           </div>
 
-          {/* Filter */}
           <div className="relative">
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all ${
-                categoryFilter
-                  ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-                  : 'bg-gray-800 text-gray-400 hover:bg-gray-700 border border-gray-700'
-              }`}
-            >
-              <Filter className="w-4 h-4" />
-              {categoryFilter || 'All'}
-              <ChevronDown className="w-4 h-4" />
-            </button>
-
+            <Button onClick={() => setShowFilters(!showFilters)}>
+              <Filter strokeWidth={1.5} className="w-4 h-4" />
+              <span className="capitalize">{categoryFilter || 'All'}</span>
+              <ChevronDown strokeWidth={1.5} className="w-3.5 h-3.5" />
+            </Button>
             {showFilters && (
-              <div className="absolute right-0 top-full mt-2 w-48 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-10 py-2">
-                <button
-                  onClick={() => { setCategoryFilter(null); setShowFilters(false) }}
-                  className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-700 transition-all ${
-                    !categoryFilter ? 'text-blue-400' : 'text-gray-300'
-                  }`}
-                >
-                  All Categories
+              <div role="menu" className="absolute right-0 top-full mt-1 w-52 bg-surface border border-hairline rounded-[12px] z-10 p-1">
+                <button type="button" role="menuitem" onClick={() => { setCategoryFilter(null); setShowFilters(false) }}
+                  className={`w-full px-3 py-2 rounded-[8px] text-left text-[14px] hover:bg-raised/60 ${!categoryFilter ? 'text-ink' : 'text-gray-300'}`}>
+                  All categories
                 </button>
                 {categories.map(cat => (
-                  <button
-                    key={cat}
-                    onClick={() => { setCategoryFilter(cat); setShowFilters(false) }}
-                    className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-700 transition-all flex items-center gap-2 ${
-                      categoryFilter === cat ? 'text-blue-400' : 'text-gray-300'
-                    }`}
-                  >
+                  <button type="button" role="menuitem" key={cat} onClick={() => { setCategoryFilter(cat); setShowFilters(false) }}
+                    className={`w-full px-3 py-2 rounded-[8px] text-left text-[14px] hover:bg-raised/60 flex items-center gap-2 ${categoryFilter === cat ? 'text-ink bg-raised/60' : 'text-gray-300'}`}>
                     <span style={{ color: CATEGORY_COLORS[cat] }}>{CATEGORY_ICONS[cat]}</span>
                     <span className="capitalize">{cat}</span>
-                    {stats?.by_category[cat] && (
-                      <span className="ml-auto text-xs text-gray-500">{stats.by_category[cat]}</span>
-                    )}
+                    {stats?.by_category[cat] && <span className="ml-auto text-[12px] text-gray-500">{stats.by_category[cat]}</span>}
                   </button>
                 ))}
               </div>
             )}
           </div>
 
-          {/* Refresh */}
-          <button
-            onClick={() => { fetchMemories(); fetchStats(); if (view === 'graph') fetchGraph(); }}
-            className="p-2 bg-gray-800 border border-gray-700 rounded-lg text-gray-400 hover:text-gray-200 hover:bg-gray-700 transition-all"
-          >
-            <RefreshCw className="w-4 h-4" />
-          </button>
+          <IconButton label="Refresh" onClick={() => { fetchMemories(); fetchStats(); if (view === 'graph') fetchGraph() }}>
+            <RefreshCw strokeWidth={1.5} className="w-4 h-4" />
+          </IconButton>
         </div>
       </div>
 
       {/* Content */}
       {view === 'list' ? (
         <div className="space-y-2">
-        <label className="flex items-center gap-2 text-xs text-gray-500 cursor-pointer select-none w-fit">
-          <input type="checkbox" checked={showFaded} onChange={e => setShowFaded(e.target.checked)} className="accent-gray-500" />
+        <label className="flex items-center gap-2 text-[13px] text-ink-muted cursor-pointer select-none w-fit">
+          <input type="checkbox" checked={showFaded} onChange={e => setShowFaded(e.target.checked)} className="accent-accent-fill" />
           Show faded memories (seen once and never used, or raw passages from before cards)
         </label>
         <MemoryList
@@ -595,7 +501,7 @@ export default function MemoryViewer({ agentId, hostUrl = '', isActive = false }
               <button
                 key={mode}
                 onClick={() => setGraphMode(mode)}
-                className={`px-3 py-1 rounded-md capitalize ${graphMode === mode ? 'bg-gray-700 text-gray-100' : 'text-gray-400 hover:text-gray-200'}`}
+                className={`px-3 py-1 rounded-full capitalize ${graphMode === mode ? 'bg-raised text-ink' : 'text-ink-muted hover:text-ink'}`}
               >
                 {mode}
               </button>
