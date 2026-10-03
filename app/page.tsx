@@ -14,6 +14,8 @@ import { AgentSubconsciousIndicator } from '@/components/AgentSubconsciousIndica
 import MigrationBanner from '@/components/MigrationBanner'
 import { VersionChecker } from '@/components/VersionChecker'
 import AgentTabContent from '@/components/shell/AgentTabContent'
+import AppShell from '@/components/shell/AppShell'
+import { readPref, writePref, SHELL_KEY } from '@/lib/safe-storage'
 import { useAgents } from '@/hooks/useAgents'
 import { TerminalProvider } from '@/contexts/TerminalContext'
 import { useToast } from '@/contexts/ToastContext'
@@ -85,6 +87,9 @@ export default function DashboardPage() {
     const saved = localStorage.getItem('aimaestro-layout-mode')
     return (saved === 'desktop' || saved === 'tablet') ? saved : null
   })
+  const [shell, setShell] = useState<'command-center' | 'classic'>(() =>
+    typeof window === 'undefined' ? 'command-center' : readPref(SHELL_KEY, 'command-center', ['command-center', 'classic'] as const))
+  const switchShell = (next: 'command-center' | 'classic') => { setShell(next); writePref(SHELL_KEY, next) }
   const effectiveLayout = layoutOverride || (deviceType === 'phone' ? 'phone' : deviceType)
   const isMobile = effectiveLayout === 'phone'
   const isTablet = effectiveLayout === 'tablet'
@@ -268,8 +273,13 @@ export default function DashboardPage() {
   const firstOnlineAgentId = onlineAgents[0]?.id
   const hasOnlineAgents = onlineAgents.length > 0
 
+  // Auto-select the first online agent once, on first load; afterwards a null
+  // selection is deliberate (the command-center Home screen).
+  const didAutoSelect = useRef(false)
   useEffect(() => {
+    if (didAutoSelect.current) return
     if (hasOnlineAgents && !activeAgentId && firstOnlineAgentId) {
+      didAutoSelect.current = true
       setActiveAgentId(firstOnlineAgentId)
     }
   }, [hasOnlineAgents, activeAgentId, firstOnlineAgentId])
@@ -467,6 +477,24 @@ export default function DashboardPage() {
     setWakeDialogAgent(agent)
   }
 
+  // Hibernate (same request as AgentList.handleHibernate); used by the command-center top bar
+  const handleSleepAgent = async (agent: Agent) => {
+    try {
+      const response = await fetch(`/api/agents/${agent.id}/hibernate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ hostUrl: agent.hostUrl }),
+      })
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}))
+        throw new Error(data.message || data.error || 'Failed to hibernate agent')
+      }
+      refreshAgents()
+    } catch (error) {
+      addToast({ type: 'error', title: 'Could not put agent to sleep', message: error instanceof Error ? error.message : 'Unknown error' })
+    }
+  }
+
   // Performs the actual wake with selected program
   const handleWakeConfirm = async (program: string, options?: { permissionMode?: string; execMode?: 'terminal' | 'streaming' }) => {
     if (!wakeDialogAgent) return
@@ -618,7 +646,55 @@ export default function DashboardPage() {
     )
   }
 
-  // Desktop dashboard - AGENT-CENTRIC
+  // Desktop dashboard - COMMAND CENTER (default; classic layout below)
+  if (shell === 'command-center') {
+    return (
+      <TerminalProvider key="desktop-dashboard">
+        <AppShell
+          agents={agents}
+          onlineAgents={onlineAgents}
+          error={agentsError?.message || null}
+          onRetry={refreshAgents}
+          activeAgentId={activeAgentId}
+          onSelectAgent={(a) => {
+            if (a.session?.status === 'online' || (a.sessions?.length ?? 0) > 0) handleAgentSelect(a)
+            else handleShowAgentProfile(a)
+          }}
+          onSelectHome={() => setActiveAgentId(null)}
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          wakingAgentId={wakingAgentId}
+          onWake={handleWakeAgent}
+          onSleep={handleSleepAgent}
+          onShowProfile={handleShowAgentProfile}
+          onAgentsChanged={refreshAgents}
+          onSwitchClassic={() => switchShell('classic')}
+        />
+        {profileAgent && (
+          <AgentProfile
+            isOpen={isProfileOpen}
+            onClose={() => { setIsProfileOpen(false); setProfileAgent(null); setProfileScrollToDangerZone(false) }}
+            agentId={profileAgent.id}
+            sessionStatus={profileAgent.session}
+            onStartSession={() => handleStartSession(profileAgent)}
+            onDeleteAgent={handleDeleteAgent}
+            scrollToDangerZone={profileScrollToDangerZone}
+            hostUrl={getAgentBaseUrl(profileAgent)}
+          />
+        )}
+        <WakeAgentDialog
+          isOpen={wakeDialogAgent !== null}
+          onClose={() => setWakeDialogAgent(null)}
+          onConfirm={handleWakeConfirm}
+          agentName={wakeDialogAgent?.name || wakeDialogAgent?.id || ''}
+          agentAlias={wakeDialogAgent?.alias}
+          defaultPermissionMode={(wakeDialogAgent as any)?.permissionMode}
+        />
+      </TerminalProvider>
+    )
+  }
+
+  // Desktop dashboard - AGENT-CENTRIC (classic)
   return (
     <TerminalProvider key="desktop-dashboard">
       <div className="flex flex-col h-screen bg-gray-900" style={{ overflow: 'hidden', position: 'fixed', inset: 0 }}>
@@ -629,6 +705,7 @@ export default function DashboardPage() {
           activeAgentId={activeAgentId}
           onOpenHelp={() => setIsHelpOpen(true)}
           onSwitchLayout={toggleLayout}
+          onTryNewLayout={() => switchShell('command-center')}
         />
 
         {/* Migration Banner */}

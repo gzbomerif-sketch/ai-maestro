@@ -8,9 +8,10 @@ interface HeaderProps {
   activeAgentId?: string | null
   onOpenHelp?: () => void
   onSwitchLayout?: () => void
+  onTryNewLayout?: () => void
 }
 
-export default function Header({ onToggleSidebar, sidebarCollapsed, activeAgentId, onOpenHelp, onSwitchLayout }: HeaderProps) {
+export default function Header({ onToggleSidebar, sidebarCollapsed, activeAgentId, onOpenHelp, onSwitchLayout, onTryNewLayout }: HeaderProps) {
   const immersiveUrl = activeAgentId ? `/immersive?agent=${encodeURIComponent(activeAgentId)}` : '/immersive'
   const companionUrl = activeAgentId ? `/companion?agent=${encodeURIComponent(activeAgentId)}` : '/companion'
   const zoomUrl = '/zoom'
@@ -87,6 +88,15 @@ export default function Header({ onToggleSidebar, sidebarCollapsed, activeAgentI
           >
             Immersive Experience
           </a>
+          {onTryNewLayout && (
+            <button
+              onClick={onTryNewLayout}
+              className="px-2.5 py-1 rounded-lg text-xs bg-blue-600 text-white hover:bg-blue-500 transition-colors"
+              title="Try the new command-center layout"
+            >
+              Try new layout
+            </button>
+          )}
           {onSwitchLayout && (
             <button
               onClick={onSwitchLayout}
