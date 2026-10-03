@@ -101,6 +101,7 @@ describe('keys and shortcuts', () => {
     expect(panelForKey('t')).toBe('terminal')
     expect(panelForKey('I')).toBe('inbox')
     expect(panelForKey('x')).toBe('export')
+    expect(panelForKey('b')).toBe('browser')
     expect(panelForKey('z')).toBeNull()
   })
   it('migrateActiveTab maps old tabs; chat stays in the centre', () => {

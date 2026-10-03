@@ -18,6 +18,7 @@ import ResizeHandle from './ResizeHandle'
 import PanelDock from './PanelDock'
 import WorkArea from './WorkArea'
 import TeamWorkspace from './TeamWorkspace'
+import MiniPreview from './MiniPreview'
 import { IconButton } from './ui'
 import HomeScreen from './HomeScreen'
 import CommandPalette from './CommandPalette'
@@ -101,6 +102,7 @@ export default function AppShell(p: AppShellProps) {
           wakingAgentId={p.wakingAgentId} onWake={p.onWake} onShowProfile={p.onShowProfile} now={now} />
       ) : agent ? (
         <WorkArea layout={layout} dispatch={dispatch} depKey={agent.id}
+          overlay={<MiniPreview hidden={layout.panel.open && layout.panel.active === 'browser'} onOpen={() => dispatch({ type: 'open', panel: 'browser' })} />}
           top={
             <AgentTopBar
               agent={agent} entry={entryById[agent.id]} now={now}

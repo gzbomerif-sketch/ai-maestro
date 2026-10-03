@@ -6,8 +6,9 @@ import { agentToSession, getAgentBaseUrl } from '@/lib/agent-utils'
 import type { Agent } from '@/types/agent'
 import type { PanelType } from '@/lib/panel-layout'
 import AgentTabContent, { type AgentTab } from './AgentTabContent'
+import BrowserPanel from './BrowserPanel'
 
-const TAB_FOR: Record<Exclude<PanelType, 'inbox'>, AgentTab> = {
+const TAB_FOR: Record<Exclude<PanelType, 'inbox' | 'browser'>, AgentTab> = {
   terminal: 'terminal', files: 'worktree', memory: 'memory', graph: 'graph', docs: 'docs',
   canvas: 'canvas', search: 'search', playback: 'playback', export: 'export',
 }
@@ -32,6 +33,7 @@ export default function PanelBody({ type, agent, onlineAgents, wakingAgentId, on
   onWake: (a: Agent) => void
   onShowProfile: (a: Agent) => void
 }) {
+  if (type === 'browser') return <BrowserPanel />
   if (type === 'inbox') {
     return (
       <div className="flex-1 min-h-0 flex overflow-hidden">

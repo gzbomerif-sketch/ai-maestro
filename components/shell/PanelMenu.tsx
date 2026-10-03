@@ -1,12 +1,12 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { SquareTerminal, Inbox, FolderTree, Brain, GitBranch, FileText, LayoutPanelTop, Search, PlayCircle, Download, type LucideIcon } from 'lucide-react'
+import { SquareTerminal, Inbox, FolderTree, Brain, GitBranch, FileText, LayoutPanelTop, Search, PlayCircle, Download, Globe, type LucideIcon } from 'lucide-react'
 import type { PanelType } from '@/lib/panel-layout'
 
 export const PANEL_ICONS: Record<PanelType, LucideIcon> = {
   terminal: SquareTerminal, inbox: Inbox, files: FolderTree, memory: Brain, graph: GitBranch,
-  docs: FileText, canvas: LayoutPanelTop, search: Search, playback: PlayCircle, export: Download,
+  docs: FileText, canvas: LayoutPanelTop, search: Search, playback: PlayCircle, export: Download, browser: Globe,
 }
 
 export interface MenuItem { id: string; label: string; key?: string; icon: LucideIcon; section?: string }

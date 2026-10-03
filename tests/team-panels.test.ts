@@ -7,8 +7,8 @@ import {
 const q = (s: string) => new URLSearchParams(s)
 
 describe('team tabs', () => {
-  it('lists the five tools with their keys', () => {
-    expect(TEAM_TOOLS.map(t => `${t.id}:${t.key}`)).toEqual(['kanban:K', 'tasks:A', 'documents:D', 'instructions:N', 'members:E'])
+  it('lists the team tools with their keys', () => {
+    expect(TEAM_TOOLS.map(t => `${t.id}:${t.key}`)).toEqual(['kanban:K', 'tasks:A', 'documents:D', 'instructions:N', 'members:E', 'browser:B'])
   })
   it('recognises tools and member terminals only', () => {
     expect(isTeamTab('kanban')).toBe(true)

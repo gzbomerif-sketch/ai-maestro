@@ -11,6 +11,7 @@ import WorkArea from './WorkArea'
 import TeamTopBar from './TeamTopBar'
 import TeamChat from './TeamChat'
 import TeamPanelDock from './TeamPanelDock'
+import MiniPreview from './MiniPreview'
 
 export default function TeamWorkspace({ teamId, layout, dispatch, allAgents, onlineAgents, meetings, startMeeting, endMeeting, wakingAgentId, onWake, onShowProfile, now }: {
   teamId: string
@@ -46,6 +47,7 @@ export default function TeamWorkspace({ teamId, layout, dispatch, allAgents, onl
 
   return (
     <WorkArea layout={layout} dispatch={dispatch} depKey={team.id}
+      overlay={<MiniPreview hidden={layout.panel.open && layout.panel.teamActive === 'browser'} onOpen={() => dispatch({ type: 'openTeam', tab: 'browser' })} />}
       top={<TeamTopBar team={team} meeting={meeting} members={members} now={now} starting={starting} onStart={start}
         onEnd={end}
         panelOpen={layout.panel.open} onTogglePanel={() => dispatch({ type: 'toggle', scope: 'team' })}

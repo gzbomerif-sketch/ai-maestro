@@ -5,13 +5,15 @@ import { LIMITS, panelLimits, panelOverlays, shouldRestoreOnEscape, shownSize, t
 import ResizeHandle from './ResizeHandle'
 
 /** Centre column + tool panel (right or bottom, resizable, maximizable). Shared by agent and team views. */
-export default function WorkArea({ layout, dispatch, depKey, top, center, dock }: {
+export default function WorkArea({ layout, dispatch, depKey, top, center, dock, overlay: floating }: {
   layout: LayoutState
   dispatch: React.Dispatch<LayoutAction>
   depKey: string
   top: ReactNode
   center: ReactNode
   dock: ReactNode
+  /** Floating extras over the work area (the browser mini preview) */
+  overlay?: ReactNode
 }) {
   const workRef = useRef<HTMLDivElement>(null)
   const [work, setWork] = useState({ w: 1200, h: 800 })
@@ -43,9 +45,11 @@ export default function WorkArea({ layout, dispatch, depKey, top, center, dock }
     <div ref={workRef} className="flex-1 min-w-0 flex relative">
       {P.open && P.maximized ? dock : (
         <>
-          <section className="flex-1 min-w-0 flex flex-col">
+          <section className="relative flex-1 min-w-0 flex flex-col">
             {top}
             <div className="flex-1 min-h-0 flex relative border-t border-hairline/70">{center}</div>
+            {/* floating extras (mini preview) sit over the chat column, never over the tool panel */}
+            {floating}
             {P.open && P.position === 'bottom' && (
               <>
                 <ResizeHandle orientation="horizontal" invert label="Drag to resize panel" value={shownBottom} min={lim.min} max={lim.max}
