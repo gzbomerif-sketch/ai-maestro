@@ -8,6 +8,8 @@ import { displayName, formatAge, type StatusEntry, type StatusGroups } from '@/l
 import { readPref, writePref, SIDEBAR_MODE_KEY } from '@/lib/safe-storage'
 import { StatusDot, SectionLabel, Badge, IconButton } from './ui'
 import ProjectTree from './ProjectTree'
+import TeamSection from './TeamSection'
+import type { Team, Meeting } from '@/types/team'
 
 export interface StatusSidebarProps {
   agents: Agent[]
@@ -24,6 +26,11 @@ export interface StatusSidebarProps {
   onNewAgent: () => void
   width: number
   onCollapse: () => void
+  teams: Team[]
+  meetings: Meeting[]
+  activeTeamId: string | null
+  onSelectTeam: (id: string) => void
+  onCreateTeam: (name: string) => Promise<string | null>
 }
 
 const initials = (name: string) => name.replace(/[^a-zA-Z0-9]+/g, ' ').trim().split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || '?'
@@ -86,8 +93,8 @@ export default function StatusSidebar(p: StatusSidebarProps) {
       )}
       {!p.statusConnected && !p.error && <div className="px-2.5 pt-1 text-[12px] text-gray-500">Status may be stale</div>}
 
-      <button type="button" onClick={p.onSelectHome} aria-current={p.activeAgentId === null ? 'page' : undefined}
-        className={`mt-1 flex items-center gap-3 px-2.5 py-2 rounded-[10px] text-[15px] ${p.activeAgentId === null ? 'bg-raised text-ink' : 'text-gray-300 hover:bg-raised/60'}`}>
+      <button type="button" onClick={p.onSelectHome} aria-current={p.activeAgentId === null && p.activeTeamId === null ? 'page' : undefined}
+        className={`mt-1 flex items-center gap-3 px-2.5 py-2 rounded-[10px] text-[15px] ${p.activeAgentId === null && p.activeTeamId === null ? 'bg-raised text-ink' : 'text-gray-300 hover:bg-raised/60'}`}>
         <Home strokeWidth={1.5} className="w-4 h-4" />Home
       </button>
 
@@ -113,6 +120,8 @@ export default function StatusSidebar(p: StatusSidebarProps) {
         {mode === 'status'
           ? <>{section('Working', p.groups.working)}{section('Idle', p.groups.idle)}{section('Asleep', p.groups.asleep)}</>
           : <ProjectTree agents={p.agents} groupsById={byId} activeAgentId={p.activeAgentId} unread={p.unread} onSelectAgent={p.onSelectAgent} />}
+        <TeamSection teams={p.teams} meetings={p.meetings} activeTeamId={p.activeTeamId}
+          onSelectTeam={p.onSelectTeam} onCreateTeam={p.onCreateTeam} />
       </div>
 
       <div className="flex items-center gap-1 pt-3 border-t border-hairline">

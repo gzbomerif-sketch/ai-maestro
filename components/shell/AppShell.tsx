@@ -9,6 +9,7 @@ import { groupByStatus, type StatusEntry } from '@/lib/agent-status'
 import { getRuntimeMode } from '@/lib/runtime-mode'
 import { resolveAgentTab } from '@/lib/shell-tabs'
 import { useLayout } from '@/hooks/useLayout'
+import { useTeams, useActiveMeetings } from '@/hooks/useTeams'
 import { LIMITS } from '@/lib/panel-layout'
 import AgentCreationWizard from '@/components/AgentCreationWizard'
 import StatusSidebar from './StatusSidebar'
@@ -62,7 +63,10 @@ export default function AppShell(p: AppShellProps) {
   const agent = p.activeAgentId ? p.agents.find(a => a.id === p.activeAgentId) : undefined
   const sleep = async (a: Agent) => { setSleepingId(a.id); try { await p.onSleep(a) } finally { setSleepingId(null) } }
 
-  const { layout, dispatch } = useLayout()
+  const [teamId, setTeamId] = useState<string | null>(null)
+  const { teams, createTeam } = useTeams()
+  const { meetings, startMeeting, endMeeting } = useActiveMeetings()
+  const { layout, dispatch } = useLayout(teamId ? 'team' : 'agent')
 
   return (
     <div className="fixed inset-0 flex bg-sunken text-ink overflow-hidden">
@@ -70,6 +74,7 @@ export default function AppShell(p: AppShellProps) {
         <>
           <StatusSidebar
             width={layout.sidebarW} onCollapse={() => dispatch({ type: 'toggleSidebar' })}
+            teams={teams} meetings={meetings} activeTeamId={teamId} onSelectTeam={id => { setTeamId(id); p.onSelectHome() }} onCreateTeam={createTeam}
             agents={p.agents} groups={groups} activeAgentId={agent ? agent.id : null} unread={unread} now={now}
             statusConnected={connected} error={p.error} onRetry={p.onRetry}
             onSelectAgent={p.onSelectAgent} onSelectHome={p.onSelectHome}
