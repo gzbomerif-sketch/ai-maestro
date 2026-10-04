@@ -18,6 +18,15 @@ One refurbishing pass over the command-center shell that delivers:
    the UI.
 5. A **UI/UX refresh** — prominent "New agent" button, semantic-token
    migration of legacy components, light theme + toggle, consistency pass.
+6. **Universal avatars** — one avatar component rendering the agent's real
+   avatar everywhere; no more bare letter-initial circles in teams,
+   meetings and member lists.
+7. An **inbox refresh** — MessageCenter redesigned to the same standard as
+   the rest of the shell.
+
+Design toolchain: the visual language for the refresh is produced with the
+**superdesign** skill before the polish phase; interactive primitives adopt
+**shadcn/ui** components layered onto the existing semantic tokens.
 
 Scope is the command-center shell only. The classic shell stays available
 behind its pref but receives no refurbishing. Mobile/tablet dashboards are
@@ -220,7 +229,62 @@ One task system. Extend, don't duplicate.
 - ⌘K palette gains a "Create agent" command.
 - Same `AgentCreationWizard`; creation APIs untouched.
 
+## 5b. Universal avatars
+
+Agent identity assets already exist (photographic portraits in
+`public/avatars/`, emoji avatars, `AgentFace`/`LiveAvatar`/`AgentBadge`),
+but several surfaces — team member lists, meeting chat bubbles, the teams
+sidebar rows, kanban cards — render bare letter-initial circles instead.
+
+- One shared `components/AgentAvatar.tsx` becomes the **only** way to render
+  an agent's picture: resolves `agent.avatar` (portrait or emoji) with the
+  hash-colored initial strictly as a last-resort fallback, takes a size
+  prop, optionally composes the status dot (from `presenceOf`, never its own
+  logic).
+- Every surface migrates to it: StatusSidebar rows, HomeScreen grid,
+  TeamWorkspace members list, meeting chat message headers, kanban cards,
+  MessageCenter, ColonyProfileCard, AgentTopBar, command palette results.
+- Meeting/team views that only have an agent name or id resolve the full
+  agent record through `useAgents` data before falling back.
+
+## 5c. Inbox (MessageCenter) refresh
+
+`MessageCenter` is redesigned to shell standard as part of this pass:
+
+- Two-pane layout inside its window: thread/message list (sender avatar via
+  `AgentAvatar`, subject, snippet, time, unread dot) + reading pane with a
+  proper compose/reply bar.
+- Unread, read and archive states clearly visible; mark-read on open.
+- Token-based styling and shadcn primitives like the rest of the shell; no
+  behavioral changes to AMP delivery (send paths and polling untouched).
+
 ## 6. UI/UX refresh
+
+### Design process
+
+- A **superdesign** pass runs before the polish phase to produce the
+  refreshed visual language (spacing, type scale, surfaces, states) for the
+  shell, the floating-window chrome, the colony profile card and the inbox,
+  grounded in the existing `theme-ink` tokens. Its output is applied through
+  the token layer in `globals.css`/`tailwind.config.ts`, not as one-off
+  styles.
+
+### Component library: shadcn/ui
+
+- shadcn/ui is adopted for interactive primitives — Dialog, DropdownMenu,
+  Popover, Tooltip, Tabs, Command, Checkbox, Select, Switch — configured so
+  its CSS variables map onto the existing semantic tokens (one source of
+  truth; `theme-ink`/`theme-paper` keep working).
+- `components/shell/ui.tsx` primitives are reimplemented on top of the
+  shadcn equivalents where that deletes custom code (Dialog, Select,
+  Checkbox, Toggle); purely presentational ones (Card, Row, SectionLabel,
+  StatusDot, EmptyState) stay as-is.
+- New UI in this spec (window chrome, profile card, task list, skills
+  editor, inbox) is built with these primitives from the start.
+- Tailwind stays at 3.4; Radix deps come with shadcn. The ⌘K
+  `CommandPalette` migrates to the shadcn Command component.
+
+### Polish
 
 - **Token migration:** `ChatView`, `AgentProfile`, `MessageCenter`,
   `WorkTree`, `ConversationDetailPanel` and other command-center-reachable
@@ -250,19 +314,26 @@ One task system. Extend, don't duplicate.
 - Existing suites must stay green (`yarn test`); build verified outside any
   live checkout per CLAUDE.md.
 
-## 8. Build order
+## 8. Build order & execution strategy
 
-1. **Window manager + floating windows** — reducer + tests, WindowLayer,
-   FloatingWindow, dock removal, terminal/colony integration. Milestone:
-   terminal and colony open side by side, draggable.
-2. **Colony profile card** — protocol message (bot-crossing sibling repo),
-   ColonyProfileCard with identity + edit + open actions.
-3. **Unified tasks** — types, registry, service, routes, headless,
-   AgentTaskList, card/profile/window placements.
-4. **Skills editor** — service content ops, editor UI, window tool, card
-   action.
-5. **Polish** — sidebar "+", palette command, token migration, theme
-   toggle, consistency sweep.
+1. **Foundations (sequential)** — shadcn setup mapped to tokens; window
+   manager reducer + tests; WindowLayer/FloatingWindow; dock removal;
+   terminal/colony integration. Milestone: terminal and colony open side by
+   side, draggable.
+2. **Parallel tracks** (independent domains, dispatched as parallel agents
+   per the dispatching-parallel-agents skill):
+   - **Track A — Colony profile card:** protocol message (bot-crossing
+     sibling repo) + ColonyProfileCard.
+   - **Track B — Unified tasks:** types, registry, service, routes,
+     headless, AgentTaskList.
+   - **Track C — Skills editor:** service content ops, editor UI.
+   - **Track D — Universal avatars:** AgentAvatar + surface migration.
+   Tracks touch disjoint files; integration points (card embeds task list
+   and skills action) wire up after merge.
+3. **Design pass** — superdesign produces the refreshed visual language;
+   applied via tokens.
+4. **Polish (parallelizable per component)** — inbox redesign, sidebar
+   "+" move, palette command, token migration sweep, theme toggle.
 
 Each step leaves the app shippable; every PR carries a version bump and
 CHANGELOG entry per house rules.
