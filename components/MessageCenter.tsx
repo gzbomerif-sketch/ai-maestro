@@ -1,11 +1,16 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { Mail, Send, Inbox, Archive, Trash2, AlertCircle, Clock, CheckCircle, Forward, Copy, ChevronDown, Server, ShieldCheck, Globe, HelpCircle, SquarePen } from 'lucide-react'
-import { Button, IconButton } from '@/components/shell/ui'
+import { Globe, HelpCircle, ShieldCheck, SquarePen, X } from 'lucide-react'
+import { IconButton } from '@/components/shell/ui'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import type { Message, MessageSummary } from '@/lib/messageQueue'
 import { findAgentByRef } from '@/lib/agent-lookup'
-import AgentAvatar from '@/components/AgentAvatar'
+import type { AgentAvatarSubject } from '@/components/AgentAvatar'
+import MessageList from '@/components/inbox/MessageList'
+import MessageReader from '@/components/inbox/MessageReader'
+import ComposeBar, { ComposeForm } from '@/components/inbox/ComposeBar'
+import { formatAgentName, partyOf, replyDraft, visibleMessages, type Box } from '@/components/inbox/helpers'
 
 /**
  * Agent recipient info for messaging
@@ -25,10 +30,18 @@ interface MessageCenterProps {
   allAgents: AgentRecipient[]
   hostUrl?: string  // Base URL for remote hosts (e.g., http://100.80.12.6:23000)
   isActive?: boolean  // Only fetch data when active (prevents API flood with many agents)
-  compact?: boolean  // Narrow side panel: list OR message (with Back), slim header
+  /** Kept for callers (floating window passes it). Layout is now driven by the measured width, not this flag. */
+  compact?: boolean
 }
 
-export default function MessageCenter({ sessionName, agentId, allAgents, hostUrl, isActive = false, compact = false }: MessageCenterProps) {
+/** Below this width the list and the reader share one pane (list, then message with Back). */
+const TWO_PANE_MIN_WIDTH = 640
+
+/**
+ * The AMP inbox: owns every fetch, poll, send and mark-read call, and lays out
+ * the two panes (list left, reader right). Presentation lives in components/inbox/*.
+ */
+export default function MessageCenter({ sessionName, agentId, allAgents, hostUrl, isActive = false }: MessageCenterProps) {
   // Use agentId as primary identifier if available, fall back to sessionName
   const messageIdentifier = agentId || sessionName
   // Base URL for API calls - empty for local, full URL for remote hosts
@@ -54,27 +67,30 @@ export default function MessageCenter({ sessionName, agentId, allAgents, hostUrl
   const [composePriority, setComposePriority] = useState<'low' | 'normal' | 'high' | 'urgent'>('normal')
   const [composeType, setComposeType] = useState<'request' | 'response' | 'notification' | 'update'>('request')
 
-  // Copy dropdown state
-  const [showCopyDropdown, setShowCopyDropdown] = useState(false)
-  const [copySuccess, setCopySuccess] = useState(false)
+  // Inline reply bar (reader footer) state
+  const [replyText, setReplyText] = useState('')
+  const [replySending, setReplySending] = useState(false)
 
-  // Agent autocomplete state
-  const [showAgentSuggestions, setShowAgentSuggestions] = useState(false)
-  const [filteredAgents, setFilteredAgents] = useState<AgentRecipient[]>([])
-  const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1)
-  const toInputRef = useRef<HTMLInputElement>(null)
-  const suggestionsRef = useRef<HTMLDivElement>(null)
+  // Presentation-only state
+  const [unreadOnly, setUnreadOnly] = useState(false)
+  const [copySuccess, setCopySuccess] = useState(false)
+  const [showExternalAgentInfo, setShowExternalAgentInfo] = useState(false)
+  const [width, setWidth] = useState(0)
+  const rootRef = useRef<HTMLDivElement>(null)
 
   // Toast notification state (replaces native alert/confirm)
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null)
   const [pendingDelete, setPendingDelete] = useState<string | null>(null)
 
-  // The sender as an avatar subject: the registered agent when we know it, else a name-only stand-in
-  const senderOf = (m: { from: string; fromAlias?: string; fromLabel?: string }) => {
-    const known = findAgentByRef(allAgents, m.from, m.fromAlias, m.fromLabel)
+  // The other party as an avatar subject: the registered agent when we know it, else a name-only stand-in
+  const counterpartOf = (m: MessageSummary | Message, box: Box): AgentAvatarSubject => {
+    const ref = box === 'inbox'
+      ? { id: m.from, alias: m.fromAlias, label: m.fromLabel }
+      : { id: m.to, alias: m.toAlias, label: m.toLabel }
+    const known = findAgentByRef(allAgents, ref.id, ref.alias, ref.label)
     return known
       ? { id: known.id, name: known.name, label: known.alias, avatar: known.avatar }
-      : { id: m.from, name: m.fromAlias || m.from, label: m.fromLabel }
+      : { id: ref.id, name: ref.alias || ref.id, label: ref.label }
   }
 
   // Show a toast notification that auto-dismisses
@@ -82,9 +98,6 @@ export default function MessageCenter({ sessionName, agentId, allAgents, hostUrl
     setToast({ message, type })
     setTimeout(() => setToast(null), 3000)
   }, [])
-
-  // External agent info toggle
-  const [showExternalAgentInfo, setShowExternalAgentInfo] = useState(false)
 
   // Fetch inbox messages with pagination
   const fetchMessages = useCallback(async (limit?: number) => {
@@ -177,6 +190,23 @@ export default function MessageCenter({ sessionName, agentId, allAgents, hostUrl
     }
   }
 
+  // POST a new message (shared by the compose form and the reply bar)
+  const postNewMessage = (to: string, subject: string, priority: 'low' | 'normal' | 'high' | 'urgent', type: 'request' | 'response' | 'notification' | 'update', message: string) =>
+    fetch(`${apiBaseUrl}/api/messages`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from: sessionName,
+        to,
+        subject,
+        priority,
+        content: {
+          type,
+          message,
+        },
+      }),
+    })
+
   // Send message
   const sendMessage = async () => {
     if (!composeTo || !composeSubject || !composeMessage) {
@@ -221,20 +251,7 @@ export default function MessageCenter({ sessionName, agentId, allAgents, hostUrl
         }
       } else {
         // Regular message send
-        const response = await fetch(`${apiBaseUrl}/api/messages`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            from: sessionName,
-            to: composeTo,
-            subject: composeSubject,
-            priority: composePriority,
-            content: {
-              type: composeType,
-              message: composeMessage,
-            },
-          }),
-        })
+        const response = await postNewMessage(composeTo, composeSubject, composePriority, composeType, composeMessage)
 
         if (response.ok) {
           // Reset form
@@ -255,6 +272,41 @@ export default function MessageCenter({ sessionName, agentId, allAgents, hostUrl
     } finally {
       setLoading(false)
     }
+  }
+
+  // Quick reply from the reader footer: the same send path as the compose form, prefilled like Reply always was
+  const sendReply = async () => {
+    if (!selectedMessage || !replyText.trim()) return
+    const draft = replyDraft(selectedMessage)
+    setReplySending(true)
+    try {
+      const response = await postNewMessage(draft.to, draft.subject, 'normal', draft.type, replyText)
+      if (response.ok) {
+        setReplyText('')
+        showToast('Message sent successfully!', 'success')
+      } else {
+        showToast('Failed to send message', 'error')
+      }
+    } catch (error) {
+      console.error('Error sending message:', error)
+      showToast('Error sending message', 'error')
+    } finally {
+      setReplySending(false)
+    }
+  }
+
+  // Open the full compose form for the current message, carrying any reply draft along
+  const expandReply = () => {
+    if (!selectedMessage) return
+    const draft = replyDraft(selectedMessage)
+    setComposeTo(draft.to)
+    setComposeSubject(draft.subject)
+    setComposeType(draft.type)
+    if (replyText) setComposeMessage(replyText)
+    setReplyText('')
+    setIsForwarding(false)
+    setForwardingOriginalMessage(null)
+    setView('compose')
   }
 
   // Delete message (with confirmation via pendingDelete state)
@@ -304,7 +356,6 @@ export default function MessageCenter({ sessionName, agentId, allAgents, hostUrl
     try {
       await navigator.clipboard.writeText(selectedMessage.content.message)
       setCopySuccess(true)
-      setShowCopyDropdown(false)
       setTimeout(() => setCopySuccess(false), 2000)
     } catch (error) {
       console.error('Error copying message:', error)
@@ -356,7 +407,6 @@ export default function MessageCenter({ sessionName, agentId, allAgents, hostUrl
     try {
       await navigator.clipboard.writeText(markdown)
       setCopySuccess(true)
-      setShowCopyDropdown(false)
       setTimeout(() => setCopySuccess(false), 2000)
     } catch (error) {
       console.error('Error copying message:', error)
@@ -408,924 +458,208 @@ export default function MessageCenter({ sessionName, agentId, allAgents, hostUrl
     return () => clearInterval(interval)
   }, [messageIdentifier, isActive])
 
-  // Close dropdown when clicking outside
+  // A reply draft belongs to the message it was written for
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as HTMLElement
-      if (!target.closest('.relative')) {
-        setShowCopyDropdown(false)
-      }
-    }
+    setReplyText('')
+  }, [selectedMessage?.id])
 
-    if (showCopyDropdown) {
-      document.addEventListener('click', handleClickOutside)
-      return () => document.removeEventListener('click', handleClickOutside)
-    }
-  }, [showCopyDropdown])
-
-  // Filter agents based on input for autocomplete
+  // Measure our own width: the inbox lives in resizable floating windows and in full-width tabs
   useEffect(() => {
-    if (!composeTo) {
-      setFilteredAgents([])
-      setShowAgentSuggestions(false)
-      return
-    }
-
-    const searchTerm = composeTo.toLowerCase()
-    // Filter out current agent and match by alias or host
-    const filtered = allAgents.filter(agent => {
-      if (agent.id === agentId) return false
-      const aliasMatch = agent.alias.toLowerCase().includes(searchTerm)
-      const hostMatch = agent.hostId?.toLowerCase().includes(searchTerm)
-      const fullMatch = `${agent.alias}@${agent.hostId || 'unknown-host'}`.toLowerCase().includes(searchTerm)
-      return aliasMatch || hostMatch || fullMatch
+    const el = rootRef.current
+    if (!el) return
+    setWidth(el.getBoundingClientRect().width)
+    const observer = new ResizeObserver(entries => {
+      const w = entries[0]?.contentRect.width
+      if (typeof w === 'number') setWidth(w)
     })
-
-    setFilteredAgents(filtered)
-    setShowAgentSuggestions(filtered.length > 0)
-    setSelectedSuggestionIndex(-1)
-  }, [composeTo, allAgents, agentId])
-
-  // Close suggestions when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as HTMLElement
-      if (
-        toInputRef.current && !toInputRef.current.contains(target) &&
-        suggestionsRef.current && !suggestionsRef.current.contains(target)
-      ) {
-        setShowAgentSuggestions(false)
-      }
-    }
-
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
+    observer.observe(el)
+    return () => observer.disconnect()
   }, [])
 
-  // Handle keyboard navigation in autocomplete
-  const handleToKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (!showAgentSuggestions || filteredAgents.length === 0) return
-
-    switch (e.key) {
-      case 'ArrowDown':
-        e.preventDefault()
-        setSelectedSuggestionIndex(prev =>
-          prev < filteredAgents.length - 1 ? prev + 1 : prev
-        )
-        break
-      case 'ArrowUp':
-        e.preventDefault()
-        setSelectedSuggestionIndex(prev => (prev > 0 ? prev - 1 : -1))
-        break
-      case 'Enter':
-        e.preventDefault()
-        if (selectedSuggestionIndex >= 0) {
-          selectAgent(filteredAgents[selectedSuggestionIndex])
-        }
-        break
-      case 'Escape':
-        setShowAgentSuggestions(false)
-        break
-    }
+  // Switching mailbox drops the open message (it belongs to the other box)
+  const changeBox = (next: Box) => {
+    setView(next)
+    setSelectedMessage(null)
   }
 
-  // Select an agent from suggestions
-  const selectAgent = (agent: AgentRecipient) => {
-    // Use technical name for messaging, include host for cross-host compatibility
-    const hostId = agent.hostId || 'unknown-host'
-    const value = `${agent.name}@${hostId}`
-    setComposeTo(value)
-    setShowAgentSuggestions(false)
-    setSelectedSuggestionIndex(-1)
-  }
-
-  // Format agent display with host indicator
-  const formatAgentDisplay = (agent: AgentRecipient) => {
-    const hostId = agent.hostId || 'unknown-host'
-    return {
-      primary: agent.alias,
-      secondary: `@${hostId}`,
-      hasHost: !!agent.hostId
-    }
-  }
-
-  // Format agent display name - prefer alias over UUID, always include host
-  const formatAgentName = (agentId: string, alias?: string, host?: string) => {
-    const displayName = alias || agentId
-    const hostName = host || 'unknown-host'
-    return `${displayName}@${hostName}`
-  }
-
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'urgent': return 'text-red-600 bg-red-100'
-      case 'high': return 'text-orange-600 bg-orange-100'
-      case 'normal': return 'text-blue-600 bg-blue-100'
-      case 'low': return 'text-gray-600 bg-gray-100'
-      default: return 'text-gray-600 bg-gray-100'
-    }
-  }
-
-  const getPriorityIcon = (priority: string) => {
-    switch (priority) {
-      case 'urgent': return <AlertCircle className="w-4 h-4" />
-      case 'high': return <Clock className="w-4 h-4" />
-      default: return null
-    }
-  }
-
-  // Check if the "To" field looks like an external agent (not in autocomplete list)
-  const isExternalRecipient = (toValue: string): boolean => {
-    if (!toValue) return false
-    // If it matches any agent in the list, it's not external
-    const matchesAgent = allAgents.some(agent =>
-      agent.name.toLowerCase() === toValue.toLowerCase() ||
-      agent.alias.toLowerCase() === toValue.toLowerCase() ||
-      `${agent.name}@${agent.hostId || 'unknown-host'}`.toLowerCase() === toValue.toLowerCase() ||
-      `${agent.alias}@${agent.hostId || 'unknown-host'}`.toLowerCase() === toValue.toLowerCase()
-    )
-    return !matchesAgent && toValue.length > 0
-  }
-
-  // Compose field styles: ink controls in the narrow side panel, original otherwise
-  const composeLabel = compact ? 'block text-[13px] text-ink-muted mb-1.5' : 'block text-sm font-medium text-gray-300 mb-1'
-  const composeInput = compact
-    ? 'w-full h-[34px] px-3 bg-sunken border border-control-border rounded-[10px] text-[14px] text-ink placeholder:text-gray-500 focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-fill'
-    : 'w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500'
+  const narrow = width > 0 && width < TWO_PANE_MIN_WIDTH
+  const box: Box = view === 'sent' ? 'sent' : 'inbox'
+  const boxMessages = box === 'inbox' ? visibleMessages(messages, unreadOnly, selectedMessage?.id) : sentMessages
+  const showList = !narrow || !selectedMessage
+  const showReader = !narrow || !!selectedMessage
 
   return (
-    <div className={`flex flex-col h-full w-full relative ${compact ? '' : 'bg-gray-900'}`}>
+    <div ref={rootRef} className="flex flex-col h-full w-full relative bg-surface text-ink">
       {/* Toast notification */}
       {toast && (
-        <div className={`absolute top-2 right-2 z-50 px-4 py-2 rounded-md text-sm font-medium shadow-lg transition-opacity ${
-          toast.type === 'success' ? 'bg-green-800 text-green-200' :
-          toast.type === 'error' ? 'bg-red-800 text-red-200' :
-          'bg-gray-700 text-gray-200'
+        <div role="status" className={`absolute top-2 right-2 z-50 px-4 py-2 rounded-[10px] border text-[13px] font-medium shadow-lg ${
+          toast.type === 'success' ? 'bg-raised text-ok border-ok/40' :
+          toast.type === 'error' ? 'bg-raised text-danger border-danger/40' :
+          'bg-raised text-ink border-hairline'
         }`}>
           {toast.message}
         </div>
       )}
 
-      {/* Header */}
-      {compact ? (
-        <div className="flex items-center gap-2 px-3 py-2.5 border-b border-hairline/70">
-          <div role="tablist" aria-label="Mailbox" className="flex rounded-full bg-raised/70 p-0.5">
-            {(['inbox', 'sent'] as const).map(v => (
-              <button key={v} type="button" role="tab" aria-selected={view === v} onClick={() => setView(v)}
-                className={`flex items-center gap-1.5 px-3 h-[26px] rounded-full text-[13px] capitalize transition-colors ${view === v ? 'bg-ink text-sunken' : 'text-ink-muted hover:text-ink'}`}>
-                {v}
-                {v === 'inbox' && unreadCount > 0 && <span className="min-w-[16px] px-1 rounded-full bg-accent-fill text-white text-[10px] leading-[16px] text-center">{unreadCount}</span>}
-              </button>
-            ))}
-          </div>
-          <span className="ml-auto">
-            <IconButton label="New message" active={view === 'compose'} onClick={() => setView('compose')}>
-              <SquarePen strokeWidth={1.5} className="w-4 h-4" />
-            </IconButton>
-          </span>
-        </div>
-      ) : (
-      <div className={`flex items-center justify-between bg-gray-800 border-b border-gray-700 ${compact ? 'px-3 py-2' : 'p-4'}`}>
-        <div className={compact ? 'hidden' : 'flex items-center gap-3'}>
-          <Mail className="w-5 h-5 text-gray-300" />
+      {/* Header: mailbox tabs, unread filter, help, new message */}
+      <div className="flex-none flex items-center gap-2 px-3 py-2.5 border-b border-hairline/70">
+        <Tabs value={view === 'compose' ? '' : view} onValueChange={v => changeBox(v as Box)}>
+          <TabsList className="h-[34px] rounded-full bg-raised/70 p-0.5">
+            <TabsTrigger value="inbox" className="h-[28px] rounded-full px-3 text-[13px] gap-1.5 data-[state=active]:bg-ink data-[state=active]:text-sunken">
+              Inbox
+              {unreadCount > 0 && (
+                <span className="min-w-[16px] px-1 rounded-full bg-accent-fill text-white text-[10px] leading-[16px] text-center" aria-label={`${unreadCount} unread`}>{unreadCount}</span>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="sent" className="h-[28px] rounded-full px-3 text-[13px] gap-1.5 data-[state=active]:bg-ink data-[state=active]:text-sunken">
+              Sent
+              {sentCount > 0 && <span className="text-[11px] text-ink-muted">{sentCount}</span>}
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+        {view === 'inbox' && (
           <button
-            onClick={() => setShowExternalAgentInfo(!showExternalAgentInfo)}
-            className="flex items-center gap-1.5 px-2 py-1 text-xs text-gray-400 hover:text-gray-200 hover:bg-gray-700 rounded transition-colors"
-            title="Learn about messaging AI Maestro and external agents"
-          >
-            <HelpCircle className="w-3.5 h-3.5" />
-            Agent Types
-          </button>
-        </div>
-        <div className={`flex ${compact ? 'gap-1 w-full' : 'gap-2'}`}>
-          <button
-            onClick={() => setView('inbox')}
-            className={`${compact ? 'px-2 py-1 text-xs' : 'px-3 py-1.5 text-sm'} rounded-md font-medium transition-colors ${
-              view === 'inbox'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+            type="button"
+            aria-pressed={unreadOnly}
+            onClick={() => setUnreadOnly(v => !v)}
+            className={`h-[28px] px-2.5 rounded-full border text-[12px] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-fill ${
+              unreadOnly ? 'border-accent-fill bg-accent-fill/15 text-ink' : 'border-control-border text-ink-muted hover:text-ink hover:bg-raised'
             }`}
           >
-            {!compact && <Inbox className="w-4 h-4 inline-block mr-1" />}
-            Inbox
-            {unreadCount > 0 && (
-              <span className="ml-1 px-1.5 py-0.5 text-xs font-bold text-white bg-red-500 rounded-full">
-                {unreadCount}
-              </span>
-            )}
+            Unread only
           </button>
-          <button
-            onClick={() => setView('sent')}
-            className={`${compact ? 'px-2 py-1 text-xs' : 'px-3 py-1.5 text-sm'} rounded-md font-medium transition-colors ${
-              view === 'sent'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-            }`}
-          >
-            {!compact && <Send className="w-4 h-4 inline-block mr-1" />}
-            Sent
-          </button>
-          <button
-            onClick={() => setView('compose')}
-            className={`${compact ? 'px-2 py-1 text-xs' : 'px-3 py-1.5 text-sm'} rounded-md font-medium transition-colors ${
-              view === 'compose'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-            }`}
-          >
-            {!compact && <Send className="w-4 h-4 inline-block mr-1" />}
-            Compose
-          </button>
-        </div>
+        )}
+        <span className="ml-auto flex items-center gap-1">
+          <IconButton label="Agent types" active={showExternalAgentInfo} onClick={() => setShowExternalAgentInfo(v => !v)}>
+            <HelpCircle strokeWidth={1.5} className="w-4 h-4" />
+          </IconButton>
+          <IconButton label="New message" active={view === 'compose'} onClick={() => setView('compose')}>
+            <SquarePen strokeWidth={1.5} className="w-4 h-4" />
+          </IconButton>
+        </span>
       </div>
-      )}
 
       {/* Agent Types Info Panel */}
       {showExternalAgentInfo && (
-        <div className="p-4 bg-gradient-to-r from-gray-800 to-gray-850 border-b border-gray-700">
+        <div className="flex-none p-4 bg-raised border-b border-hairline/70">
           <div className="flex items-start gap-4">
-            <div className="flex-1 grid grid-cols-2 gap-4">
+            <div className={`flex-1 grid gap-4 ${narrow ? 'grid-cols-1' : 'grid-cols-2'}`}>
               {/* AI Maestro Agents */}
-              <div className="p-3 bg-gray-900/50 rounded-lg border border-gray-700">
+              <div className="p-3 bg-surface rounded-lg border border-hairline">
                 <div className="flex items-center gap-2 mb-2">
-                  <div className="w-6 h-6 bg-green-500/20 rounded-full flex items-center justify-center">
-                    <ShieldCheck className="w-3.5 h-3.5 text-green-400" />
+                  <div className="w-6 h-6 bg-ok/20 rounded-full flex items-center justify-center">
+                    <ShieldCheck className="w-3.5 h-3.5 text-ok" />
                   </div>
-                  <span className="text-sm font-medium text-green-400">AI Maestro Agents</span>
+                  <span className="text-[14px] font-medium text-ok">AI Maestro Agents</span>
                 </div>
-                <p className="text-xs text-gray-400 mb-2">
+                <p className="text-[12px] text-ink-muted mb-2">
                   Registered agents in your AI Maestro network. These appear in autocomplete when composing messages.
                 </p>
-                <ul className="text-xs text-gray-500 space-y-1">
-                  <li className="flex items-center gap-1.5">
-                    <span className="w-1 h-1 bg-green-500 rounded-full"></span>
-                    Local agents on this machine
-                  </li>
-                  <li className="flex items-center gap-1.5">
-                    <span className="w-1 h-1 bg-green-500 rounded-full"></span>
-                    Network agents on other hosts
-                  </li>
-                  <li className="flex items-center gap-1.5">
-                    <span className="w-1 h-1 bg-green-500 rounded-full"></span>
-                    Push notifications supported
-                  </li>
+                <ul className="text-[12px] text-ink-muted space-y-1">
+                  <li className="flex items-center gap-1.5"><span className="w-1 h-1 bg-ok rounded-full"></span>Local agents on this machine</li>
+                  <li className="flex items-center gap-1.5"><span className="w-1 h-1 bg-ok rounded-full"></span>Network agents on other hosts</li>
+                  <li className="flex items-center gap-1.5"><span className="w-1 h-1 bg-ok rounded-full"></span>Push notifications supported</li>
                 </ul>
               </div>
 
               {/* External Agents */}
-              <div className="p-3 bg-gray-900/50 rounded-lg border border-gray-700">
+              <div className="p-3 bg-surface rounded-lg border border-hairline">
                 <div className="flex items-center gap-2 mb-2">
-                  <div className="w-6 h-6 bg-blue-500/20 rounded-full flex items-center justify-center">
-                    <Globe className="w-3.5 h-3.5 text-blue-400" />
+                  <div className="w-6 h-6 bg-accent/20 rounded-full flex items-center justify-center">
+                    <Globe className="w-3.5 h-3.5 text-accent" />
                   </div>
-                  <span className="text-sm font-medium text-blue-400">External Agents</span>
+                  <span className="text-[14px] font-medium text-accent">External Agents</span>
                 </div>
-                <p className="text-xs text-gray-400 mb-2">
+                <p className="text-[12px] text-ink-muted mb-2">
                   Agents outside AI Maestro that use the messaging API. Type their address manually in compose.
                 </p>
-                <ul className="text-xs text-gray-500 space-y-1">
+                <ul className="text-[12px] text-ink-muted space-y-1">
+                  <li className="flex items-center gap-1.5"><span className="w-1 h-1 bg-accent rounded-full"></span>Custom Claude Code agents</li>
+                  <li className="flex items-center gap-1.5"><span className="w-1 h-1 bg-accent rounded-full"></span>Third-party integrations</li>
                   <li className="flex items-center gap-1.5">
-                    <span className="w-1 h-1 bg-blue-500 rounded-full"></span>
-                    Custom Claude Code agents
-                  </li>
-                  <li className="flex items-center gap-1.5">
-                    <span className="w-1 h-1 bg-blue-500 rounded-full"></span>
-                    Third-party integrations
-                  </li>
-                  <li className="flex items-center gap-1.5">
-                    <span className="w-1 h-1 bg-blue-500 rounded-full"></span>
-                    Use format: <code className="bg-gray-800 px-1 rounded">name@host</code>
+                    <span className="w-1 h-1 bg-accent rounded-full"></span>
+                    Use format: <code className="bg-raised px-1 rounded font-mono">name@host</code>
                   </li>
                 </ul>
               </div>
             </div>
-            <button
-              onClick={() => setShowExternalAgentInfo(false)}
-              className="text-gray-500 hover:text-gray-300 p-1"
-            >
-              ✕
-            </button>
+            <IconButton label="Close agent types" onClick={() => setShowExternalAgentInfo(false)}>
+              <X strokeWidth={1.5} className="w-4 h-4" />
+            </IconButton>
           </div>
         </div>
       )}
 
-      {/* Inbox View */}
-      {view === 'inbox' && (
-        <div className="flex flex-1 overflow-hidden">
-          {/* Message List */}
-          <div data-inbox-list className={`${compact ? (selectedMessage ? 'hidden' : 'w-full') : 'w-1/3 border-r border-gray-700 bg-gray-800'} overflow-y-auto`}>
-            {messages.length === 0 ? (
-              <div className="p-8 text-center text-gray-500">
-                <Inbox strokeWidth={1.5} className={`${compact ? 'w-6 h-6 text-ink-muted' : 'w-12 h-12 text-gray-300'} mx-auto mb-2`} />
-                <p className={compact ? 'text-[14px] text-ink-muted' : ''}>No inbox messages</p>
-              </div>
-            ) : (
-              <>
-                {messages.map((msg) => (
-                  <div
-                    key={msg.id}
-                    onClick={() => loadMessage(msg.id)}
-                    className={`p-4 border-b border-gray-700 cursor-pointer hover:bg-gray-700 transition-colors ${
-                      msg.status === 'unread' ? 'bg-blue-900/30' : ''
-                    } ${selectedMessage?.id === msg.id ? 'bg-blue-900/50' : ''}`}
-                  >
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex items-start gap-2">
-                        {/* Verified/External indicator */}
-                        <div className="mt-0.5">
-                          {msg.fromVerified !== false ? (
-                            <span title="AI Maestro Agent">
-                              <ShieldCheck className="w-3.5 h-3.5 text-green-400 flex-shrink-0" />
-                            </span>
-                          ) : (
-                            <span title="External Agent">
-                              <Globe className="w-3.5 h-3.5 text-blue-400 flex-shrink-0" />
-                            </span>
-                          )}
-                        </div>
-                        <AgentAvatar agent={senderOf(msg)} size="sm" />
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className={`text-sm font-semibold truncate ${msg.status === 'unread' ? 'text-gray-100' : 'text-gray-300'}`}>
-                              {(msg as any).fromLabel || msg.fromAlias || msg.from}
-                            </span>
-                            {getPriorityIcon(msg.priority)}
-                          </div>
-                          <div className="text-xs text-gray-500 truncate">
-                            {msg.fromAlias || msg.from}@{msg.fromHost || 'unknown-host'}
-                          </div>
-                        </div>
-                      </div>
-                      <span className={`text-xs px-2 py-0.5 rounded flex-shrink-0 ${getPriorityColor(msg.priority)}`}>
-                        {msg.priority}
-                      </span>
-                    </div>
-                    <h3 className={`text-sm mb-1 ${msg.status === 'unread' ? 'font-semibold text-gray-200' : 'font-medium text-gray-300'}`}>
-                      {msg.subject}
-                    </h3>
-                    <p className="text-xs text-gray-400 line-clamp-2">{msg.preview}</p>
-                    <div className="flex items-center justify-between mt-2">
-                      <span className="text-xs text-gray-500">
-                        {new Date(msg.timestamp).toLocaleString()}
-                      </span>
-                      {msg.status === 'unread' && (
-                        <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                      )}
-                    </div>
-                  </div>
-                ))}
-                {hasMoreInbox && (
-                  <button
-                    onClick={loadMoreInbox}
-                    className="w-full p-3 text-sm text-blue-400 hover:bg-gray-700 transition-colors border-t border-gray-700"
-                  >
-                    Load more messages...
-                  </button>
-                )}
-              </>
-            )}
-          </div>
-
-          {/* Message Detail */}
-          <div className={`${compact && !selectedMessage ? 'hidden' : 'flex-1'} ${compact ? '' : 'bg-gray-900'} overflow-y-auto`}>
-            {selectedMessage ? (
-              <div className={compact ? 'p-4' : 'p-6'}>
-                {compact && (
-                  <button
-                    onClick={() => setSelectedMessage(null)}
-                    className="mb-3 text-xs text-gray-400 hover:text-gray-200"
-                  >
-                    ← Back
-                  </button>
-                )}
-                <div className="flex items-start justify-between mb-4 gap-4">
-                  <div className="flex-1 min-w-0">
-                    <h2 className="text-xl font-bold text-gray-100 mb-3">
-                      {selectedMessage.subject}
-                    </h2>
-                    <div className="flex items-start gap-2">
-                      <span className="font-medium text-sm text-gray-400 mt-0.5 flex-shrink-0">From:</span>
-                      {/* Verified/External indicator */}
-                      <span
-                        className={`flex items-center mt-0.5 flex-shrink-0 ${(selectedMessage as any).fromVerified !== false ? 'text-green-400' : 'text-blue-400'}`}
-                        title={(selectedMessage as any).fromVerified !== false ? 'AI Maestro Agent' : 'External Agent'}
-                      >
-                        {(selectedMessage as any).fromVerified !== false ? (
-                          <ShieldCheck className="w-4 h-4" />
-                        ) : (
-                          <Globe className="w-4 h-4" />
-                        )}
-                      </span>
-                      <AgentAvatar agent={senderOf(selectedMessage)} size="sm" />
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium text-gray-200 truncate">
-                          {(selectedMessage as any).fromLabel || selectedMessage.fromAlias || selectedMessage.from}
-                        </div>
-                        <div className="flex items-center gap-2 text-xs text-gray-500">
-                          <span className="truncate">{selectedMessage.fromAlias || selectedMessage.from}@{selectedMessage.fromHost || 'unknown-host'}</span>
-                          <span className="flex-shrink-0">•</span>
-                          <span className="flex-shrink-0">{new Date(selectedMessage.timestamp).toLocaleString()}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex gap-2 flex-shrink-0">
-                    {/* Copy Button with Dropdown */}
-                    <div className="relative">
-                      <button
-                        onClick={() => setShowCopyDropdown(!showCopyDropdown)}
-                        className={`p-2 rounded-md transition-colors flex items-center gap-1 ${
-                          copySuccess
-                            ? 'text-green-400 bg-green-900/30'
-                            : 'text-gray-400 hover:bg-gray-800'
-                        }`}
-                        title="Copy Message"
-                      >
-                        <Copy className="w-5 h-5" />
-                        <ChevronDown className="w-3 h-3" />
-                      </button>
-
-                      {showCopyDropdown && (
-                        <div className="absolute right-0 mt-2 w-48 bg-gray-800 border border-gray-700 rounded-md shadow-lg z-10">
-                          <button
-                            onClick={copyMessageRegular}
-                            className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 transition-colors flex items-center gap-2"
-                          >
-                            <Copy className="w-4 h-4" />
-                            Copy Message
-                          </button>
-                          <button
-                            onClick={copyMessageForLLM}
-                            className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 transition-colors flex items-center gap-2"
-                          >
-                            <Copy className="w-4 h-4" />
-                            Copy for LLM
-                          </button>
-                        </div>
-                      )}
-                    </div>
-
-                    <button
-                      onClick={() => prepareForward(selectedMessage)}
-                      className="p-2 text-blue-400 hover:bg-blue-900/30 rounded-md transition-colors"
-                      title="Forward"
-                    >
-                      <Forward className="w-5 h-5" />
-                    </button>
-                    <button
-                      onClick={() => archiveMessage(selectedMessage.id)}
-                      className="p-2 text-gray-400 hover:bg-gray-800 rounded-md transition-colors"
-                      title="Archive"
-                    >
-                      <Archive className="w-5 h-5" />
-                    </button>
-                    <button
-                      onClick={() => deleteMessage(selectedMessage.id)}
-                      className="p-2 text-red-400 hover:bg-red-900/30 rounded-md transition-colors"
-                      title="Delete"
-                    >
-                      <Trash2 className="w-5 h-5" />
-                    </button>
-                  </div>
-                </div>
-
-                <div className="flex gap-2 mb-4">
-                  <span className={`text-xs px-2 py-1 rounded ${getPriorityColor(selectedMessage.priority)}`}>
-                    {selectedMessage.priority}
-                  </span>
-                  <span className="text-xs px-2 py-1 rounded bg-purple-100 text-purple-600">
-                    {selectedMessage.content.type}
-                  </span>
-                </div>
-
-                <div className="prose max-w-none">
-                  <div className="p-4 bg-gray-800 rounded-lg mb-4">
-                    <pre className="whitespace-pre-wrap text-sm text-gray-200 font-sans">
-                      {selectedMessage.content.message}
-                    </pre>
-                  </div>
-
-                  {selectedMessage.content.context && (
-                    <div className="mt-4">
-                      <h3 className="text-sm font-semibold text-gray-300 mb-2">Context:</h3>
-                      <pre className="p-3 bg-gray-800 rounded text-xs overflow-x-auto text-gray-300">
-                        {JSON.stringify(selectedMessage.content.context, null, 2)}
-                      </pre>
-                    </div>
-                  )}
-                </div>
-
-                <div className="mt-6 pt-4 border-t border-gray-800 flex gap-3">
-                  <button
-                    onClick={() => {
-                      // Use technical name (from) for routing, not display alias
-                      const replyHost = selectedMessage.fromHost || 'unknown-host'
-                      setComposeTo(`${selectedMessage.from}@${replyHost}`)
-                      setComposeSubject(`Re: ${selectedMessage.subject}`)
-                      setComposeType('response')
-                      setIsForwarding(false)
-                      setForwardingOriginalMessage(null)
-                      setView('compose')
-                    }}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                  >
-                    <Send className="w-4 h-4 inline-block mr-2" />
-                    Reply
-                  </button>
-                  <button
-                    onClick={() => prepareForward(selectedMessage)}
-                    className="px-4 py-2 bg-gray-700 text-white rounded-md hover:bg-gray-600 transition-colors"
-                  >
-                    <Forward className="w-4 h-4 inline-block mr-2" />
-                    Forward
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="flex items-center justify-center h-full text-gray-500">
-                <div className="text-center">
-                  <Mail className="w-16 h-16 mx-auto mb-2 text-gray-600" />
-                  <p>Select a message to read</p>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Sent Messages View */}
-      {view === 'sent' && (
-        <div className="flex flex-1 overflow-hidden">
-          {/* Message List */}
-          <div data-inbox-list className={`${compact ? (selectedMessage ? 'hidden' : 'w-full') : 'w-1/3 border-r border-gray-700 bg-gray-800'} overflow-y-auto`}>
-            {sentMessages.length === 0 ? (
-              <div className="p-8 text-center text-gray-500">
-                <Send strokeWidth={1.5} className={`${compact ? 'w-6 h-6 text-ink-muted' : 'w-12 h-12 text-gray-300'} mx-auto mb-2`} />
-                <p className={compact ? 'text-[14px] text-ink-muted' : ''}>No sent messages</p>
-              </div>
-            ) : (
-              <>
-                {sentMessages.map((msg) => (
-                  <div
-                    key={msg.id}
-                    onClick={() => loadMessage(msg.id, 'sent')}
-                    className={`p-4 border-b border-gray-700 cursor-pointer hover:bg-gray-700 transition-colors ${
-                      selectedMessage?.id === msg.id ? 'bg-blue-900/50' : ''
-                    }`}
-                  >
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex items-start gap-2">
-                        <span className="text-xs text-green-400 font-medium mt-0.5">To:</span>
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-semibold text-gray-300 truncate">
-                              {(msg as any).toLabel || msg.toAlias || msg.to}
-                            </span>
-                            {getPriorityIcon(msg.priority)}
-                          </div>
-                          <div className="text-xs text-gray-500 truncate">
-                            {msg.toAlias || msg.to}@{msg.toHost || 'unknown-host'}
-                          </div>
-                        </div>
-                      </div>
-                      <span className={`text-xs px-2 py-0.5 rounded flex-shrink-0 ${getPriorityColor(msg.priority)}`}>
-                        {msg.priority}
-                      </span>
-                    </div>
-                    <h3 className="text-sm mb-1 font-medium text-gray-300">
-                      {msg.subject}
-                    </h3>
-                    <p className="text-xs text-gray-400 line-clamp-2">{msg.preview}</p>
-                    <div className="flex items-center justify-between mt-2">
-                      <span className="text-xs text-gray-500">
-                        {new Date(msg.timestamp).toLocaleString()}
-                      </span>
-                      <CheckCircle className="w-3 h-3 text-green-500" />
-                    </div>
-                  </div>
-                ))}
-                {hasMoreSent && (
-                  <button
-                    onClick={loadMoreSent}
-                    className="w-full p-3 text-sm text-blue-400 hover:bg-gray-700 transition-colors border-t border-gray-700"
-                  >
-                    Load more messages...
-                  </button>
-                )}
-              </>
-            )}
-          </div>
-
-          {/* Message Detail */}
-          <div className={`${compact && !selectedMessage ? 'hidden' : 'flex-1'} ${compact ? '' : 'bg-gray-900'} overflow-y-auto`}>
-            {selectedMessage ? (
-              <div className={compact ? 'p-4' : 'p-6'}>
-                {compact && (
-                  <button
-                    onClick={() => setSelectedMessage(null)}
-                    className="mb-3 text-xs text-gray-400 hover:text-gray-200"
-                  >
-                    ← Back
-                  </button>
-                )}
-                <div className="flex items-start justify-between mb-4 gap-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-2">
-                      <CheckCircle className="w-5 h-5 text-green-500" />
-                      <span className="text-sm text-green-400 font-medium">Sent Message</span>
-                    </div>
-                    <h2 className="text-xl font-bold text-gray-100 mb-3">
-                      {selectedMessage.subject}
-                    </h2>
-                    <div className="flex items-start gap-2">
-                      <span className="font-medium text-sm text-gray-400 mt-0.5 flex-shrink-0">To:</span>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium text-gray-200 truncate">
-                          {(selectedMessage as any).toLabel || selectedMessage.toAlias || selectedMessage.to}
-                        </div>
-                        <div className="flex items-center gap-2 text-xs text-gray-500">
-                          <span className="truncate">{selectedMessage.toAlias || selectedMessage.to}@{selectedMessage.toHost || 'unknown-host'}</span>
-                          <span className="flex-shrink-0">•</span>
-                          <span className="flex-shrink-0">{new Date(selectedMessage.timestamp).toLocaleString()}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex gap-2 flex-shrink-0">
-                    {/* Copy Button with Dropdown */}
-                    <div className="relative">
-                      <button
-                        onClick={() => setShowCopyDropdown(!showCopyDropdown)}
-                        className={`p-2 rounded-md transition-colors flex items-center gap-1 ${
-                          copySuccess
-                            ? 'text-green-400 bg-green-900/30'
-                            : 'text-gray-400 hover:bg-gray-800'
-                        }`}
-                        title="Copy Message"
-                      >
-                        <Copy className="w-5 h-5" />
-                        <ChevronDown className="w-3 h-3" />
-                      </button>
-
-                      {showCopyDropdown && (
-                        <div className="absolute right-0 mt-2 w-48 bg-gray-800 border border-gray-700 rounded-md shadow-lg z-10">
-                          <button
-                            onClick={copyMessageRegular}
-                            className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 transition-colors flex items-center gap-2"
-                          >
-                            <Copy className="w-4 h-4" />
-                            Copy Message
-                          </button>
-                          <button
-                            onClick={copyMessageForLLM}
-                            className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 transition-colors flex items-center gap-2"
-                          >
-                            <Copy className="w-4 h-4" />
-                            Copy for LLM
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex gap-2 mb-4">
-                  <span className={`text-xs px-2 py-1 rounded ${getPriorityColor(selectedMessage.priority)}`}>
-                    {selectedMessage.priority}
-                  </span>
-                  <span className="text-xs px-2 py-1 rounded bg-purple-100 text-purple-600">
-                    {selectedMessage.content.type}
-                  </span>
-                </div>
-
-                <div className="prose max-w-none">
-                  <div className="p-4 bg-gray-800 rounded-lg mb-4">
-                    <pre className="whitespace-pre-wrap text-sm text-gray-200 font-sans">
-                      {selectedMessage.content.message}
-                    </pre>
-                  </div>
-
-                  {selectedMessage.content.context && (
-                    <div className="mt-4">
-                      <h3 className="text-sm font-semibold text-gray-300 mb-2">Context:</h3>
-                      <pre className="p-3 bg-gray-800 rounded text-xs overflow-x-auto text-gray-300">
-                        {JSON.stringify(selectedMessage.content.context, null, 2)}
-                      </pre>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <div className="flex items-center justify-center h-full text-gray-500">
-                <div className="text-center">
-                  <Send className="w-16 h-16 mx-auto mb-2 text-gray-600" />
-                  <p>Select a sent message to view</p>
-                </div>
-              </div>
-            )}
-          </div>
+      {/* Inbox / Sent: list left, reader right */}
+      {view !== 'compose' && (
+        <div className="flex flex-1 min-h-0">
+          {showList && (
+            <div className={`${narrow ? 'w-full' : 'w-[320px] flex-none border-r border-hairline/70'} min-h-0 flex flex-col`}>
+              <MessageList
+                box={box}
+                messages={boxMessages}
+                selectedId={selectedMessage?.id}
+                avatarOf={m => counterpartOf(m, box)}
+                onSelect={id => loadMessage(id, box)}
+                hasMore={box === 'inbox' ? hasMoreInbox : hasMoreSent}
+                onLoadMore={box === 'inbox' ? loadMoreInbox : loadMoreSent}
+                filteredEmpty={box === 'inbox' && unreadOnly && messages.length > 0}
+              />
+            </div>
+          )}
+          {showReader && (
+            <MessageReader
+              box={box}
+              message={selectedMessage}
+              avatar={selectedMessage ? counterpartOf(selectedMessage, box) : null}
+              onBack={narrow ? () => setSelectedMessage(null) : undefined}
+              onArchive={() => selectedMessage && archiveMessage(selectedMessage.id)}
+              onDelete={() => selectedMessage && deleteMessage(selectedMessage.id)}
+              deleteArmed={!!selectedMessage && pendingDelete === selectedMessage.id}
+              onForward={() => selectedMessage && prepareForward(selectedMessage)}
+              onCopy={format => (format === 'llm' ? copyMessageForLLM() : copyMessageRegular())}
+              copySuccess={copySuccess}
+              footer={box === 'inbox' && selectedMessage ? (
+                <ComposeBar
+                  replyingTo={partyOf(selectedMessage, 'inbox').address}
+                  text={replyText}
+                  onTextChange={setReplyText}
+                  onSend={sendReply}
+                  sending={replySending}
+                  onExpand={expandReply}
+                />
+              ) : undefined}
+            />
+          )}
         </div>
       )}
 
       {/* Compose View */}
       {view === 'compose' && (
-        <div className={`flex-1 overflow-y-auto ${compact ? 'p-4' : 'bg-gray-900 p-6'}`}>
-          {compact
-            ? isForwarding && <div className="text-[15px] font-medium text-ink mb-3">Forward message</div>
-            : <h2 className="text-xl font-bold text-gray-100 mb-6">{isForwarding ? 'Forward Message' : 'Compose Message'}</h2>}
-
-          {isForwarding && (
-            <div className="mb-4 p-3 bg-blue-900/30 border border-blue-700 rounded-md">
-              <p className="text-sm text-blue-300">
-                <Forward className="w-4 h-4 inline-block mr-1" />
-                Forwarding message from <strong>{forwardingOriginalMessage ? formatAgentName(forwardingOriginalMessage.from, forwardingOriginalMessage.fromAlias, forwardingOriginalMessage.fromHost) : ''}</strong>
-              </p>
-              <p className="text-xs text-blue-400 mt-1">
-                You can add a note at the top of the message before the forwarded content.
-              </p>
-            </div>
-          )}
-
-          <div className={compact ? 'space-y-3.5' : 'space-y-4 max-w-2xl'}>
-            <div className="relative">
-              <label htmlFor="compose-to" className={composeLabel}>
-                {compact ? 'To' : 'To (Agent Name):'}
-              </label>
-              <input
-                ref={toInputRef}
-                id="compose-to"
-                name="to"
-                type="text"
-                aria-label="Recipient agent name"
-                aria-autocomplete="list"
-                aria-expanded={showAgentSuggestions}
-                value={composeTo}
-                onChange={(e) => setComposeTo(e.target.value)}
-                onKeyDown={handleToKeyDown}
-                onFocus={() => composeTo && filteredAgents.length > 0 && setShowAgentSuggestions(true)}
-                autoComplete="off"
-                className={composeInput}
-                placeholder="Type agent name or agent@host"
-              />
-
-              {/* Autocomplete suggestions dropdown */}
-              {showAgentSuggestions && filteredAgents.length > 0 && (
-                <div
-                  ref={suggestionsRef}
-                  role="listbox"
-                  aria-label="Agent suggestions"
-                  className="absolute z-20 w-full mt-1 bg-gray-800 border border-gray-600 rounded-md shadow-lg max-h-60 overflow-y-auto"
-                >
-                  {filteredAgents.map((agent, index) => {
-                    const display = formatAgentDisplay(agent)
-                    const isSelected = index === selectedSuggestionIndex
-                    return (
-                      <div
-                        key={agent.id}
-                        onClick={() => selectAgent(agent)}
-                        className={`px-3 py-2 cursor-pointer flex items-center justify-between ${
-                          isSelected
-                            ? 'bg-blue-600 text-white'
-                            : 'hover:bg-gray-700 text-gray-200'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">{display.primary}</span>
-                          <span className={`text-sm ${isSelected ? 'text-blue-200' : 'text-gray-400'}`}>
-                            {display.secondary}
-                          </span>
-                        </div>
-                        {display.hasHost && (
-                          <Server className={`w-4 h-4 ${isSelected ? 'text-blue-200' : 'text-gray-500'}`} />
-                        )}
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
-
-              {/* External agent indicator */}
-              {isExternalRecipient(composeTo) ? (
-                <div className="mt-2 flex items-center gap-2 p-2 bg-blue-900/30 border border-blue-700/50 rounded-md">
-                  <Globe className="w-4 h-4 text-blue-400 flex-shrink-0" />
-                  <div className="text-xs">
-                    <span className="text-blue-300 font-medium">External Agent</span>
-                    <span className="text-blue-400/70 ml-1">— This agent is not registered in AI Maestro. The message will be sent via API.</span>
-                  </div>
-                </div>
-              ) : (
-                <p className={`mt-1 ${compact ? 'text-[12px] text-gray-500' : 'text-xs text-gray-500'}`}>
-                  {compact ? <>Agent name, or <code className="font-mono">agent@host</code> for external agents.</> : <>Type to search AI Maestro agents, or enter <code className="bg-gray-800 px-1 rounded">agent@host</code> for external agents.</>}
-                </p>
-              )}
-            </div>
-
-            <div>
-              <label htmlFor="compose-subject" className={composeLabel}>
-                {compact ? 'Subject' : 'Subject:'}
-              </label>
-              <input
-                id="compose-subject"
-                name="subject"
-                type="text"
-                aria-label="Message subject"
-                value={composeSubject}
-                onChange={(e) => setComposeSubject(e.target.value)}
-                className={composeInput}
-                placeholder="Enter subject"
-              />
-            </div>
-
-            <div className={`flex ${compact ? 'gap-2.5' : 'gap-4'}`}>
-              <div className="flex-1">
-                <label className={composeLabel}>
-                  {compact ? 'Priority' : 'Priority:'}
-                </label>
-                <div className="relative">
-                <select
-                  value={composePriority}
-                  onChange={(e) => setComposePriority(e.target.value as any)}
-                  className={compact ? `${composeInput} appearance-none pr-8 cursor-pointer` : composeInput}
-                >
-                  <option value="low">Low</option>
-                  <option value="normal">Normal</option>
-                  <option value="high">High</option>
-                  <option value="urgent">Urgent</option>
-                </select>
-                  {compact && <ChevronDown strokeWidth={1.5} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-ink-muted" />}
-                </div>
-              </div>
-
-              <div className="flex-1">
-                <label className={composeLabel}>
-                  {compact ? 'Type' : 'Type:'}
-                </label>
-                <div className="relative">
-                <select
-                  value={composeType}
-                  onChange={(e) => setComposeType(e.target.value as any)}
-                  className={compact ? `${composeInput} appearance-none pr-8 cursor-pointer` : composeInput}
-                >
-                  <option value="request">Request</option>
-                  <option value="response">Response</option>
-                  <option value="notification">Notification</option>
-                  <option value="update">Update</option>
-                </select>
-                  {compact && <ChevronDown strokeWidth={1.5} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-ink-muted" />}
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <label className={composeLabel}>
-                {compact ? 'Message' : 'Message:'}
-              </label>
-              <textarea
-                id="compose-message"
-                name="message"
-                aria-label="Message body"
-                value={composeMessage}
-                onChange={(e) => setComposeMessage(e.target.value)}
-                rows={compact ? 8 : 10}
-                className={compact ? `${composeInput} h-auto py-2 leading-relaxed resize-y` : 'w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm'}
-                placeholder="Enter your message..."
-              />
-            </div>
-
-            {compact ? (
-              <div className="flex justify-end gap-2 pt-1">
-                <Button onClick={() => {
-                  setView('inbox')
-                  setIsForwarding(false)
-                  setForwardingOriginalMessage(null)
-                }}>Cancel</Button>
-                <Button variant="accent" onClick={sendMessage} disabled={loading}>
-                  <Send strokeWidth={1.5} className="w-4 h-4" />
-                  {loading ? (isForwarding ? 'Forwarding…' : 'Sending…') : (isForwarding ? 'Forward' : 'Send')}
-                </Button>
-              </div>
-            ) : (
-            <div className="flex gap-3">
-              <button
-                onClick={sendMessage}
-                disabled={loading}
-                className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading ? (isForwarding ? 'Forwarding...' : 'Sending...') : (isForwarding ? 'Forward Message' : 'Send Message')}
-              </button>
-              <button
-                onClick={() => {
-                  setView('inbox')
-                  setIsForwarding(false)
-                  setForwardingOriginalMessage(null)
-                }}
-                className="px-6 py-2 bg-gray-700 text-gray-200 rounded-md hover:bg-gray-600 transition-colors"
-              >
-                Cancel
-              </button>
-            </div>
-            )}
-          </div>
+        <div className="flex-1 min-h-0">
+          <ComposeForm
+            to={composeTo}
+            subject={composeSubject}
+            message={composeMessage}
+            priority={composePriority}
+            type={composeType}
+            onToChange={setComposeTo}
+            onSubjectChange={setComposeSubject}
+            onMessageChange={setComposeMessage}
+            onPriorityChange={setComposePriority}
+            onTypeChange={setComposeType}
+            allAgents={allAgents}
+            agentId={agentId}
+            isForwarding={isForwarding}
+            forwardingFrom={forwardingOriginalMessage ? formatAgentName(forwardingOriginalMessage.from, forwardingOriginalMessage.fromAlias, forwardingOriginalMessage.fromHost) : ''}
+            loading={loading}
+            onSend={sendMessage}
+            onCancel={() => {
+              setView('inbox')
+              setIsForwarding(false)
+              setForwardingOriginalMessage(null)
+            }}
+          />
         </div>
       )}
     </div>
