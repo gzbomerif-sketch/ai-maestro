@@ -2,6 +2,7 @@
  * Task Registry - File-based CRUD for team task persistence
  *
  * Storage: ~/.aimaestro/teams/tasks-{teamId}.json (one per team)
+ *          ~/.aimaestro/agents/<agentId>/tasks.json (personal tasks, one per agent)
  * Mirrors the pattern from lib/team-registry.ts
  */
 
@@ -213,4 +214,124 @@ export function wouldCreateCycle(teamId: string, taskId: string, dependencyId: s
   }
 
   return hasCycle(dependencyId)
+}
+
+// ---------------------------------------------------------------------------
+// Personal (per-agent) tasks
+//
+// Same TasksFile format as team tasks. Paths are resolved at call time so the
+// home directory can be overridden in tests. blockedBy is always [] here:
+// dependencies across files are not supported.
+// ---------------------------------------------------------------------------
+
+function agentTasksDir(agentId: string): string {
+  return path.join(os.homedir(), '.aimaestro', 'agents', agentId)
+}
+
+function agentTasksFilePath(agentId: string): string {
+  return path.join(agentTasksDir(agentId), 'tasks.json')
+}
+
+function ensureAgentTasksDir(agentId: string) {
+  const dir = agentTasksDir(agentId)
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true })
+  }
+}
+
+export function loadAgentTasks(agentId: string): Task[] {
+  try {
+    const filePath = agentTasksFilePath(agentId)
+    if (!fs.existsSync(filePath)) {
+      return []
+    }
+    const data = fs.readFileSync(filePath, 'utf-8')
+    const parsed: TasksFile = JSON.parse(data)
+    return Array.isArray(parsed.tasks) ? parsed.tasks : []
+  } catch (error) {
+    console.error(`Failed to load tasks for agent ${agentId}:`, error)
+    return []
+  }
+}
+
+export function saveAgentTasks(agentId: string, tasks: Task[]): boolean {
+  try {
+    ensureAgentTasksDir(agentId)
+    const file: TasksFile = { version: 1, tasks }
+    fs.writeFileSync(agentTasksFilePath(agentId), JSON.stringify(file, null, 2), 'utf-8')
+    return true
+  } catch (error) {
+    console.error(`Failed to save tasks for agent ${agentId}:`, error)
+    return false
+  }
+}
+
+export function createAgentTask(data: {
+  agentId: string
+  subject: string
+  description?: string
+  priority?: number
+  teamId?: string
+}): Task {
+  const tasks = loadAgentTasks(data.agentId)
+  const now = new Date().toISOString()
+
+  const task: Task = {
+    id: uuidv4(),
+    agentId: data.agentId,
+    teamId: data.teamId,
+    subject: data.subject,
+    description: data.description,
+    status: 'pending',
+    blockedBy: [],
+    priority: data.priority,
+    createdAt: now,
+    updatedAt: now,
+  }
+
+  tasks.push(task)
+  saveAgentTasks(data.agentId, tasks)
+  return task
+}
+
+export function updateAgentTask(
+  agentId: string,
+  taskId: string,
+  updates: Partial<Pick<Task, 'subject' | 'description' | 'status' | 'priority'>>
+): Task | null {
+  const tasks = loadAgentTasks(agentId)
+  const index = tasks.findIndex(t => t.id === taskId)
+  if (index === -1) return null
+
+  const now = new Date().toISOString()
+
+  // Filter out undefined values to prevent overwriting existing fields
+  const cleanUpdates = Object.fromEntries(
+    Object.entries(updates).filter(([, v]) => v !== undefined)
+  )
+
+  tasks[index] = {
+    ...tasks[index],
+    ...cleanUpdates,
+    updatedAt: now,
+  }
+
+  // Set timestamps based on status changes
+  if ((updates.status === 'in_progress' || updates.status === 'review') && !tasks[index].startedAt) {
+    tasks[index].startedAt = now
+  }
+  if (updates.status === 'completed' && !tasks[index].completedAt) {
+    tasks[index].completedAt = now
+  }
+
+  saveAgentTasks(agentId, tasks)
+  return tasks[index]
+}
+
+export function deleteAgentTask(agentId: string, taskId: string): boolean {
+  const tasks = loadAgentTasks(agentId)
+  const filtered = tasks.filter(t => t.id !== taskId)
+  if (filtered.length === tasks.length) return false
+  saveAgentTasks(agentId, filtered)
+  return true
 }

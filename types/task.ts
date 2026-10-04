@@ -1,7 +1,7 @@
 /**
  * Task types for the Shared Task List feature
  *
- * Tasks belong to teams and support dependency chains
+ * Tasks belong to teams and/or agents and support dependency chains
  * with auto-unblocking when dependencies complete.
  */
 
@@ -9,7 +9,12 @@ export type TaskStatus = 'backlog' | 'pending' | 'in_progress' | 'review' | 'com
 
 export interface Task {
   id: string                     // UUID
-  teamId: string                 // Team this task belongs to
+  // Invariant: a task has teamId, agentId, or both.
+  //   teamId only  -> shared team task (tasks-{teamId}.json)
+  //   agentId only -> personal task (agents/<agentId>/tasks.json)
+  //   both         -> personal task linked to a team
+  teamId?: string                // Team this task belongs to
+  agentId?: string               // Agent that owns this personal task
   subject: string                // "Implement user auth endpoint"
   description?: string           // Detailed description / acceptance criteria
   status: TaskStatus
