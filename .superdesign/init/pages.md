@@ -1,0 +1,456 @@
+# Pages — component dependency trees
+
+Candidate sets only: apply the payload budget when choosing `--context-file`s. All pages are wrapped by `app/layout.tsx` → `components/Providers.tsx` (ToastProvider) and `app/globals.css` (see layouts.md / theme.md). Trees follow local imports (`@/…`, relative, dynamic `import()`); `lib/`, `hooks/`, `contexts/` files are listed as leaves (not expanded); `types/`, `services/` and `app/api/` are omitted. "(see above)" marks an already-expanded file.
+
+## / (Command-center shell — primary, by far the most important)
+Entry: `app/page.tsx` (client; renders `<AppShell>` when shell === 'command-center', else the legacy classic layout; also MobileDashboard/TabletDashboard on small screens).
+Visual structure: `AppShell` = StatusSidebar | ResizeHandle | (HomeScreen | WorkArea{AgentTopBar, AgentTabContent→ChatView(ink), WindowLayer→FloatingWindow→renderTool panels} | TeamWorkspace) + CommandPalette + AgentCreationWizard.
+Skipped (classic/mobile/onboarding-only, not part of the shell): `components/AgentList.tsx`, `WorkTree.tsx`, `Header.tsx`, `MobileDashboard.tsx`, `TabletDashboard.tsx`, `onboarding/OnboardingFlow.tsx`, `OrganizationSetup.tsx`, `HelpPanel.tsx`, `ImportAgentDialog.tsx`, `MigrationBanner.tsx`, `VersionChecker.tsx`, `AgentSubconsciousIndicator.tsx`, `AgentProfile.tsx` (modal opened from the top bar menu), `WakeAgentDialog.tsx`.
+Dependencies:
+- lib/runtime-mode.ts
+- components/ErrorBoundary.tsx
+- hooks/useDeviceType.ts
+- components/shell/AgentTabContent.tsx
+  - components/TerminalView.tsx
+    - hooks/useSessionActivity.ts
+    - components/LiveAvatar.tsx
+      - hooks/useSessionActivity.ts (see above)
+      - lib/agent-presence.ts
+    - components/AgentHeaderBar.tsx
+      - components/LiveAvatar.tsx (see above)
+      - lib/agent-presence.ts (see above)
+    - hooks/useTerminal.ts
+    - hooks/useWebSocket.ts
+    - lib/websocket.ts
+    - contexts/TerminalContext.tsx
+    - hooks/useDeviceType.ts (see above)
+    - components/MobileKeyToolbar.tsx
+    - contexts/ToastContext.tsx
+  - components/ChatView.tsx
+    - lib/agent-presence.ts (see above)
+    - hooks/useSessionActivity.ts (see above)
+    - components/LiveAvatar.tsx (see above)
+    - components/AgentHeaderBar.tsx (see above)
+    - lib/agent-utils.ts
+    - components/chat/MarkdownRenderer.tsx
+    - components/chat/ToolBurstGroup.tsx
+      - lib/chat-utils.ts
+    - lib/chat-utils.ts (see above)
+  - components/StreamingChatView.tsx
+    - hooks/useSessionActivity.ts (see above)
+    - components/LiveAvatar.tsx (see above)
+    - components/AgentHeaderBar.tsx (see above)
+    - lib/agent-utils.ts (see above)
+    - components/chat/MarkdownRenderer.tsx (see above)
+  - components/MessageCenter.tsx
+    - components/shell/ui.tsx
+      - lib/agent-status.ts
+    - lib/messageQueue.ts
+    - lib/agent-lookup.ts
+    - components/AgentAvatar.tsx
+      - hooks/useSessionActivity.ts (see above)
+      - lib/agent-presence.ts (see above)
+      - lib/agent-status.ts (see above)
+      - lib/agent-colors.ts
+      - lib/avatar-resolve.ts
+      - components/shell/ui.tsx (see above)
+  - components/ErrorBoundary.tsx (see above)
+  - components/AgentSearch.tsx
+    - hooks/useAgentSearch.ts
+  - components/TranscriptExport.tsx
+    - hooks/useTranscriptExport.ts
+  - components/AgentPlayback.tsx
+    - hooks/useAgentPlayback.ts
+  - lib/runtime-mode.ts (see above)
+  - lib/agent-utils.ts (see above)
+  - lib/agent-status.ts (see above)
+  - components/MemoryViewer.tsx
+    - components/memory/MemoryEntityGraph.tsx
+    - components/shell/ui.tsx (see above)
+    - lib/memory-format.ts
+  - components/AgentGraph.tsx
+  - components/DocumentationPanel.tsx
+  - components/CanvasPanel.tsx
+- components/shell/AppShell.tsx
+  - hooks/useSessionActivity.ts (see above)
+  - hooks/useUnreadCounts.ts
+  - lib/agent-status.ts (see above)
+  - lib/runtime-mode.ts (see above)
+  - lib/shell-tabs.ts
+  - hooks/useLayout.ts
+  - hooks/useTeams.ts
+  - lib/panel-layout.ts
+  - lib/window-tools.ts
+  - lib/window-manager.ts
+  - components/AgentCreationWizard.tsx
+    - components/CreateAgentAnimation.tsx
+      - lib/hash-utils.ts
+    - components/DirectoryPicker.tsx
+    - components/TrustLevelSelector.tsx
+    - hooks/useHosts.ts
+    - lib/agent-utils.ts (see above)
+  - components/shell/StatusSidebar.tsx
+    - lib/agent-status.ts (see above)
+    - lib/safe-storage.ts
+    - components/shell/ui.tsx (see above)
+    - components/AgentAvatar.tsx (see above)
+    - components/shell/ProjectTree.tsx
+      - lib/agent-status.ts (see above)
+      - components/shell/ui.tsx (see above)
+      - components/AgentAvatar.tsx (see above)
+    - components/shell/TeamSection.tsx
+      - lib/team-panels.ts
+      - components/shell/ui.tsx (see above)
+  - components/shell/AgentTopBar.tsx
+    - lib/agent-status.ts (see above)
+    - components/shell/ui.tsx (see above)
+    - components/AgentAvatar.tsx (see above)
+    - components/shell/PanelMenu.tsx
+      - lib/panel-layout.ts (see above)
+      - lib/team-panels.ts (see above)
+      - components/shell/ui.tsx (see above)
+  - components/shell/ResizeHandle.tsx
+    - lib/panel-layout.ts (see above)
+  - components/shell/ColonyHost.tsx
+    - lib/colony-message.ts
+    - components/shell/BrowserPanel.tsx
+      - lib/browser-nav.ts
+      - hooks/useBrowser.ts
+      - components/shell/ui.tsx (see above)
+  - components/shell/ColonyProfileCard.tsx
+    - lib/agent-presence.ts (see above)
+    - lib/agent-status.ts (see above)
+    - lib/panel-layout.ts (see above)
+    - hooks/useSessionActivity.ts (see above)
+    - components/ui/button.tsx
+      - lib/utils.ts
+    - components/AgentAvatar.tsx (see above)
+    - components/AvatarPicker.tsx
+    - components/tasks/AgentTaskList.tsx
+      - components/ui/checkbox.tsx
+        - lib/utils.ts (see above)
+      - components/ui/dropdown-menu.tsx
+        - lib/utils.ts (see above)
+      - components/ui/select.tsx
+        - lib/utils.ts (see above)
+      - components/ui/tooltip.tsx
+        - lib/utils.ts (see above)
+      - components/shell/ui.tsx (see above)
+      - hooks/useAgentTasks.ts
+    - components/shell/ui.tsx (see above)
+  - components/shell/WorkArea.tsx
+    - lib/panel-layout.ts (see above)
+    - lib/window-manager.ts (see above)
+    - lib/window-chrome.ts
+    - lib/window-tools.ts (see above)
+    - hooks/useWindows.ts
+    - components/shell/WindowLayer.tsx
+      - components/shell/FloatingWindow.tsx
+        - lib/utils.ts (see above)
+        - components/shell/ui.tsx (see above)
+        - lib/window-manager.ts (see above)
+        - lib/window-chrome.ts (see above)
+      - lib/window-manager.ts (see above)
+  - components/shell/TeamWorkspace.tsx
+    - lib/team-panels.ts (see above)
+    - lib/window-manager.ts (see above)
+    - lib/window-tools.ts (see above)
+    - lib/agent-status.ts (see above)
+    - hooks/useTeam.ts
+    - components/shell/ui.tsx (see above)
+    - components/shell/WorkArea.tsx (see above)
+    - components/shell/TeamTopBar.tsx
+      - lib/agent-status.ts (see above)
+      - components/shell/ui.tsx (see above)
+      - components/AgentAvatar.tsx (see above)
+      - components/shell/PanelMenu.tsx (see above)
+    - components/shell/TeamChat.tsx
+      - hooks/useMeetingMessages.ts
+      - lib/agent-status.ts (see above)
+      - lib/team-panels.ts (see above)
+      - lib/agent-lookup.ts (see above)
+      - components/AgentAvatar.tsx (see above)
+      - components/shell/ui.tsx (see above)
+    - components/shell/MiniPreview.tsx
+      - lib/browser-nav.ts (see above)
+      - hooks/useBrowser.ts (see above)
+      - components/shell/BrowserPanel.tsx (see above)
+    - components/shell/PanelBody.tsx
+      - components/MessageCenter.tsx (see above)
+      - components/ErrorBoundary.tsx (see above)
+      - components/marketplace/index.ts
+        - components/marketplace/SkillBrowser.tsx
+          - components/marketplace/SkillCard.tsx
+          - components/marketplace/SkillDetailModal.tsx
+        - components/marketplace/SkillCard.tsx (see above)
+        - components/marketplace/SkillDetailModal.tsx (see above)
+        - components/marketplace/AgentSkillEditor.tsx
+          - components/ui/button.tsx (see above)
+          - components/ui/switch.tsx
+            - lib/utils.ts (see above)
+          - components/marketplace/SkillBrowser.tsx (see above)
+          - components/marketplace/SkillDetailModal.tsx (see above)
+          - components/marketplace/SkillContentEditor.tsx
+            - components/ui/button.tsx (see above)
+            - components/ui/dialog.tsx
+              - lib/utils.ts (see above)
+      - lib/agent-utils.ts (see above)
+      - lib/panel-layout.ts (see above)
+      - lib/window-manager.ts (see above)
+      - components/shell/AgentTabContent.tsx (see above)
+      - components/shell/BrowserPanel.tsx (see above)
+      - components/shell/ColonyPanel.tsx
+        - components/shell/ColonyHost.tsx (see above)
+        - components/shell/ColonyProfileCard.tsx (see above)
+        - components/shell/ui.tsx (see above)
+      - components/shell/TeamTools.tsx
+        - lib/team-panels.ts (see above)
+        - lib/window-manager.ts (see above)
+        - hooks/useTasks.ts
+        - hooks/useDocuments.ts
+        - components/team-meeting/TaskKanbanBoard.tsx
+          - components/team-meeting/KanbanColumn.tsx
+            - components/team-meeting/KanbanCard.tsx
+              - lib/agent-lookup.ts (see above)
+              - components/AgentAvatar.tsx (see above)
+          - components/team-meeting/TaskDetailView.tsx
+            - components/team-meeting/DependencyPicker.tsx
+          - components/team-meeting/TaskCreateForm.tsx
+            - components/team-meeting/DependencyPicker.tsx (see above)
+        - components/team-meeting/TaskPanel.tsx
+          - components/team-meeting/TaskCard.tsx
+            - lib/agent-lookup.ts (see above)
+            - components/AgentAvatar.tsx (see above)
+          - components/team-meeting/TaskCreateForm.tsx (see above)
+          - components/team-meeting/TaskDetailView.tsx (see above)
+        - components/teams/TeamDocumentsSection.tsx
+          - hooks/useDocuments.ts (see above)
+          - components/teams/DocumentEditor.tsx
+        - components/teams/TeamInstructionsSection.tsx
+        - components/shell/ColonyPanel.tsx (see above)
+        - components/teams/TeamOverviewSection.tsx
+          - components/AgentAvatar.tsx (see above)
+        - components/shell/AgentTabContent.tsx (see above)
+        - components/shell/BrowserPanel.tsx (see above)
+        - components/shell/PanelBody.tsx (see above)
+      - components/tasks/AgentTaskList.tsx (see above)
+    - components/shell/PanelMenu.tsx (see above)
+  - components/shell/MiniPreview.tsx (see above)
+  - components/shell/PanelBody.tsx (see above)
+  - components/shell/PanelMenu.tsx (see above)
+  - components/shell/ui.tsx (see above)
+  - components/shell/HomeScreen.tsx
+    - lib/agent-status.ts (see above)
+    - components/shell/ui.tsx (see above)
+    - components/AgentAvatar.tsx (see above)
+  - components/shell/CommandPalette.tsx
+    - lib/agent-status.ts (see above)
+    - components/AgentAvatar.tsx (see above)
+    - lib/command-palette.ts
+  - components/shell/AgentTabContent.tsx (see above)
+- lib/safe-storage.ts (see above)
+- hooks/useAgents.ts
+- contexts/TerminalContext.tsx (see above)
+- contexts/ToastContext.tsx (see above)
+- lib/agent-utils.ts (see above)
+
+## /settings
+Entry: `app/settings/page.tsx` (Suspense → SettingsShell + one section chosen by `?section=`; ink-theme, standalone full-screen layout)
+Dependencies:
+- components/settings/SettingsShell.tsx
+  - lib/settings-sections.ts
+- components/settings/HostsSection.tsx
+  - components/shell/ui.tsx
+    - lib/agent-status.ts
+  - components/settings/hosts/HostList.tsx
+    - components/shell/ui.tsx (see above)
+    - components/settings/hosts/hostUtils.ts
+  - components/settings/hosts/HostDetail.tsx
+    - components/shell/ui.tsx (see above)
+    - components/settings/hosts/hostUtils.ts (see above)
+  - components/settings/hosts/AddHostDialog.tsx
+    - components/shell/ui.tsx (see above)
+    - components/settings/hosts/hostUtils.ts (see above)
+  - components/settings/hosts/hostUtils.ts (see above)
+- components/settings/DomainsSection.tsx
+  - components/shell/ui.tsx (see above)
+- components/settings/WebhooksSection.tsx
+  - components/shell/ui.tsx (see above)
+  - components/settings/SecretRevealDialog.tsx
+    - components/shell/ui.tsx (see above)
+- components/settings/HelpSection.tsx
+  - components/shell/ui.tsx (see above)
+- components/settings/AboutSection.tsx
+  - components/shell/ui.tsx (see above)
+  - components/VersionChecker.tsx
+- components/settings/OnboardingSection.tsx
+  - components/shell/ui.tsx (see above)
+  - lib/safe-storage.ts
+- components/settings/ExperimentsSection.tsx
+  - components/shell/ui.tsx (see above)
+  - lib/safe-storage.ts (see above)
+- components/settings/MarketplaceSection.tsx
+  - components/marketplace/index.ts
+    - components/marketplace/SkillBrowser.tsx
+      - components/marketplace/SkillCard.tsx
+      - components/marketplace/SkillDetailModal.tsx
+    - components/marketplace/SkillCard.tsx (see above)
+    - components/marketplace/SkillDetailModal.tsx (see above)
+    - components/marketplace/AgentSkillEditor.tsx
+      - components/ui/button.tsx
+        - lib/utils.ts
+      - components/ui/switch.tsx
+        - lib/utils.ts (see above)
+      - components/marketplace/SkillBrowser.tsx (see above)
+      - components/marketplace/SkillDetailModal.tsx (see above)
+      - components/marketplace/SkillContentEditor.tsx
+        - components/ui/button.tsx (see above)
+        - components/ui/dialog.tsx
+          - lib/utils.ts (see above)
+  - components/shell/ui.tsx (see above)
+- components/settings/MemorySection.tsx
+  - components/shell/ui.tsx (see above)
+  - components/settings/MemoryConsolidationCard.tsx
+    - components/shell/ui.tsx (see above)
+- components/settings/TerminalSection.tsx
+  - components/shell/ui.tsx (see above)
+  - lib/safe-storage.ts (see above)
+- lib/settings-sections.ts (see above)
+
+## /teams/[id] (Team dashboard — legacy; forwards into the shell as `/?team=<id>` unless classic shell is on)
+Entry: `app/teams/[id]/page.tsx`
+Dependencies:
+- components/shell/ShellRedirect.tsx
+  - lib/safe-storage.ts
+  - lib/team-panels.ts
+- hooks/useTeam.ts
+- hooks/useDocuments.ts
+- hooks/useTasks.ts
+- hooks/useAgents.ts
+- components/teams/TeamDashboardSidebar.tsx
+- components/teams/TeamOverviewSection.tsx
+  - components/AgentAvatar.tsx
+    - hooks/useSessionActivity.ts
+    - lib/agent-presence.ts
+    - lib/agent-status.ts
+    - lib/agent-colors.ts
+    - lib/avatar-resolve.ts
+    - components/shell/ui.tsx
+      - lib/agent-status.ts (see above)
+- components/teams/TeamTasksSection.tsx
+  - hooks/useTasks.ts (see above)
+  - components/team-meeting/TaskPanel.tsx
+    - components/team-meeting/TaskCard.tsx
+      - lib/agent-lookup.ts
+      - components/AgentAvatar.tsx (see above)
+    - components/team-meeting/TaskCreateForm.tsx
+      - components/team-meeting/DependencyPicker.tsx
+    - components/team-meeting/TaskDetailView.tsx
+      - components/team-meeting/DependencyPicker.tsx (see above)
+- components/teams/TeamKanbanSection.tsx
+  - hooks/useTasks.ts (see above)
+  - components/team-meeting/TaskKanbanBoard.tsx
+    - components/team-meeting/KanbanColumn.tsx
+      - components/team-meeting/KanbanCard.tsx
+        - lib/agent-lookup.ts (see above)
+        - components/AgentAvatar.tsx (see above)
+    - components/team-meeting/TaskDetailView.tsx (see above)
+    - components/team-meeting/TaskCreateForm.tsx (see above)
+- components/teams/TeamDocumentsSection.tsx
+  - hooks/useDocuments.ts (see above)
+  - components/teams/DocumentEditor.tsx
+- components/teams/TeamInstructionsSection.tsx
+
+## /marketplace (Skill Marketplace — legacy gray-950 styling)
+Entry: `app/marketplace/page.tsx`
+Dependencies:
+- components/marketplace/index.ts
+  - components/marketplace/SkillBrowser.tsx
+    - components/marketplace/SkillCard.tsx
+    - components/marketplace/SkillDetailModal.tsx
+  - components/marketplace/SkillCard.tsx (see above)
+  - components/marketplace/SkillDetailModal.tsx (see above)
+  - components/marketplace/AgentSkillEditor.tsx
+    - components/ui/button.tsx
+      - lib/utils.ts
+    - components/ui/switch.tsx
+      - lib/utils.ts (see above)
+    - components/marketplace/SkillBrowser.tsx (see above)
+    - components/marketplace/SkillDetailModal.tsx (see above)
+    - components/marketplace/SkillContentEditor.tsx
+      - components/ui/button.tsx (see above)
+      - components/ui/dialog.tsx
+        - lib/utils.ts (see above)
+
+## /zoom (Zoom View: grid of live agent cards — legacy gray-900 styling, `app/zoom/zoom.css`)
+Entry: `app/zoom/page.tsx`
+Dependencies:
+- app/zoom/zoom.css
+- components/LiveAvatar.tsx
+  - hooks/useSessionActivity.ts
+  - lib/agent-presence.ts
+- hooks/useAgents.ts
+- contexts/TerminalContext.tsx
+- lib/agent-utils.ts
+- components/zoom/AgentCard.tsx
+  - components/LiveAvatar.tsx (see above)
+  - lib/agent-utils.ts (see above)
+- components/zoom/AgentCardView.tsx
+  - components/TerminalView.tsx
+    - hooks/useSessionActivity.ts (see above)
+    - components/LiveAvatar.tsx (see above)
+    - components/AgentHeaderBar.tsx
+      - components/LiveAvatar.tsx (see above)
+      - lib/agent-presence.ts (see above)
+    - hooks/useTerminal.ts
+    - hooks/useWebSocket.ts
+    - lib/websocket.ts
+    - contexts/TerminalContext.tsx (see above)
+    - hooks/useDeviceType.ts
+    - components/MobileKeyToolbar.tsx
+    - contexts/ToastContext.tsx
+  - components/MessageCenter.tsx
+    - components/shell/ui.tsx
+      - lib/agent-status.ts
+    - lib/messageQueue.ts
+    - lib/agent-lookup.ts
+    - components/AgentAvatar.tsx
+      - hooks/useSessionActivity.ts (see above)
+      - lib/agent-presence.ts (see above)
+      - lib/agent-status.ts (see above)
+      - lib/agent-colors.ts
+      - lib/avatar-resolve.ts
+      - components/shell/ui.tsx (see above)
+  - components/MemoryViewer.tsx
+    - components/memory/MemoryEntityGraph.tsx
+    - components/shell/ui.tsx (see above)
+    - lib/memory-format.ts
+  - components/zoom/AgentProfileTab.tsx
+    - components/LiveAvatar.tsx (see above)
+    - lib/agent-utils.ts (see above)
+    - components/TransferAgentDialog.tsx
+      - hooks/useHosts.ts
+      - components/TransferAnimation.tsx
+    - components/ExportAgentDialog.tsx
+    - components/DeleteAgentDialog.tsx
+    - components/SkillsSection.tsx
+    - components/marketplace/index.ts
+      - components/marketplace/SkillBrowser.tsx
+        - components/marketplace/SkillCard.tsx
+        - components/marketplace/SkillDetailModal.tsx
+      - components/marketplace/SkillCard.tsx (see above)
+      - components/marketplace/SkillDetailModal.tsx (see above)
+      - components/marketplace/AgentSkillEditor.tsx
+        - components/ui/button.tsx
+          - lib/utils.ts
+        - components/ui/switch.tsx
+          - lib/utils.ts (see above)
+        - components/marketplace/SkillBrowser.tsx (see above)
+        - components/marketplace/SkillDetailModal.tsx (see above)
+        - components/marketplace/SkillContentEditor.tsx
+          - components/ui/button.tsx (see above)
+          - components/ui/dialog.tsx
+            - lib/utils.ts (see above)
+    - components/AvatarPicker.tsx
+    - components/EmailAddressesSection.tsx
+      - components/EmailAddressDialog.tsx

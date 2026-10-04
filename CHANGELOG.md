@@ -3,6 +3,29 @@
 All notable changes to AI Maestro are documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.49.0] - 2026-10-04 — The floating workspace: windows, a colony profile card, agent tasks, editable skills
+
+The command-center shell's single-tool dock is replaced by a floating-window workspace: terminal, colony, inbox, files, tasks and skills now open as draggable, resizable, snappable windows over the chat, with layouts persisted across reloads. Clicking a bot in the colony opens a profile card beside the world — live status, inline editing, a task list, and one-click terminal/skills/chat. Spec and plan: `docs/superpowers/specs/2026-10-04-refurbish-floating-workspace-design.md`.
+
+### Added
+- **Floating windows** (`lib/window-manager.ts`, `components/shell/FloatingWindow.tsx`, `WindowLayer.tsx`): drag, 8-way resize, edge snap, minimize to a pill strip, flag-based maximize; per-agent and global (colony) windows; z-order compacted per workspace; layouts persisted (`aimaestro-windows`). Single-key tool shortcuts now work shell-wide (plus A = Tasks, L = Skills); ⌘J minimizes/restores all.
+- **Colony profile card** (`components/shell/ColonyProfileCard.tsx`): Bot Crossing emits `bot-crossing:select-agent` on bot selection (sibling repo); the card shows avatar, presence, metadata, inline edit (PATCH), a task list, and New conversation / Open chat, Terminal, Skills, Open workspace actions.
+- **Per-agent tasks**: unified model (`teamId` optional, `agentId` added), storage at `~/.aimaestro/agents/<id>/tasks.json`, full CRUD API (`/api/agents/[id]/tasks`, headless-mirrored, traversal-gated, field-whitelisted) and `AgentTaskList` in the card, Agent Profile and Tasks window — merged with team tasks assigned to the agent.
+- **Skill content editing**: `GET/PATCH /api/agents/[id]/skills/custom/[name]` (name-validated before any path work) and a SKILL.md editor with scaffold-on-create, safe YAML description sync, dirty guard and crash-safe draft cache; Skills window + card entry point.
+- **Universal avatars** (`components/AgentAvatar.tsx` + `lib/avatar-resolve.ts`): real portrait/emoji avatars across sidebar, home, top bar, palette, team members, meeting chat, kanban, inbox and colony card; hash-colored initials only as last resort; ambiguous name lookups fall back instead of guessing.
+- **Light theme**: `.theme-paper` with Ink/Paper/System preference (Settings → Appearance), no-flash boot, live terminal re-theme; scoped to the command-center shell.
+- **shadcn/ui primitives** mapped onto the existing semantic tokens; shell Dialog/Select/Checkbox/Toggle now wrap them; ⌘K palette on the Command component.
+
+### Changed
+- Two-pane inbox (list + reader with inline reply) — same AMP endpoints and polling, presentation only.
+- "New agent" button moved to the sidebar header (reachable collapsed too) + a ⌘K "Create agent…" command.
+- Refreshed visual language via tokens: layered window shadows, higher-contrast muted text, selected-row accent indicator, unified hover/focus treatment.
+- Token sweep of ChatView, AgentProfile, WorkTree, ConversationDetailPanel.
+
+### Fixed
+- Colony iframe now stacks correctly with windows, menus and dialogs (shared stacking context + bounded z).
+- Radix Select type-ahead no longer triggers window shortcuts.
+
 ## [0.48.0] - 2026-10-02 — Agents that get told: a notification system built on Claude Code mods
 
 One day of work on one question: when mail arrives, does the agent find out, once, on any setup? This release adds an inbox **mod** for Claude Code sessions with no tmux, repairs the push for agents in tmux, and writes down the rules every notifier now follows. It rolls up 0.47.5 to 0.47.8 (each has its own entry below) and adds the mod, its documentation and the Claude Code version requirements.
