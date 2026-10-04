@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { COLONY_OPEN_AGENT, COLONY_REFRESH, COLONY_SELECT_AGENT, UNREACHABLE, colonyFrameUrl, colonyReachableFrom, findAgent, nextColonyStatus, originOf, parseColonyEvent, parseColonyMessage, shouldShowColony, type ColonyStatus } from '@/lib/colony-message'
+import { COLONY_HIDE_AGENT, COLONY_MARK_VIEWED, COLONY_OPEN_AGENT, COLONY_REFRESH, COLONY_SELECT_AGENT, UNREACHABLE, colonyFrameUrl, colonyReachableFrom, findAgent, nextColonyStatus, originOf, parseColonyEvent, postColonyMessage, parseColonyMessage, shouldShowColony, type ColonyStatus } from '@/lib/colony-message'
 
 const COLONY = 'http://localhost:23010'
 const msg = (data: unknown, origin = COLONY) => ({ origin, data })
@@ -105,5 +105,24 @@ describe('shouldShowColony', () => {
     expect(shouldShowColony(true, true, UNREACHABLE)).toBe(false)
     expect(shouldShowColony(true, true, { ...RUNNING, url: null })).toBe(false)
     expect(shouldShowColony(true, true, null)).toBe(false)
+  })
+})
+
+describe('host → colony actions', () => {
+  it('names the messages Bot Crossing listens for', () => {
+    expect(COLONY_MARK_VIEWED).toBe('bot-crossing:mark-viewed')
+    expect(COLONY_HIDE_AGENT).toBe('bot-crossing:hide-agent')
+  })
+  it('posts the exact shape to the colony origin and nowhere else', () => {
+    const calls: Array<[unknown, string]> = []
+    const frame = { postMessage: (m: unknown, o: string) => { calls.push([m, o]) } }
+    expect(postColonyMessage(frame, COLONY, { type: COLONY_HIDE_AGENT, agentId: 'a1' })).toBe(true)
+    expect(calls).toEqual([[{ type: 'bot-crossing:hide-agent', agentId: 'a1' }, COLONY]])
+  })
+  it('sends nothing when the colony is not running or its frame is missing', () => {
+    const frame = { postMessage: () => { throw new Error('must not post') } }
+    expect(postColonyMessage(frame, null, { type: COLONY_MARK_VIEWED, agentId: 'a1' })).toBe(false)
+    expect(postColonyMessage(null, COLONY, { type: COLONY_MARK_VIEWED, agentId: 'a1' })).toBe(false)
+    expect(postColonyMessage(undefined, COLONY, { type: COLONY_MARK_VIEWED, agentId: 'a1' })).toBe(false)
   })
 })

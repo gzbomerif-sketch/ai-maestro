@@ -4,7 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState, ty
 import type { Agent } from '@/types/agent'
 import {
   COLONY_REFRESH, colonyFrameUrl, colonyReachableFrom, findAgent, nextColonyStatus, originOf,
-  parseColonyEvent, shouldShowColony, type ColonyStatus,
+  parseColonyEvent, postColonyMessage, shouldShowColony, type ColonyAction, type ColonyStatus,
 } from '@/lib/colony-message'
 import { BROWSER_SANDBOX } from './BrowserPanel'
 
@@ -22,6 +22,8 @@ export interface ColonyContextValue {
   /** The agent whose bot was last selected in the colony, or null. A newer selection replaces it. */
   selectedColonyAgentId: string | null
   clearColonySelection: () => void
+  /** Ask the colony to act on one agent's bot (mark it viewed, hide it). False when the colony cannot be reached. */
+  postColonyAction: (type: ColonyAction, agentId: string) => boolean
 }
 
 const ColonyContext = createContext<ColonyContextValue | null>(null)
@@ -117,7 +119,7 @@ export default function ColonyHost({ agents, onSelectAgent, children }: {
   // event, and the colony rescans at once instead of waiting out its 15 s poll.
   useEffect(() => {
     const onRefresh = () => {
-      if (colonyOrigin) iframeRef.current?.contentWindow?.postMessage({ type: COLONY_REFRESH }, colonyOrigin)
+      postColonyMessage(iframeRef.current?.contentWindow, colonyOrigin, { type: COLONY_REFRESH })
     }
     window.addEventListener('aimaestro:colony-refresh', onRefresh)
     return () => window.removeEventListener('aimaestro:colony-refresh', onRefresh)
@@ -154,6 +156,10 @@ export default function ColonyHost({ agents, onSelectAgent, children }: {
   }, [])
   const reload = useCallback(() => setNonce(n => n + 1), [])
   const clearColonySelection = useCallback(() => setSelectedColonyAgentId(null), [])
+  const postColonyAction = useCallback(
+    (type: ColonyAction, agentId: string) => postColonyMessage(iframeRef.current?.contentWindow, colonyOrigin, { type, agentId }),
+    [colonyOrigin],
+  )
 
   const src = shouldShowColony(everShown, local, status) && status?.url && pageOrigin
     ? colonyFrameUrl(status.url, pageOrigin.origin) : null
@@ -169,7 +175,7 @@ export default function ColonyHost({ agents, onSelectAgent, children }: {
   )
 
   return (
-    <ColonyContext.Provider value={{ setSlot, status, local, reload, selectedColonyAgentId, clearColonySelection }}>
+    <ColonyContext.Provider value={{ setSlot, status, local, reload, selectedColonyAgentId, clearColonySelection, postColonyAction }}>
       <ColonyFrameContext.Provider value={frame}>
         {children}
       </ColonyFrameContext.Provider>

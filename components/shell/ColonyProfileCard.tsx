@@ -2,18 +2,20 @@
 
 import { createContext, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Loader2, MessageSquare, MessageSquarePlus, Pencil, SquareTerminal, Sparkles, LayoutDashboard, X } from 'lucide-react'
+import { Eye, EyeOff, Loader2, MessageSquare, MessageSquarePlus, Pencil, SquareTerminal, Sparkles, LayoutDashboard, X } from 'lucide-react'
 import type { Agent } from '@/types/agent'
 import { PRESENCE_STYLE } from '@/lib/agent-presence'
 import { displayName } from '@/lib/agent-status'
 import { isEditableTarget } from '@/lib/panel-layout'
 import { MODAL_SELECTOR } from '@/lib/window-tools'
 import { getAgentBaseUrl } from '@/lib/agent-utils'
+import { COLONY_HIDE_AGENT, COLONY_MARK_VIEWED } from '@/lib/colony-message'
 import { useSessionActivity } from '@/hooks/useSessionActivity'
 import { Button as ActionButton } from '@/components/ui/button'
 import AgentAvatar, { shellStatusFor } from '@/components/AgentAvatar'
 import AvatarPicker from '@/components/AvatarPicker'
 import AgentTaskList from '@/components/tasks/AgentTaskList'
+import { useColony } from './ColonyHost'
 import { Badge, Button, Field, IconButton, Notice, StatusDot, Textarea } from './ui'
 
 // ── Pure helpers (tested in tests/colony-profile-card.test.ts) ─────────────────────────────
@@ -120,6 +122,7 @@ export default function ColonyProfileCard({ agent, env, hidden = false, onClose 
   onClose: () => void
 }) {
   const { presenceOf } = useSessionActivity()
+  const { postColonyAction, clearColonySelection } = useColony()
   const presence = presenceOf(agent)
   const status = shellStatusFor(agent, presence)
   const unread = env.unread[agent.id] ?? 0
@@ -273,6 +276,13 @@ export default function ColonyProfileCard({ agent, env, hidden = false, onClose 
         </ActionButton>
         <ActionButton variant="outline" size="sm" onClick={() => env.onOpenSkills(agent)}>
           <Sparkles />Skills
+        </ActionButton>
+        <ActionButton variant="outline" size="sm" onClick={() => postColonyAction(COLONY_MARK_VIEWED, agent.id)}>
+          <Eye />Viewed
+        </ActionButton>
+        {/* The bot leaves the colony, so there is nothing left for this card to describe */}
+        <ActionButton variant="outline" size="sm" onClick={() => { if (postColonyAction(COLONY_HIDE_AGENT, agent.id)) clearColonySelection() }}>
+          <EyeOff />Hide from colony
         </ActionButton>
       </div>
 

@@ -9,6 +9,28 @@ export const COLONY_OPEN_AGENT = 'bot-crossing:open-agent'
  * `isHostRefresh` checks this exact string. */
 export const COLONY_REFRESH = 'bot-crossing:refresh'
 
+/** Host→colony: stop an agent's bot asking for the user (the colony HUD's "Viewed"). */
+export const COLONY_MARK_VIEWED = 'bot-crossing:mark-viewed'
+
+/** Host→colony: send an agent's bot home, out of the colony (the colony HUD's "Archive"). */
+export const COLONY_HIDE_AGENT = 'bot-crossing:hide-agent'
+
+export type ColonyAction = typeof COLONY_MARK_VIEWED | typeof COLONY_HIDE_AGENT
+
+/**
+ * Post `{ type, agentId }` to the colony frame, to its own origin and nowhere else. Returns whether it was
+ * sent: false when the colony is not running (no origin) or its frame is not there.
+ */
+export function postColonyMessage(
+  target: { postMessage: (message: unknown, targetOrigin: string) => void } | null | undefined,
+  colonyOrigin: string | null,
+  message: { type: string; agentId?: string },
+): boolean {
+  if (!target || !colonyOrigin) return false
+  target.postMessage(message, colonyOrigin)
+  return true
+}
+
 export interface ColonyStatus {
   enabled: boolean
   running: boolean
