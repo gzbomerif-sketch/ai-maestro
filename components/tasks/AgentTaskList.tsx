@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, type KeyboardEvent } from 'react'
+import { useEffect, useState, type KeyboardEvent } from 'react'
 import { ChevronRight, MoreHorizontal, Trash2 } from 'lucide-react'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
@@ -43,6 +43,16 @@ export function priorityFromValue(v: string): number | undefined {
   return Number.isFinite(n) ? n : undefined
 }
 
+/** The draft to show: local edits win while dirty, otherwise follow the server value. */
+export function nextDescDraft(current: string, remote: string, dirty: boolean): string {
+  return dirty ? current : remote
+}
+
+/** Only an edited draft that differs from the server value is worth a PATCH. */
+export function shouldSaveDescription(dirty: boolean, draft: string, remote: string): boolean {
+  return dirty && draft !== remote
+}
+
 // Menus portal to <body>; floating windows sit at z-index 10 + stack position
 const POPUP_Z = 'z-[1000]'
 
@@ -54,11 +64,24 @@ function TaskRow({ task, compact, onToggle, onUpdate, onRemove }: {
   task: AgentTaskView
   compact: boolean
   onToggle: (t: AgentTaskView) => void
-  onUpdate: (id: string, patch: AgentTaskPatch) => void
+  onUpdate: (id: string, patch: AgentTaskPatch) => Promise<boolean>
   onRemove: (id: string) => void
 }) {
   const [open, setOpen] = useState(false)
   const [desc, setDesc] = useState(task.description ?? '')
+  const [dirty, setDirty] = useState(false)
+  const remoteDesc = task.description ?? ''
+
+  // Poll-delivered (or rolled-back) descriptions replace the draft unless the user is mid-edit
+  useEffect(() => { setDesc(d => nextDescDraft(d, remoteDesc, dirty)) }, [remoteDesc, dirty])
+
+  const saveDescription = async () => {
+    if (!shouldSaveDescription(dirty, desc, remoteDesc)) { setDirty(false); return }
+    const ok = await onUpdate(task.id, { description: desc })
+    // Success: server value now equals the draft. Failure: the task reverted, so drop the rejected text too.
+    setDirty(false)
+    if (!ok) setDesc(remoteDesc)
+  }
   const team = isTeamTask(task)
   const done = task.status === 'completed'
   const expandable = !compact
@@ -126,8 +149,8 @@ function TaskRow({ task, compact, onToggle, onUpdate, onRemove }: {
               value={desc}
               placeholder="Description"
               aria-label="Description"
-              onChange={e => setDesc(e.target.value)}
-              onBlur={() => { if (desc !== (task.description ?? '')) onUpdate(task.id, { description: desc }) }}
+              onChange={e => { setDesc(e.target.value); setDirty(true) }}
+              onBlur={() => void saveDescription()}
             />
           )}
           <div className="flex flex-wrap items-center gap-2">
@@ -168,9 +191,10 @@ export default function AgentTaskList({ agentId, compact = false }: { agentId: s
   const [draft, setDraft] = useState('')
   const [error, setError] = useState<string | null>(null)
 
-  const run = async (fn: () => Promise<void>) => {
+  /** Runs a mutation, surfacing failures; resolves true when it succeeded. */
+  const run = async (fn: () => Promise<void>): Promise<boolean> => {
     setError(null)
-    try { await fn() } catch (e) { setError(e instanceof Error ? e.message : 'Something went wrong') }
+    try { await fn(); return true } catch (e) { setError(e instanceof Error ? e.message : 'Something went wrong'); return false }
   }
 
   const submit = () => {
@@ -213,7 +237,7 @@ export default function AgentTaskList({ agentId, compact = false }: { agentId: s
                 task={t}
                 compact={compact}
                 onToggle={task => void run(() => toggle(task))}
-                onUpdate={(id, patch) => void run(() => update(id, patch))}
+                onUpdate={(id, patch) => run(() => update(id, patch))}
                 onRemove={id => void run(() => remove(id))}
               />
             ))}

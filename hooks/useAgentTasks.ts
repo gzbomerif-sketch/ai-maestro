@@ -52,6 +52,15 @@ export function orderTasks(tasks: AgentTaskView[]): AgentTaskView[] {
   return [...open, ...done]
 }
 
+/**
+ * A mutation's rollback/inflight bookkeeping only applies while the agent it
+ * started for is still current. `epoch` bumps on every agent change, so even
+ * A -> B -> A does not let a stale mutation touch the new state.
+ */
+export function isCurrentEpoch(current: number, startedAt: number): boolean {
+  return current === startedAt
+}
+
 // ---------------------------------------------------------------------------
 // Hook
 // ---------------------------------------------------------------------------
@@ -73,6 +82,8 @@ export function useAgentTasks(agentId: string | null): UseAgentTasksResult {
   const agentRef = useRef<string | null>(agentId)
   // While a mutation is in flight a poll result would clobber the optimistic state
   const inflight = useRef(0)
+  // Bumped on every agent change; mutations remember the epoch they started in
+  const epoch = useRef(0)
 
   agentRef.current = agentId
 
@@ -95,6 +106,8 @@ export function useAgentTasks(agentId: string | null): UseAgentTasksResult {
   }, [agentId, commit])
 
   useEffect(() => {
+    epoch.current++
+    inflight.current = 0
     commit([])
     if (!agentId) { setLoading(false); return }
     setLoading(true)
@@ -109,16 +122,19 @@ export function useAgentTasks(agentId: string | null): UseAgentTasksResult {
   const mutate = useCallback(async (optimistic: (prev: AgentTaskView[]) => AgentTaskView[], send: () => Promise<Response>, failure: string) => {
     if (!agentId) return
     const snapshot = tasksRef.current
+    const startedAt = epoch.current
     commit(optimistic(snapshot))
     inflight.current++
     try {
       const res = await send()
       if (!res.ok) throw new Error(failure)
     } catch (err) {
-      commit(snapshot)
+      // The agent may have changed mid-flight: never write the old list into the new agent's state
+      if (isCurrentEpoch(epoch.current, startedAt)) commit(snapshot)
       throw err instanceof Error ? err : new Error(failure)
     } finally {
-      inflight.current--
+      // The counter was reset on agent change; a stale mutation must not decrement the new one
+      if (isCurrentEpoch(epoch.current, startedAt)) inflight.current--
     }
     void fetchTasks()
   }, [agentId, commit, fetchTasks])

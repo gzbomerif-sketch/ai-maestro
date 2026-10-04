@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest'
 import {
   isTeamTask, nextToggleStatus, normalizeSubject, applyTaskPatch,
-  applyOptimisticToggle, removeTaskFromList, orderTasks, type AgentTaskView,
+  applyOptimisticToggle, removeTaskFromList, orderTasks, isCurrentEpoch, type AgentTaskView,
 } from '@/hooks/useAgentTasks'
-import { priorityValue, priorityFromValue } from '@/components/tasks/AgentTaskList'
+import { priorityValue, priorityFromValue, nextDescDraft, shouldSaveDescription } from '@/components/tasks/AgentTaskList'
 
 const t = (o: Partial<AgentTaskView> = {}): AgentTaskView => ({
   id: 't1', subject: 'Do it', status: 'pending', blockedBy: [], createdAt: '', updatedAt: '', source: 'personal', ...o,
@@ -77,5 +77,29 @@ describe('priority select mapping', () => {
     expect(priorityValue(0)).toBe('0')
     expect(priorityFromValue('2')).toBe(2)
     expect(priorityFromValue('')).toBeUndefined()
+  })
+})
+
+describe('isCurrentEpoch (rollback / inflight guard)', () => {
+  it('applies only while the agent epoch is unchanged', () => {
+    expect(isCurrentEpoch(3, 3)).toBe(true)
+    expect(isCurrentEpoch(4, 3)).toBe(false) // agent switched mid-flight: skip rollback + decrement
+    expect(isCurrentEpoch(5, 3)).toBe(false) // A -> B -> A is still a different epoch
+  })
+})
+
+describe('description draft sync', () => {
+  it('follows the server value when not dirty', () => {
+    expect(nextDescDraft('old', 'fresh from poll', false)).toBe('fresh from poll')
+  })
+  it('keeps local edits while dirty', () => {
+    expect(nextDescDraft('typing', 'fresh from poll', true)).toBe('typing')
+  })
+  it('focus + blur without typing sends nothing', () => {
+    expect(shouldSaveDescription(false, 'stale', 'fresh')).toBe(false)
+  })
+  it('saves only a dirty draft that differs', () => {
+    expect(shouldSaveDescription(true, 'new', 'old')).toBe(true)
+    expect(shouldSaveDescription(true, 'same', 'same')).toBe(false)
   })
 })
