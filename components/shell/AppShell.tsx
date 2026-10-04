@@ -119,8 +119,8 @@ export default function AppShell(p: AppShellProps) {
               hideHeaders chatVariant="ink" />
           }
           dock={
-            <PanelDock layout={layout} dispatch={dispatch} agent={agent} onlineAgents={p.onlineAgents} unread={unread[agent.id] ?? 0}
-              wakingAgentId={p.wakingAgentId} onWake={p.onWake} onShowProfile={p.onShowProfile} />
+            <PanelDock layout={layout} dispatch={dispatch} agent={agent} agents={p.agents} onlineAgents={p.onlineAgents} unread={unread[agent.id] ?? 0}
+              wakingAgentId={p.wakingAgentId} onWake={p.onWake} onShowProfile={p.onShowProfile} onSelectAgent={selectAgent} />
           }
         />
       ) : (

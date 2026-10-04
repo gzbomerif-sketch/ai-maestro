@@ -13,6 +13,7 @@ import { getOrCreateBuffer, removeBuffer } from './lib/cerebellum/session-bridge
 import { parsePermissionMenu } from './lib/pane-permission.mjs'
 import { deliverAndVerify, NOT_SUBMITTED_MESSAGE } from './lib/chat-verify.mjs'
 import { isValidSessionName } from './lib/tmux-safe.mjs'
+import { sidecar as colonySidecar, waitForUrl } from './lib/bot-crossing-sidecar.mjs'
 import {
   resolveJsonlPath,
   getAgentWorkingDir,
@@ -1016,6 +1017,15 @@ async function startServer(handleRequest) {
   const server = createServer(async (req, res) => {
     try {
       const parsedUrl = parse(req.url, true)
+
+      // Colony panel: whether AI Maestro's own Bot Crossing is up, and if not, why.
+      // Answered here because the sidecar lives in this process, not in Next's module graph.
+      if (parsedUrl.pathname === '/api/colony/status') {
+        res.setHeader('Content-Type', 'application/json')
+        res.setHeader('Cache-Control', 'no-store')
+        res.end(JSON.stringify(colonySidecar.status()))
+        return
+      }
 
       // Internal endpoint for PTY debug info - served directly from server.mjs
       // This allows access to the in-memory sessions map
@@ -2701,6 +2711,9 @@ async function startServer(handleRequest) {
   const gracefulShutdown = async (signal) => {
     console.log(`[Server] Received ${signal}, shutting down gracefully...`)
 
+    // Bot Crossing's vite would otherwise outlive us and hold the colony port
+    try { colonySidecar.stop() } catch { /* ignore */ }
+
     // Stop the scheduler
     try {
       const { stopScheduler } = await import('./lib/schedule-executor.ts')
@@ -2761,6 +2774,8 @@ async function startServer(handleRequest) {
   // Handle both SIGTERM and SIGINT
   process.on('SIGTERM', () => gracefulShutdown('SIGTERM'))
   process.on('SIGINT', () => gracefulShutdown('SIGINT'))
+  // Crashes and plain exits skip gracefulShutdown; the colony's children still have to go
+  process.on('exit', () => { try { colonySidecar.stop() } catch { /* ignore */ } })
 }
 
 // =============================================================================
@@ -2796,4 +2811,15 @@ if (MAESTRO_MODE === 'headless') {
   startServer(async (req, res, parsedUrl) => {
     await handle(req, res, parsedUrl)
   })
+
+  // Colony panel: AI Maestro's own Bot Crossing. Never blocks startup; the panel shows why if
+  // it does not come up.
+  // The warm-up waits for this server to listen and compiles /api/agents, so the colony's
+  // first scan is not empty.
+  colonySidecar.start({
+    aiMaestroDir: process.cwd(),
+    aiMaestroPort: port,
+    warmUp: () => waitForUrl(`http://localhost:${port}/api/agents`),
+  })
+    .catch(err => console.error('[Colony] Failed to start:', err))
 }

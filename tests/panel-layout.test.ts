@@ -104,6 +104,16 @@ describe('keys and shortcuts', () => {
     expect(panelForKey('b')).toBe('browser')
     expect(panelForKey('z')).toBeNull()
   })
+  it('O opens the Colony panel', () => {
+    expect(panelForKey('o')).toBe('colony')
+    expect(panelForKey('O')).toBe('colony')
+  })
+  it('a saved layout with a Colony tab survives a reload', () => {
+    const saved = JSON.stringify({ ...DEFAULT_LAYOUT, panel: { ...DEFAULT_LAYOUT.panel, open: true, tabs: ['terminal', 'colony'], active: 'colony' } })
+    const parsed = parseLayout(saved)
+    expect(parsed?.panel.tabs).toEqual(['terminal', 'colony'])
+    expect(parsed?.panel.active).toBe('colony')
+  })
   it('migrateActiveTab maps old tabs; chat stays in the centre', () => {
     expect(migrateActiveTab('worktree')).toBe('files')
     expect(migrateActiveTab('messages')).toBe('inbox')

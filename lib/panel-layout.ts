@@ -4,7 +4,7 @@
  */
 import { isTeamTab, pruneMemberTabs } from '@/lib/team-panels'
 
-export type PanelType = 'terminal' | 'inbox' | 'files' | 'memory' | 'graph' | 'docs' | 'canvas' | 'search' | 'playback' | 'export' | 'browser'
+export type PanelType = 'terminal' | 'inbox' | 'files' | 'memory' | 'graph' | 'docs' | 'canvas' | 'search' | 'playback' | 'export' | 'browser' | 'colony'
 export type PanelPosition = 'right' | 'bottom'
 
 export const PANEL_TYPES: { id: PanelType; label: string; key: string }[] = [
@@ -19,6 +19,7 @@ export const PANEL_TYPES: { id: PanelType; label: string; key: string }[] = [
   { id: 'playback', label: 'Playback', key: 'P' },
   { id: 'export', label: 'Export', key: 'X' },
   { id: 'browser', label: 'Browser', key: 'B' },
+  { id: 'colony', label: 'Colony', key: 'O' },
 ]
 const TYPE_IDS = new Set<string>(PANEL_TYPES.map(p => p.id))
 

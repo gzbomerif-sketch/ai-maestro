@@ -7,15 +7,17 @@ import DockFrame from './DockFrame'
 import PanelBody from './PanelBody'
 
 /** Agent tool panel: Terminal, Inbox, Files, Memory… for the selected agent. */
-export default function PanelDock({ layout, dispatch, agent, onlineAgents, unread, wakingAgentId, onWake, onShowProfile }: {
+export default function PanelDock({ layout, dispatch, agent, agents, onlineAgents, unread, wakingAgentId, onWake, onShowProfile, onSelectAgent }: {
   layout: LayoutState
   dispatch: React.Dispatch<LayoutAction>
   agent: Agent
+  agents: Agent[]
   onlineAgents: Agent[]
   unread: number
   wakingAgentId: string | null
   onWake: (a: Agent) => void
   onShowProfile: (a: Agent) => void
+  onSelectAgent: (a: Agent) => void
 }) {
   const p = layout.panel
   const labelOf = (t: PanelType) => PANEL_TYPES.find(x => x.id === t)?.label ?? t
@@ -31,8 +33,8 @@ export default function PanelDock({ layout, dispatch, agent, onlineAgents, unrea
       emptyHint="Use ＋ or ⌘J. Terminal, Inbox, Files, Memory and more open here."
     >
       {p.active && (
-        <PanelBody key={p.active} type={p.active} agent={agent} onlineAgents={onlineAgents}
-          wakingAgentId={wakingAgentId} onWake={onWake} onShowProfile={onShowProfile} />
+        <PanelBody key={p.active} type={p.active} agent={agent} agents={agents} onlineAgents={onlineAgents}
+          wakingAgentId={wakingAgentId} onWake={onWake} onShowProfile={onShowProfile} onSelectAgent={onSelectAgent} />
       )}
     </DockFrame>
   )
