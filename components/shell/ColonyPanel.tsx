@@ -1,8 +1,9 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useContext, useEffect, useRef } from 'react'
 import { Orbit, RotateCw, ExternalLink } from 'lucide-react'
 import { useColony } from './ColonyHost'
+import ColonyProfileCard, { ColonyCardEnvContext, resolveColonySelection } from './ColonyProfileCard'
 import { Button, EmptyState, IconButton } from './ui'
 
 /**
@@ -11,9 +12,15 @@ import { Button, EmptyState, IconButton } from './ui'
  * when there is nothing to show. `z` is this window's stack position, mirrored onto the frame. The iframe itself never mounts here — see ColonyHost.
  */
 export default function ColonyPanel({ hidden = false, z = 0 }: { hidden?: boolean; z?: number } = {}) {
-  const { setSlot, status, local, reload } = useColony()
+  const { setSlot, status, local, reload, selectedColonyAgentId, clearColonySelection } = useColony()
+  const cardEnv = useContext(ColonyCardEnvContext)
   const slotRef = useRef<HTMLDivElement>(null)
   const showing = local && !!status?.running && !!status.url
+  const { agent: selected, stale } = resolveColonySelection(cardEnv?.agents ?? [], cardEnv ? selectedColonyAgentId : null)
+  // A bot this host does not know (removed, or from another host) shows nothing, and the selection is dropped
+  useEffect(() => { if (stale) clearColonySelection() }, [stale, clearColonySelection])
+  // Closing the window must not leave a selection that pops the card back open next time
+  useEffect(() => clearColonySelection, [clearColonySelection])
 
   // A minimized window stays mounted but must release the slot, or the frame would keep floating over the chat
   useEffect(() => {
@@ -65,7 +72,16 @@ export default function ColonyPanel({ hidden = false, z = 0 }: { hidden?: boolea
 
   return (
     <div className="flex-1 min-h-0 flex flex-col bg-sunken">
-      <div ref={slotRef} className="flex-1 min-h-0" />
+      <div className="flex-1 min-h-0 flex">
+        <div ref={slotRef} className="flex-1 min-w-0" />
+        {/* The colony frame is pinned over the slot above the whole shell (see ColonyHost), so the card
+            is a sibling column the slot yields to, not an overlay it would hide behind. */}
+        {selected && cardEnv && (
+          <div className="flex-none w-[min(24rem,45%)] min-h-0">
+            <ColonyProfileCard key={selected.id} agent={selected} env={cardEnv} onClose={clearColonySelection} />
+          </div>
+        )}
+      </div>
       <div className="flex-none flex items-center gap-2 pl-3 pr-1 h-[38px] border-t border-hairline/70 text-[12px] text-gray-500">
         <span className="truncate">Based on Bot Crossing. Click a bot, then Open, to go to that agent.</span>
         <span className="ml-auto flex items-center">

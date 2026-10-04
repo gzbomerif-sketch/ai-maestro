@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { PanelLeft } from 'lucide-react'
 import type { Agent } from '@/types/agent'
 import { useSessionActivity } from '@/hooks/useSessionActivity'
@@ -18,7 +18,8 @@ import StatusSidebar from './StatusSidebar'
 import AgentTopBar from './AgentTopBar'
 import ResizeHandle from './ResizeHandle'
 import ColonyHost from './ColonyHost'
-import WorkArea from './WorkArea'
+import { ColonyCardEnvContext, type ColonyCardEnv } from './ColonyProfileCard'
+import WorkArea, { type WorkAreaApi } from './WorkArea'
 import TeamWorkspace from './TeamWorkspace'
 import MiniPreview from './MiniPreview'
 import { renderTool } from './PanelBody'
@@ -84,8 +85,37 @@ export default function AppShell(p: AppShellProps) {
   const selectHome = () => { setTeamId(null); p.onSelectHome() }
   const selectTeam = (id: string) => { setTeamId(id); p.onSelectHome() }
 
+  // Colony profile card actions. A tool opens in the workspace of the agent it is for, so for any
+  // other agent we select it first and open the tool once its workspace (and its window API) is up.
+  const workApi = useRef<WorkAreaApi | null>(null)
+  const [pendingTool, setPendingTool] = useState<{ tool: WindowTool; agentId: string } | null>(null)
+  const openToolFor = (tool: WindowTool, a: Agent) => {
+    if (!teamId && agent?.id === a.id && workApi.current) { workApi.current.openTool(tool); return }
+    selectAgent(a)
+    setPendingTool({ tool, agentId: a.id })
+  }
+  useEffect(() => {
+    if (!pendingTool || teamId || agent?.id !== pendingTool.agentId || !workApi.current) return
+    workApi.current.openTool(pendingTool.tool)
+    setPendingTool(null)
+  }, [pendingTool, teamId, agent?.id])
+  const colonyCard: ColonyCardEnv = {
+    agents: p.agents, unread, wakingAgentId: p.wakingAgentId,
+    onOpenWorkspace: selectAgent,
+    onOpenTerminal: a => openToolFor('terminal', a),
+    onOpenSkills: a => openToolFor('skills', a),
+    // Same rule as the top bar's Wake button: not online (asleep or offline) means wake it
+    onNewConversation: a => {
+      selectAgent(a)
+      const st = entryById[a.id]?.status ?? 'offline'
+      if (st === 'asleep' || st === 'offline') p.onWake(a)
+    },
+    onAgentsChanged: p.onAgentsChanged,
+  }
+
   return (
     <ColonyHost agents={p.agents} onSelectAgent={selectAgent}>
+    <ColonyCardEnvContext.Provider value={colonyCard}>
     <div className="fixed inset-0 flex bg-sunken text-ink overflow-hidden">
       {!layout.sidebarCollapsed && (
         <>
@@ -120,8 +150,9 @@ export default function AppShell(p: AppShellProps) {
             agent, onlineAgents: p.onlineAgents, wakingAgentId: p.wakingAgentId, onWake: p.onWake, onShowProfile: p.onShowProfile, minimized: w.minimized, z: w.z,
           })}
           overlay={api => <MiniPreview hidden={api.isShowing('browser')} onOpen={() => api.openTool('browser')} />}
-          top={api =>
-            <AgentTopBar
+          top={api => {
+            workApi.current = api
+            return <AgentTopBar
               agent={agent} entry={entryById[agent.id]} now={now}
               busy={p.wakingAgentId === agent.id || sleepingId === agent.id}
               onSleep={() => sleep(agent)} onWake={() => p.onWake(agent)}
@@ -130,7 +161,7 @@ export default function AppShell(p: AppShellProps) {
               hasWindows={api.windows.length > 0} allMinimized={api.allMinimized} onToggleAll={api.toggleAll}
               sidebarCollapsed={layout.sidebarCollapsed} onToggleSidebar={() => dispatch({ type: 'toggleSidebar' })}
             />
-          }
+          }}
           center={
             <AgentTabContent agent={agent} activeTab={resolveAgentTab('chat', getRuntimeMode(agent.id))} setActiveTab={p.setActiveTab}
               onlineAgents={p.onlineAgents} wakingAgentId={p.wakingAgentId} onWake={p.onWake} onShowProfile={p.onShowProfile}
@@ -159,6 +190,7 @@ export default function AppShell(p: AppShellProps) {
         window.dispatchEvent(new CustomEvent('aimaestro:colony-refresh'))
       }} />}
     </div>
+    </ColonyCardEnvContext.Provider>
     </ColonyHost>
   )
 }
