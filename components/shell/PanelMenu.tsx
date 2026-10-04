@@ -1,8 +1,13 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
-import { SquareTerminal, Inbox, FolderTree, Brain, GitBranch, FileText, LayoutPanelTop, Search, PlayCircle, Download, Globe, Orbit, type LucideIcon } from 'lucide-react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import {
+  SquareTerminal, Inbox, FolderTree, Brain, GitBranch, FileText, LayoutPanelTop, Search, PlayCircle, Download, Globe, Orbit,
+  ListChecks, Sparkles, Columns3, ScrollText, Users, Plus, PanelBottomClose, PanelBottomOpen, type LucideIcon,
+} from 'lucide-react'
 import type { PanelType } from '@/lib/panel-layout'
+import { termAgentId } from '@/lib/team-panels'
+import { IconButton } from './ui'
 
 export const PANEL_ICONS: Record<PanelType, LucideIcon> = {
   terminal: SquareTerminal, inbox: Inbox, files: FolderTree, memory: Brain, graph: GitBranch,
@@ -10,10 +15,19 @@ export const PANEL_ICONS: Record<PanelType, LucideIcon> = {
   colony: Orbit,
 }
 
+/** Icons for every window tool: dock tools, the Tasks/Skills launcher entries, team tools and member terminals. */
+const TOOL_ICONS: Record<string, LucideIcon> = {
+  ...PANEL_ICONS, tasks: ListChecks, skills: Sparkles,
+  kanban: Columns3, documents: FileText, instructions: ScrollText, members: Users,
+}
+export function iconForTool(tool: string): LucideIcon {
+  return termAgentId(tool) ? SquareTerminal : TOOL_ICONS[tool] ?? LayoutPanelTop
+}
+
 export interface MenuItem { id: string; label: string; key?: string; icon: LucideIcon; section?: string }
 
 /** ＋ menu: rows with optional section headers; single-key shortcuts while open. */
-export default function ToolMenu({ open, onClose, anchorRef, items, openIds, onPick }: {
+export default function ToolMenu({ open, onClose, anchorRef, items, openIds, onPick, align = 'left' }: {
   open: boolean
   onClose: () => void
   /** The toggle button: clicks on it must not count as "outside" (it toggles the menu itself) */
@@ -21,6 +35,8 @@ export default function ToolMenu({ open, onClose, anchorRef, items, openIds, onP
   items: MenuItem[]
   openIds: string[]
   onPick: (id: string) => void
+  /** Which edge of the anchor the menu lines up with (the launcher sits at the right of the top bar) */
+  align?: 'left' | 'right'
 }) {
   const [index, setIndex] = useState(0)
   const ref = useRef<HTMLDivElement>(null)
@@ -60,7 +76,7 @@ export default function ToolMenu({ open, onClose, anchorRef, items, openIds, onP
           if (hit) { e.preventDefault(); pick(hit.id) }
         }
       }}
-      className="absolute left-0 top-full mt-1.5 z-40 w-[250px] max-h-[70vh] overflow-y-auto rounded-[12px] border border-hairline bg-surface p-1.5 focus:outline-none">
+      className={`absolute ${align === 'right' ? 'right-0' : 'left-0'} top-full mt-1.5 z-40 w-[250px] max-h-[70vh] overflow-y-auto rounded-[12px] border border-hairline bg-surface p-1.5 focus:outline-none`}>
       {items.map((it, i) => {
         const Icon = it.icon
         const header = it.section && it.section !== items[i - 1]?.section
@@ -78,5 +94,33 @@ export default function ToolMenu({ open, onClose, anchorRef, items, openIds, onP
         )
       })}
     </div>
+  )
+}
+
+/** The ＋ window launcher in the top bars (opens or focuses a window) plus the minimize/restore-all toggle (⌘J). */
+export function WindowLauncher({ items, openIds, onPick, hasWindows, allMinimized, onToggleAll }: {
+  items: MenuItem[]
+  /** Ids (tool names) of the windows already open in this workspace */
+  openIds: string[]
+  onPick: (id: string) => void
+  hasWindows: boolean
+  allMinimized: boolean
+  onToggleAll: () => void
+}) {
+  const [open, setOpen] = useState(false)
+  const anchorRef = useRef<HTMLDivElement>(null)
+  const close = useCallback(() => setOpen(false), [])
+  return (
+    <>
+      <div ref={anchorRef} className="relative flex-none">
+        <IconButton label="Open a tool window" active={open} onClick={() => setOpen(o => !o)}><Plus strokeWidth={1.5} className="w-4 h-4" /></IconButton>
+        <ToolMenu open={open} onClose={close} anchorRef={anchorRef} items={items} openIds={openIds} onPick={onPick} align="right" />
+      </div>
+      {hasWindows && (
+        <IconButton label={allMinimized ? 'Show all windows (⌘J)' : 'Minimize all windows (⌘J)'} onClick={onToggleAll} active={allMinimized}>
+          {allMinimized ? <PanelBottomOpen strokeWidth={1.5} className="w-4 h-4" /> : <PanelBottomClose strokeWidth={1.5} className="w-4 h-4" />}
+        </IconButton>
+      )}
+    </>
   )
 }

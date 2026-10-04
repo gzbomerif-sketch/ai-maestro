@@ -1,26 +1,21 @@
 'use client'
 
-/** Layout state for the command-center shell: reducer + persistence + global shortcuts. */
-import { useEffect, useReducer, useRef, useState } from 'react'
-import { DEFAULT_LAYOUT, isEditableTarget, layoutReducer, layoutShortcut, migrateActiveTab, parseLayout } from '@/lib/panel-layout'
+/** Layout state for the command-center shell: sidebar width/collapse, persisted, plus the ⌘B shortcut. Windows live in useWindows. */
+import { useEffect, useReducer, useState } from 'react'
+import { DEFAULT_LAYOUT, isEditableTarget, layoutReducer, layoutShortcut, parseLayout } from '@/lib/panel-layout'
 import { readString, writePref } from '@/lib/safe-storage'
 
 export const LAYOUT_KEY = 'aimaestro-layout'
 
-export function useLayout(scope: 'agent' | 'team' = 'agent') {
+export function useLayout() {
   const [layout, dispatch] = useReducer(layoutReducer, DEFAULT_LAYOUT)
   const [hydrated, setHydrated] = useState(false)
 
-  // Read after mount (the server render has no localStorage)
+  // Read after mount (the server render has no localStorage). A stored layout from before the window
+  // workspace may still carry a dock `panel`; parseLayout drops it.
   useEffect(() => {
     const stored = parseLayout(readString(LAYOUT_KEY))
-    if (stored) {
-      dispatch({ type: 'replace', state: stored })
-    } else {
-      // First run with panels: carry over the old top-tab choice once
-      const migrated = migrateActiveTab(readString('aimaestro-active-tab'))
-      if (migrated) dispatch({ type: 'open', panel: migrated })
-    }
+    if (stored) dispatch({ type: 'replace', state: stored })
     setHydrated(true)
   }, [])
 
@@ -28,17 +23,13 @@ export function useLayout(scope: 'agent' | 'team' = 'agent') {
     if (hydrated) writePref(LAYOUT_KEY, JSON.stringify(layout))
   }, [layout, hydrated])
 
-  const scopeRef = useRef(scope)
-  scopeRef.current = scope
   useEffect(() => {
     const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform)
     const onKey = (e: KeyboardEvent) => {
-      const action = layoutShortcut(e, isMac)
-      if (!action || isEditableTarget(e.target as Element | null)) return
+      // ⌘J and ⇧⌘M act on windows: WorkArea handles them
+      if (layoutShortcut(e, isMac) !== 'toggleSidebar' || isEditableTarget(e.target as Element | null)) return
       e.preventDefault()
-      if (action === 'togglePanel') dispatch({ type: 'toggle', scope: scopeRef.current })
-      else if (action === 'toggleSidebar') dispatch({ type: 'toggleSidebar' })
-      else dispatch({ type: 'toggleMaximize' })
+      dispatch({ type: 'toggleSidebar' })
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)

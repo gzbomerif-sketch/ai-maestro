@@ -1,14 +1,14 @@
 'use client'
 
 import type { Agent } from '@/types/agent'
-import { PANEL_TYPES, type LayoutAction, type LayoutState, type PanelType } from '@/lib/panel-layout'
+import { PANEL_TYPES, type PanelType } from '@/lib/panel-layout'
 import { PANEL_ICONS } from './PanelMenu'
-import DockFrame from './DockFrame'
-import PanelBody from './PanelBody'
+import DockFrame, { type LayoutAction, type PanelState } from './DockFrame'
+import { renderTool } from './PanelBody'
 
-/** Agent tool panel: Terminal, Inbox, Files, Memory… for the selected agent. */
+/** Legacy agent tool dock (unused by the command-center shell; see DockFrame). Agent tool panel: Terminal, Inbox, Files, Memory… for the selected agent. */
 export default function PanelDock({ layout, dispatch, agent, onlineAgents, unread, wakingAgentId, onWake, onShowProfile }: {
-  layout: LayoutState
+  layout: { panel: PanelState }
   dispatch: React.Dispatch<LayoutAction>
   agent: Agent
   onlineAgents: Agent[]
@@ -30,10 +30,7 @@ export default function PanelDock({ layout, dispatch, agent, onlineAgents, unrea
       onPick={id => dispatch({ type: 'open', panel: id as PanelType })}
       emptyHint="Use ＋ or ⌘J. Terminal, Inbox, Files, Memory and more open here."
     >
-      {p.active && (
-        <PanelBody key={p.active} type={p.active} agent={agent} onlineAgents={onlineAgents}
-          wakingAgentId={wakingAgentId} onWake={onWake} onShowProfile={onShowProfile} />
-      )}
+      {p.active && renderTool(p.active, { agent, onlineAgents, wakingAgentId, onWake, onShowProfile, minimized: false })}
     </DockFrame>
   )
 }

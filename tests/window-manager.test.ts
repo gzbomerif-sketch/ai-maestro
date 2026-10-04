@@ -249,4 +249,12 @@ describe('window-manager', () => {
     ] }))
     expect(ok?.windows.map(w => w.id)).toEqual(['a1:term:abc', '_:tasks'])
   })
+  it('parseWindows accepts team tools scoped by a team id', () => {
+    const base = { x: 0, y: 0, w: 500, h: 400, z: 1, minimized: false, maximized: false }
+    const ok = parseWindows(JSON.stringify({ windows: [
+      { ...base, id: 'team:t1:kanban', tool: 'kanban', agentId: 'team:t1' },
+      { ...base, id: 'team:t1:term:a1', tool: 'term:a1', agentId: 'team:t1' },
+    ] }))
+    expect(ok?.windows.map(w => w.id)).toEqual(['team:t1:kanban', 'team:t1:term:a1'])
+  })
 })

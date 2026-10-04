@@ -3,8 +3,10 @@
  * Pure (no React, no storage) so it can be unit-tested. Mirrors the idioms of lib/panel-layout.ts.
  */
 import { PANEL_TYPES, clampSize, type PanelType } from '@/lib/panel-layout'
+import { TEAM_TOOLS, type TeamTool } from '@/lib/team-panels'
 
-export type WindowTool = PanelType | 'tasks' | 'skills' | `term:${string}`
+/** Team workspace windows reuse this reducer, scoped by agentId = `team:<teamId>` (see teamScope in lib/team-panels). */
+export type WindowTool = PanelType | 'tasks' | 'skills' | TeamTool | `term:${string}`
 
 export interface ManagedWindow {
   /** windowId(tool, agentId) */
@@ -145,7 +147,7 @@ export function windowReducer(s: WindowState, a: WindowAction): WindowState {
   }
 }
 
-const TOOL_IDS = new Set<string>([...PANEL_TYPES.map(p => p.id), 'tasks', 'skills'])
+const TOOL_IDS = new Set<string>([...PANEL_TYPES.map(p => p.id), 'tasks', 'skills', ...TEAM_TOOLS.map(t => t.id)])
 const TERM_TOOL = /^term:[a-zA-Z0-9_-]+$/
 const isTool = (t: unknown): t is WindowTool => typeof t === 'string' && (TOOL_IDS.has(t) || TERM_TOOL.test(t))
 const isNum = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v)

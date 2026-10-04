@@ -19,7 +19,7 @@ export default function MiniPreview({ hidden, onOpen }: { hidden: boolean; onOpe
   try { host = new URL(url).host } catch { /* keep raw */ }
 
   return (
-    <div className="absolute right-5 bottom-[150px] z-30 rounded-[12px] border border-hairline bg-surface overflow-hidden group"
+    <div className="absolute right-5 bottom-[150px] z-10 rounded-[12px] border border-hairline bg-surface overflow-hidden group"
       style={{ width: W }}>
       <div className="relative bg-white overflow-hidden" style={{ height: PAGE_H * scale }}>
         <iframe src={url} title="Mini preview" tabIndex={-1} sandbox={BROWSER_SANDBOX} referrerPolicy="no-referrer" aria-hidden

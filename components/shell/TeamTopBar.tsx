@@ -1,14 +1,15 @@
 'use client'
 
-import { PanelLeft, PanelRight, Loader2 } from 'lucide-react'
+import { PanelLeft, Loader2 } from 'lucide-react'
 import type { Agent } from '@/types/agent'
 import type { Team, Meeting } from '@/types/team'
 import { displayName, formatAge } from '@/lib/agent-status'
 import { Button, IconButton } from './ui'
+import { WindowLauncher, type MenuItem } from './PanelMenu'
 
 const initials = (n: string) => n.replace(/[^a-zA-Z0-9]+/g, ' ').trim().split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || '?'
 
-export default function TeamTopBar({ team, meeting, members, now, starting, onStart, onEnd, panelOpen, onTogglePanel, sidebarCollapsed, onToggleSidebar }: {
+export default function TeamTopBar({ team, meeting, members, now, starting, onStart, onEnd, tools, openToolIds, onOpenTool, hasWindows, allMinimized, onToggleAll, sidebarCollapsed, onToggleSidebar }: {
   team: Team
   meeting: Meeting | null
   members: Agent[]
@@ -16,8 +17,13 @@ export default function TeamTopBar({ team, meeting, members, now, starting, onSt
   starting: boolean
   onStart: () => void
   onEnd: () => void
-  panelOpen: boolean
-  onTogglePanel: () => void
+  /** Window launcher (＋) entries, the ids already open, and the minimize/restore-all toggle */
+  tools: MenuItem[]
+  openToolIds: string[]
+  onOpenTool: (id: string) => void
+  hasWindows: boolean
+  allMinimized: boolean
+  onToggleAll: () => void
   sidebarCollapsed: boolean
   onToggleSidebar: () => void
 }) {
@@ -42,7 +48,8 @@ export default function TeamTopBar({ team, meeting, members, now, starting, onSt
           : <Button variant="accent" onClick={onStart} disabled={starting || members.length === 0} title={members.length === 0 ? 'Add members first' : undefined}>
               {starting && <Loader2 className="w-4 h-4 animate-spin" />}Start meeting
             </Button>}
-        <IconButton label={panelOpen ? 'Hide panel (⌘J)' : 'Show panel (⌘J)'} onClick={onTogglePanel} active={panelOpen}><PanelRight strokeWidth={1.5} className="w-4 h-4" /></IconButton>
+        <WindowLauncher items={tools} openIds={openToolIds} onPick={onOpenTool}
+          hasWindows={hasWindows} allMinimized={allMinimized} onToggleAll={onToggleAll} />
       </div>
     </header>
   )

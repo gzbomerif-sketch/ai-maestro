@@ -1,10 +1,11 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Moon, Power, ExternalLink, MoreHorizontal, PanelRight, PanelLeft, Loader2 } from 'lucide-react'
+import { Moon, Power, ExternalLink, MoreHorizontal, PanelLeft, Loader2 } from 'lucide-react'
 import type { Agent } from '@/types/agent'
 import { displayName, formatAge, type StatusEntry } from '@/lib/agent-status'
 import { Button, IconButton } from './ui'
+import { WindowLauncher, type MenuItem } from './PanelMenu'
 
 export interface AgentTopBarProps {
   agent: Agent
@@ -15,8 +16,13 @@ export interface AgentTopBarProps {
   onWake: () => void
   onProfile: () => void
   onExport: () => void
-  panelOpen: boolean
-  onTogglePanel: () => void
+  /** Window launcher (＋) entries, the ids already open, and the minimize/restore-all toggle */
+  tools: MenuItem[]
+  openToolIds: string[]
+  onOpenTool: (id: string) => void
+  hasWindows: boolean
+  allMinimized: boolean
+  onToggleAll: () => void
   sidebarCollapsed: boolean
   onToggleSidebar: () => void
 }
@@ -66,7 +72,8 @@ export default function AgentTopBar(p: AgentTopBarProps) {
             </div>
           )}
         </div>
-        <IconButton label={p.panelOpen ? 'Hide panel (⌘J)' : 'Show panel (⌘J)'} onClick={p.onTogglePanel} active={p.panelOpen}><PanelRight strokeWidth={1.5} className="w-4 h-4" /></IconButton>
+        <WindowLauncher items={p.tools} openIds={p.openToolIds} onPick={p.onOpenTool}
+          hasWindows={p.hasWindows} allMinimized={p.allMinimized} onToggleAll={p.onToggleAll} />
       </div>
     </header>
   )

@@ -2,9 +2,21 @@
 
 import { useCallback, useRef, useState, type ReactNode } from 'react'
 import { Plus, X, Maximize2, Minimize2, PanelBottom, PanelRight, PanelRightClose, type LucideIcon } from 'lucide-react'
-import type { LayoutAction, PanelState } from '@/lib/panel-layout'
+import type { PanelType } from '@/lib/panel-layout'
 import { Badge, IconButton, EmptyState } from './ui'
 import ToolMenu, { type MenuItem } from './PanelMenu'
+
+/**
+ * Legacy dock state. The command-center shell no longer uses the dock (it opens floating windows);
+ * these local types only keep this file compiling until the classic-shell audit removes it.
+ */
+export interface PanelState {
+  open: boolean; position: 'right' | 'bottom'; rightW: number; bottomH: number; maximized: boolean
+  tabs: PanelType[]; active: PanelType | null; teamTabs: string[]; teamActive: string | null
+}
+export type LayoutAction =
+  | { type: 'open'; panel: PanelType } | { type: 'close'; panel: PanelType } | { type: 'activate'; panel: PanelType }
+  | { type: 'toggle'; scope?: 'agent' | 'team' } | { type: 'setPosition'; position: 'right' | 'bottom' } | { type: 'toggleMaximize' }
 
 export interface DockTab { id: string; label: string; icon: LucideIcon; badge?: number }
 

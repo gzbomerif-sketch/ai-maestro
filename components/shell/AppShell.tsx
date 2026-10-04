@@ -11,15 +11,18 @@ import { resolveAgentTab } from '@/lib/shell-tabs'
 import { useLayout } from '@/hooks/useLayout'
 import { useTeams, useActiveMeetings } from '@/hooks/useTeams'
 import { LIMITS } from '@/lib/panel-layout'
+import { AGENT_TOOLS, agentToolForKey, toolLabel } from '@/lib/window-tools'
+import type { ManagedWindow, WindowTool } from '@/lib/window-manager'
 import AgentCreationWizard from '@/components/AgentCreationWizard'
 import StatusSidebar from './StatusSidebar'
 import AgentTopBar from './AgentTopBar'
 import ResizeHandle from './ResizeHandle'
-import PanelDock from './PanelDock'
 import ColonyHost from './ColonyHost'
 import WorkArea from './WorkArea'
 import TeamWorkspace from './TeamWorkspace'
 import MiniPreview from './MiniPreview'
+import { renderTool } from './PanelBody'
+import { iconForTool, type MenuItem } from './PanelMenu'
 import { IconButton } from './ui'
 import HomeScreen from './HomeScreen'
 import CommandPalette from './CommandPalette'
@@ -42,6 +45,9 @@ export interface AppShellProps {
   onAgentsChanged: () => void
   onSwitchClassic: () => void
 }
+
+const AGENT_MENU: MenuItem[] = AGENT_TOOLS.map(t => ({ id: t.id, label: t.label, key: t.key, icon: iconForTool(t.id) }))
+const windowIcon = (w: ManagedWindow) => { const Icon = iconForTool(w.tool); return <Icon strokeWidth={1.5} className="w-3.5 h-3.5" /> }
 
 const LABEL: Record<string, string> = { 'needs-you': 'Needs you', working: 'Working', idle: 'Idle', asleep: 'Asleep', offline: 'Offline' }
 
@@ -69,7 +75,7 @@ export default function AppShell(p: AppShellProps) {
   const [teamId, setTeamId] = useState<string | null>(null)
   const { teams, createTeam } = useTeams()
   const { meetings, startMeeting, endMeeting } = useActiveMeetings()
-  const { layout, dispatch } = useLayout(teamId ? 'team' : 'agent')
+  const { layout, dispatch } = useLayout()
   useEffect(() => {
     const id = new URLSearchParams(window.location.search).get('team')
     if (id) { setTeamId(id); p.onSelectHome(); window.history.replaceState(null, '', '/') }
@@ -99,19 +105,29 @@ export default function AppShell(p: AppShellProps) {
       )}
 
       {teamId ? (
-        <TeamWorkspace key={teamId} teamId={teamId} layout={layout} dispatch={dispatch} allAgents={p.agents} onlineAgents={p.onlineAgents}
+        <TeamWorkspace key={teamId} teamId={teamId} sidebarCollapsed={layout.sidebarCollapsed} onToggleSidebar={() => dispatch({ type: 'toggleSidebar' })} allAgents={p.agents} onlineAgents={p.onlineAgents}
           meetings={meetings} startMeeting={startMeeting} endMeeting={endMeeting}
           wakingAgentId={p.wakingAgentId} onWake={p.onWake} onShowProfile={p.onShowProfile} now={now} />
       ) : agent ? (
-        <WorkArea layout={layout} dispatch={dispatch} depKey={agent.id}
-          overlay={<MiniPreview hidden={layout.panel.open && layout.panel.active === 'browser'} onOpen={() => dispatch({ type: 'open', panel: 'browser' })} />}
-          top={
+        <WorkArea
+          scopeId={agent.id} keyToTool={agentToolForKey} iconFor={windowIcon}
+          titleFor={w => {
+            const label = toolLabel(w.tool)
+            const n = w.tool === 'inbox' ? unread[agent.id] ?? 0 : 0
+            return n > 0 ? `${label} (${n})` : label
+          }}
+          renderContent={w => renderTool(w.tool, {
+            agent, onlineAgents: p.onlineAgents, wakingAgentId: p.wakingAgentId, onWake: p.onWake, onShowProfile: p.onShowProfile, minimized: w.minimized,
+          })}
+          overlay={api => <MiniPreview hidden={api.isShowing('browser')} onOpen={() => api.openTool('browser')} />}
+          top={api =>
             <AgentTopBar
               agent={agent} entry={entryById[agent.id]} now={now}
               busy={p.wakingAgentId === agent.id || sleepingId === agent.id}
               onSleep={() => sleep(agent)} onWake={() => p.onWake(agent)}
-              onProfile={() => p.onShowProfile(agent)} onExport={() => dispatch({ type: 'open', panel: 'export' })}
-              panelOpen={layout.panel.open} onTogglePanel={() => dispatch({ type: 'toggle', scope: 'agent' })}
+              onProfile={() => p.onShowProfile(agent)} onExport={() => api.openTool('export')}
+              tools={AGENT_MENU} openToolIds={api.windows.map(w => w.tool)} onOpenTool={id => api.openTool(id as WindowTool)}
+              hasWindows={api.windows.length > 0} allMinimized={api.allMinimized} onToggleAll={api.toggleAll}
               sidebarCollapsed={layout.sidebarCollapsed} onToggleSidebar={() => dispatch({ type: 'toggleSidebar' })}
             />
           }
@@ -119,10 +135,6 @@ export default function AppShell(p: AppShellProps) {
             <AgentTabContent agent={agent} activeTab={resolveAgentTab('chat', getRuntimeMode(agent.id))} setActiveTab={p.setActiveTab}
               onlineAgents={p.onlineAgents} wakingAgentId={p.wakingAgentId} onWake={p.onWake} onShowProfile={p.onShowProfile}
               hideHeaders chatVariant="ink" />
-          }
-          dock={
-            <PanelDock layout={layout} dispatch={dispatch} agent={agent} onlineAgents={p.onlineAgents} unread={unread[agent.id] ?? 0}
-              wakingAgentId={p.wakingAgentId} onWake={p.onWake} onShowProfile={p.onShowProfile} />
           }
         />
       ) : (

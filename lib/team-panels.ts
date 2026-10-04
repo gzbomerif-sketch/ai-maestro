@@ -11,6 +11,9 @@ export const TEAM_TOOLS: { id: TeamTool; label: string; key: string }[] = [
   { id: 'browser', label: 'Browser', key: 'B' },
   { id: 'colony', label: 'Colony', key: 'O' },
 ]
+/** Window scope for a team's workspace: the team id stands in for the agent id in lib/window-manager. */
+export const teamScope = (teamId: string): string => `team:${teamId}`
+
 const TOOL_IDS = new Set<string>(TEAM_TOOLS.map(t => t.id))
 
 export function isTeamTab(v: unknown): v is TeamTab {

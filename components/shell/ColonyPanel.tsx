@@ -6,20 +6,21 @@ import { useColony } from './ColonyHost'
 import { Button, EmptyState, IconButton } from './ui'
 
 /**
- * The Colony tab's body, in the agent dock and the team workspace alike: an empty slot the
+ * The Colony window's body, in the agent and team workspaces alike: an empty slot the
  * persistent colony iframe (ColonyHost) pins itself over, plus the explain-yourself states
  * when there is nothing to show. The iframe itself never mounts here — see ColonyHost.
  */
-export default function ColonyPanel() {
+export default function ColonyPanel({ hidden = false }: { hidden?: boolean } = {}) {
   const { setSlot, status, local, reload } = useColony()
   const slotRef = useRef<HTMLDivElement>(null)
   const showing = local && !!status?.running && !!status.url
 
+  // A minimized window stays mounted but must release the slot, or the frame would keep floating over the chat
   useEffect(() => {
-    if (!showing) return
+    if (!showing || hidden) return
     setSlot(slotRef.current)
     return () => setSlot(null)
-  }, [setSlot, showing])
+  }, [setSlot, showing, hidden])
 
   if (!status) return <div className="flex-1 min-h-0 bg-sunken" aria-busy="true" />
 

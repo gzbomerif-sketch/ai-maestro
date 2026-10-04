@@ -1,12 +1,15 @@
 import { describe, it, expect } from 'vitest'
 import {
   TEAM_TOOLS, isTeamTab, termTab, termAgentId, teamTabForKey, teamTabLabel,
-  pruneMemberTabs, activeMeetingFor, redirectTarget,
+  pruneMemberTabs, activeMeetingFor, redirectTarget, teamScope,
 } from '@/lib/team-panels'
 
 const q = (s: string) => new URLSearchParams(s)
 
 describe('team tabs', () => {
+  it('scopes a team workspace\'s windows by team id', () => {
+    expect(teamScope('t1')).toBe('team:t1')
+  })
   it('lists the team tools with their keys', () => {
     expect(TEAM_TOOLS.map(t => `${t.id}:${t.key}`)).toEqual(['kanban:K', 'tasks:A', 'documents:D', 'instructions:N', 'members:E', 'browser:B', 'colony:O'])
   })

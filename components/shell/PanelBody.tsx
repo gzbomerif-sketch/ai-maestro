@@ -1,13 +1,18 @@
 'use client'
 
+import type { ReactNode } from 'react'
 import MessageCenter from '@/components/MessageCenter'
 import ErrorBoundary from '@/components/ErrorBoundary'
 import { agentToSession, getAgentBaseUrl } from '@/lib/agent-utils'
 import type { Agent } from '@/types/agent'
 import type { PanelType } from '@/lib/panel-layout'
+import type { WindowTool } from '@/lib/window-manager'
+import { toolLabel } from '@/lib/window-tools'
 import AgentTabContent, { type AgentTab } from './AgentTabContent'
 import BrowserPanel from './BrowserPanel'
 import ColonyPanel from './ColonyPanel'
+import { renderTeamTool, type TeamToolData } from './TeamTools'
+import { EmptyState } from './ui'
 
 const TAB_FOR: Record<Exclude<PanelType, 'inbox' | 'browser' | 'colony'>, AgentTab> = {
   terminal: 'terminal', files: 'worktree', memory: 'memory', graph: 'graph', docs: 'docs',
@@ -25,29 +30,53 @@ function toRecipients(onlineAgents: Agent[]) {
   }))
 }
 
-/** One tool's content inside the panel dock. */
-export default function PanelBody({ type, agent, onlineAgents, wakingAgentId, onWake, onShowProfile }: {
-  type: PanelType
-  agent: Agent
+/** What every tool needs from the shell, whatever the workspace. */
+export interface ToolEnv {
   onlineAgents: Agent[]
   wakingAgentId: string | null
   onWake: (a: Agent) => void
   onShowProfile: (a: Agent) => void
-}) {
-  if (type === 'browser') return <BrowserPanel />
-  if (type === 'colony') return <ColonyPanel />
-  if (type === 'inbox') {
+  /** The window is minimized: still mounted (terminals keep their size and scrollback), just hidden */
+  minimized: boolean
+}
+
+export interface ToolContext extends ToolEnv {
+  /** The selected agent (agent workspace) */
+  agent: Agent | null
+  /** Present in a team workspace; its tools come from lib/team-panels */
+  team?: TeamToolData
+}
+
+function ComingSoon({ tool }: { tool: WindowTool }) {
+  return (
+    <div className="flex-1 min-h-0 grid place-items-center overflow-auto bg-sunken">
+      <EmptyState title={toolLabel(tool)} description="Coming soon. This tool will open here in a later update." />
+    </div>
+  )
+}
+
+/** One tool's content inside its floating window. Every window's content comes through here. */
+export function renderTool(tool: WindowTool, ctx: ToolContext): ReactNode {
+  if (ctx.team) return renderTeamTool(tool, ctx.team, ctx)
+  const { agent } = ctx
+  if (!agent) return null
+  if (tool === 'browser') return <BrowserPanel />
+  if (tool === 'colony') return <ColonyPanel hidden={ctx.minimized} />
+  if (tool === 'tasks' || tool === 'skills') return <ComingSoon tool={tool} />
+  if (tool === 'inbox') {
     return (
       <div className="flex-1 min-h-0 flex overflow-hidden">
         <ErrorBoundary fallbackLabel="Inbox">
-          <MessageCenter sessionName={agentToSession(agent).id} agentId={agent.id} allAgents={toRecipients(onlineAgents)}
+          <MessageCenter sessionName={agentToSession(agent).id} agentId={agent.id} allAgents={toRecipients(ctx.onlineAgents)}
             hostUrl={getAgentBaseUrl(agent)} isActive={true} compact />
         </ErrorBoundary>
       </div>
     )
   }
+  const tab = TAB_FOR[tool as keyof typeof TAB_FOR]
+  if (!tab) return null
   return (
-    <AgentTabContent agent={agent} activeTab={TAB_FOR[type]} setActiveTab={() => {}} onlineAgents={onlineAgents}
-      wakingAgentId={wakingAgentId} onWake={onWake} onShowProfile={onShowProfile} hideHeaders chatVariant="ink" />
+    <AgentTabContent agent={agent} activeTab={tab} setActiveTab={() => {}} onlineAgents={ctx.onlineAgents}
+      wakingAgentId={ctx.wakingAgentId} onWake={ctx.onWake} onShowProfile={ctx.onShowProfile} hideHeaders chatVariant="ink" />
   )
 }
