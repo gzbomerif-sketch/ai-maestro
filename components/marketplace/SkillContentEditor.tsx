@@ -30,29 +30,88 @@ export function isValidSkillName(name: string): boolean {
   return /^[a-zA-Z0-9_-]+$/.test(name)
 }
 
+const YAML_RESERVED = /^(true|false|yes|no|on|off|null|~|[-+]?[\d.][\d._eE+-]*)$/i
+
+/** A YAML scalar for `value`: plain when that is safe, single-quoted (quotes doubled) otherwise. */
+export function yamlScalar(value: string): string {
+  const v = value.replace(/\s*[\r\n]+\s*/g, ' ').trim()
+  const needsQuote =
+    v === '' ||
+    /^[-?:,\[\]{}#&*!|>'"%@`]/.test(v) ||
+    /: |:$| #/.test(v) ||
+    YAML_RESERVED.test(v)
+  return needsQuote ? `'${v.replace(/'/g, "''")}'` : v
+}
+
 /** The SKILL.md a freshly created skill starts from. */
 export function buildSkillScaffold(name: string, description: string): string {
-  return `---\nname: ${name}\ndescription: ${description}\n---\n\n${description}\n\n## Instructions\n\n`
+  return `---\nname: ${name}\ndescription: ${yamlScalar(description)}\n---\n\n${description}\n\n## Instructions\n\n`
 }
 
 const FRONTMATTER = /^---\r?\n([\s\S]*?)\r?\n---/
 
-/** The `description:` value from the SKILL.md frontmatter ('' when absent). */
+interface DescriptionEntry {
+  start: number
+  end: number
+  value: string
+}
+
+/** Locate the frontmatter `description:` entry: its first line, one past its last continuation line, decoded value. */
+function findDescription(lines: string[]): DescriptionEntry | null {
+  const start = lines.findIndex(l => /^description:/.test(l))
+  if (start === -1) return null
+  let end = start + 1
+  for (let j = start + 1; j < lines.length; j++) {
+    if (/^[ \t]+\S/.test(lines[j])) end = j + 1
+    else if (lines[j].trim() !== '') break
+  }
+  const first = lines[start].replace(/^description:[ \t]*/, '').trim()
+  const cont = lines.slice(start + 1, end).map(l => l.trim())
+  let value: string
+  if (/^[>|][+-]?\d*$/.test(first)) {
+    value = cont.join(' ')
+  } else {
+    const raw = [first, ...cont].join(' ').trim()
+    const single = /^'([\s\S]*)'$/.exec(raw)
+    const double = /^"([\s\S]*)"$/.exec(raw)
+    if (single) value = single[1].replace(/''/g, "'")
+    else if (double) value = double[1].replace(/\\(["\\])/g, '$1')
+    else value = raw.replace(/\s+#.*$/, '')
+  }
+  return { start, end, value: value.replace(/\s+/g, ' ').trim() }
+}
+
+/** The `description:` value from the SKILL.md frontmatter, decoded ('' when absent). */
 export function parseSkillDescription(content: string): string {
   const fm = FRONTMATTER.exec(content)
   if (!fm) return ''
-  const line = /^description:[ \t]*(.*)$/m.exec(fm[1])
-  if (!line) return ''
-  return line[1].trim().replace(/^(["'])(.*)\1$/, '$2')
+  return findDescription(fm[1].split(/\r?\n/))?.value ?? ''
 }
 
-/** Rewrite the frontmatter `description:` line; content without one is returned unchanged. */
+/**
+ * Write `description` into the frontmatter: replaces the existing entry (block
+ * scalars and continuation lines included), or inserts one after `name:` (else
+ * at the end) when missing. Content without frontmatter is returned unchanged.
+ */
 export function setSkillDescription(content: string, description: string): string {
   const fm = FRONTMATTER.exec(content)
-  if (!fm || !/^description:/m.test(fm[1])) return content
-  const single = description.replace(/\s*[\r\n]+\s*/g, ' ').trim()
-  const block = fm[1].replace(/^description:.*$/m, () => `description: ${single}`)
-  return content.replace(fm[1], () => block)
+  if (!fm) return content
+  const eol = fm[0].includes('\r\n') ? '\r\n' : '\n'
+  const lines = fm[1].split(/\r?\n/)
+  const line = `description: ${yamlScalar(description)}`
+  const existing = findDescription(lines)
+  if (existing) {
+    lines.splice(existing.start, existing.end - existing.start, line)
+  } else {
+    const nameAt = lines.findIndex(l => /^name:/.test(l))
+    let at = lines.length
+    if (nameAt !== -1) {
+      at = nameAt + 1
+      while (at < lines.length && /^[ \t]+\S/.test(lines[at])) at++
+    }
+    lines.splice(at, 0, line)
+  }
+  return content.replace(fm[1], () => lines.join(eol))
 }
 
 /** True when the draft differs from what was last loaded or saved. */
@@ -126,15 +185,17 @@ export default function SkillContentEditor({
     setSaving(true)
     setSaveError(null)
     // The description field also owns the frontmatter line, unless the body was hand-edited there
+    const descriptionChanged = description !== initial.description
     const nextContent =
-      description !== initial.description && parseSkillDescription(content) === initial.description
+      descriptionChanged && parseSkillDescription(content) === initial.description
         ? setSkillDescription(content, description)
         : content
     try {
       const res = await fetch(skillUrl, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: nextContent, description }),
+        // description only when edited, so a body-only save never touches the registry description
+        body: JSON.stringify({ content: nextContent, ...(descriptionChanged ? { description } : {}) }),
       })
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
