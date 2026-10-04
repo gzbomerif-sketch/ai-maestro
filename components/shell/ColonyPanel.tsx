@@ -78,7 +78,7 @@ export default function ColonyPanel({ hidden = false, z = 0 }: { hidden?: boolea
             is a sibling column the slot yields to, not an overlay it would hide behind. */}
         {selected && cardEnv && (
           <div className="flex-none w-[min(24rem,45%)] min-h-0">
-            <ColonyProfileCard key={selected.id} agent={selected} env={cardEnv} onClose={clearColonySelection} />
+            <ColonyProfileCard key={selected.id} agent={selected} env={cardEnv} hidden={hidden} onClose={clearColonySelection} />
           </div>
         )}
       </div>

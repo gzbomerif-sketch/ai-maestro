@@ -81,19 +81,26 @@ export default function AppShell(p: AppShellProps) {
     const id = new URLSearchParams(window.location.search).get('team')
     if (id) { setTeamId(id); p.onSelectHome(); window.history.replaceState(null, '', '/') }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
-  const selectAgent = (a: Agent) => { setTeamId(null); p.onSelectAgent(a) }
-  const selectHome = () => { setTeamId(null); p.onSelectHome() }
-  const selectTeam = (id: string) => { setTeamId(id); p.onSelectHome() }
+  // A tool queued for an agent that is about to open (colony card) is dropped by any selection of someone else
+  const [pendingTool, setPendingTool] = useState<{ tool: WindowTool; agentId: string } | null>(null)
+  const selectAgent = (a: Agent) => { setPendingTool(cur => (cur && cur.agentId === a.id ? cur : null)); setTeamId(null); p.onSelectAgent(a) }
+  const selectHome = () => { setPendingTool(null); setTeamId(null); p.onSelectHome() }
+  const selectTeam = (id: string) => { setPendingTool(null); setTeamId(id); p.onSelectHome() }
 
   // Colony profile card actions. A tool opens in the workspace of the agent it is for, so for any
   // other agent we select it first and open the tool once its workspace (and its window API) is up.
   const workApi = useRef<WorkAreaApi | null>(null)
-  const [pendingTool, setPendingTool] = useState<{ tool: WindowTool; agentId: string } | null>(null)
   const openToolFor = (tool: WindowTool, a: Agent) => {
     if (!teamId && agent?.id === a.id && workApi.current) { workApi.current.openTool(tool); return }
     selectAgent(a)
     setPendingTool({ tool, agentId: a.id })
   }
+  // Backstop: a select the page rejects never activates the agent, so a stale request expires
+  useEffect(() => {
+    if (!pendingTool) return
+    const t = setTimeout(() => setPendingTool(null), 3000)
+    return () => clearTimeout(t)
+  }, [pendingTool])
   useEffect(() => {
     if (!pendingTool || teamId || agent?.id !== pendingTool.agentId || !workApi.current) return
     workApi.current.openTool(pendingTool.tool)

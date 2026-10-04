@@ -1,12 +1,13 @@
 'use client'
 
-import { createContext, useEffect, useMemo, useState } from 'react'
+import { createContext, useEffect, useMemo, useRef, useState } from 'react'
 import { Loader2, MessageSquarePlus, Pencil, SquareTerminal, Sparkles, LayoutDashboard, X } from 'lucide-react'
 import type { Agent } from '@/types/agent'
 import { PRESENCE_STYLE, type AgentPresence } from '@/lib/agent-presence'
 import type { ShellStatus } from '@/lib/agent-status'
 import { displayName } from '@/lib/agent-status'
 import type { FaceActivity } from '@/lib/avatar-motion'
+import { isEditableTarget } from '@/lib/panel-layout'
 import { useSessionActivity } from '@/hooks/useSessionActivity'
 import { Button as ActionButton } from '@/components/ui/button'
 import AgentFace from '@/components/AgentFace'
@@ -78,8 +79,8 @@ export interface ProfilePatch {
 }
 
 /**
- * Only what the user changed, or null when nothing changed. An emptied label is left out because
- * the API reads a blank label as "no update" rather than "clear it", so sending it would only mislead.
+ * Only what the user changed, or null when nothing changed. A blank label is left out on purpose: it is a
+ * guard against clearing a label by accident (the API would accept it), not an API limitation.
  */
 export function buildProfilePatch(agent: Agent, draft: ProfileDraft): ProfilePatch | null {
   const patch: ProfilePatch = {}
@@ -128,9 +129,11 @@ function Detail({ label, children }: { label: string; children: React.ReactNode 
 }
 
 /** A bot's profile, shown inside the Colony window when its bot is selected. */
-export default function ColonyProfileCard({ agent, env, onClose }: {
+export default function ColonyProfileCard({ agent, env, hidden = false, onClose }: {
   agent: Agent
   env: ColonyCardEnv
+  /** The colony window is minimized: the card stays mounted but must not claim Esc */
+  hidden?: boolean
   onClose: () => void
 }) {
   const { presenceOf } = useSessionActivity()
@@ -152,16 +155,25 @@ export default function ColonyProfileCard({ agent, env, onClose }: {
     [env.agents, agent.id],
   )
 
-  // Esc: leave the form first, then dismiss. Dialogs (the avatar picker) keep their own Escape.
+  // Esc: leave the form first, then dismiss. Only while the colony window is showing, and never for
+  // an Esc meant for something else: a terminal or chat field outside the card, or a dialog/menu/picker.
+  // Capture phase + preventDefault is how this stays one-Esc-one-action without touching WorkArea: its
+  // bubble listener (maximize restore) already yields to defaultPrevented, so when the card takes the Esc
+  // the window stays put and the next Esc restores it.
+  const rootRef = useRef<HTMLElement>(null)
   useEffect(() => {
+    if (hidden) return
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape' || e.defaultPrevented || pickerOpen) return
-      if ((e.target as Element | null)?.closest?.('[role="dialog"],[aria-modal="true"],[role="menu"]')) return
+      const target = e.target as Element | null
+      if (target?.closest?.('[role="dialog"],[aria-modal="true"],[role="menu"]')) return
+      if (isEditableTarget(target) && !rootRef.current?.contains(target)) return
+      e.preventDefault()
       if (editing) { setEditing(false); setError(null) } else onClose()
     }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [editing, pickerOpen, onClose])
+    window.addEventListener('keydown', onKey, true)
+    return () => window.removeEventListener('keydown', onKey, true)
+  }, [hidden, editing, pickerOpen, onClose])
 
   const startEdit = () => { setDraft(draftOf(agent)); setError(null); setEditing(true) }
 
@@ -192,7 +204,7 @@ export default function ColonyProfileCard({ agent, env, onClose }: {
   const program = [agent.program, agent.model].filter(Boolean).join(' · ')
 
   return (
-    <aside aria-label={`${name} profile`}
+    <aside ref={rootRef} aria-label={`${name} profile`}
       className="w-full max-w-sm h-full flex flex-col overflow-y-auto bg-surface border-l border-hairline/70 text-ink">
       <header className="flex items-start gap-3 p-4">
         <div className="flex-none w-16 h-16 rounded-[14px] overflow-hidden bg-sunken border border-hairline grid place-items-center text-2xl text-ink-muted">

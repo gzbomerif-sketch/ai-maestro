@@ -43,7 +43,7 @@ describe('buildProfilePatch', () => {
     expect(buildProfilePatch(a, { ...draftOf(a), tags: 'api, ts, ui' })).toEqual({ tags: ['api', 'ts', 'ui'] })
     expect(buildProfilePatch(a, { ...draftOf(a), tags: '' })).toEqual({ tags: [] })
   })
-  it('never sends an emptied label (the API would ignore it)', () => {
+  it('never sends a blanked label: a deliberate guard against clearing it by accident', () => {
     expect(buildProfilePatch(a, { ...draftOf(a), label: '   ' })).toBeNull()
   })
   it('can clear the task description', () => {
