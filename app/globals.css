@@ -126,6 +126,36 @@
   --c-warn-surface: 22 19 13;   --c-warn-border: 42 35 20;
 }
 
+/* ══ SHADCN/UI BRIDGE ════════════════════════════════════════════════════════
+   shadcn's variables are DERIVED from the semantic channels above (one source
+   of truth). Each holds an RGB channel triple, consumed in tailwind.config.ts
+   as rgb(var(--x) / <alpha-value>). Declared on `:root, .theme-ink` so a theme
+   class re-resolves them against its own --c-* values (var() substitutes at the
+   element that declares it, so a :root-only copy would never follow a theme).
+   shadcn's `accent`/`accent-foreground` are deliberately absent: `accent` is
+   already the brand accent here. */
+:root,
+.theme-ink {
+  --background: var(--c-surface);
+  --foreground: var(--c-ink);
+  --card: var(--c-raised);
+  --card-foreground: var(--c-ink);
+  --popover: var(--c-raised);
+  --popover-foreground: var(--c-ink);
+  --primary: var(--c-accent);
+  --primary-foreground: var(--c-accent-fill);
+  --secondary: var(--c-control-off);
+  --secondary-foreground: var(--c-ink);
+  --muted: var(--c-sunken);
+  --muted-foreground: var(--c-ink-muted);
+  --border: var(--c-hairline);
+  --input: var(--c-hairline);
+  --ring: var(--c-accent);
+  --destructive: var(--c-danger);
+  --destructive-foreground: var(--fg-white);
+  --radius: 0.5rem;
+}
+
 html {
   /* Prevent ALL scroll navigation gestures at root level */
   overscroll-behavior: none;

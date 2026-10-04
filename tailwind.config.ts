@@ -1,4 +1,5 @@
 import type { Config } from 'tailwindcss'
+import animate from 'tailwindcss-animate'
 
 const config: Config = {
   content: [
@@ -78,6 +79,42 @@ const config: Config = {
         'warn-surface': 'rgb(var(--c-warn-surface) / <alpha-value>)',
         'warn-border': 'rgb(var(--c-warn-border) / <alpha-value>)',
 
+        // ── shadcn/ui semantic variables ─────────────────────────────────
+        // Derived from the roles above (app/globals.css maps --background etc.
+        // onto --c-* channels), so the tokens stay the single source of truth.
+        // NOTE: shadcn's own `accent` (hover highlight) is NOT mapped — `accent`
+        // above is the brand accent. Vendored components in components/ui use
+        // bg-control-off / text-ink for that role instead.
+        background: 'rgb(var(--background) / <alpha-value>)',
+        foreground: 'rgb(var(--foreground) / <alpha-value>)',
+        card: {
+          DEFAULT: 'rgb(var(--card) / <alpha-value>)',
+          foreground: 'rgb(var(--card-foreground) / <alpha-value>)',
+        },
+        popover: {
+          DEFAULT: 'rgb(var(--popover) / <alpha-value>)',
+          foreground: 'rgb(var(--popover-foreground) / <alpha-value>)',
+        },
+        primary: {
+          DEFAULT: 'rgb(var(--primary) / <alpha-value>)',
+          foreground: 'rgb(var(--primary-foreground) / <alpha-value>)',
+        },
+        secondary: {
+          DEFAULT: 'rgb(var(--secondary) / <alpha-value>)',
+          foreground: 'rgb(var(--secondary-foreground) / <alpha-value>)',
+        },
+        muted: {
+          DEFAULT: 'rgb(var(--muted) / <alpha-value>)',
+          foreground: 'rgb(var(--muted-foreground) / <alpha-value>)',
+        },
+        destructive: {
+          DEFAULT: 'rgb(var(--destructive) / <alpha-value>)',
+          foreground: 'rgb(var(--destructive-foreground) / <alpha-value>)',
+        },
+        border: 'rgb(var(--border) / <alpha-value>)',
+        input: 'rgb(var(--input) / <alpha-value>)',
+        ring: 'rgb(var(--ring) / <alpha-value>)',
+
         // Deliberately dark surfaces (terminal chrome, immersive rooms), named
         // so no component needs an arbitrary hex.
         room: {
@@ -105,6 +142,6 @@ const config: Config = {
       },
     },
   },
-  plugins: [],
+  plugins: [animate],
 }
 export default config
