@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
-import { Columns3, ListChecks, FileText, ScrollText, Users, SquareTerminal, Globe, type LucideIcon } from 'lucide-react'
+import { Columns3, ListChecks, FileText, ScrollText, Users, SquareTerminal, Globe, Orbit, type LucideIcon } from 'lucide-react'
 import type { Agent } from '@/types/agent'
 import type { Team } from '@/types/team'
 import type { LayoutAction, LayoutState } from '@/lib/panel-layout'
@@ -13,12 +13,13 @@ import TaskKanbanBoard from '@/components/team-meeting/TaskKanbanBoard'
 import TaskPanel from '@/components/team-meeting/TaskPanel'
 import TeamDocumentsSection from '@/components/teams/TeamDocumentsSection'
 import TeamInstructionsSection from '@/components/teams/TeamInstructionsSection'
+import ColonyPanel from '@/components/shell/ColonyPanel'
 import TeamOverviewSection from '@/components/teams/TeamOverviewSection'
 import AgentTabContent from './AgentTabContent'
 import DockFrame from './DockFrame'
 import BrowserPanel from './BrowserPanel'
 
-const TOOL_ICONS: Record<TeamTool, LucideIcon> = { kanban: Columns3, tasks: ListChecks, documents: FileText, instructions: ScrollText, members: Users, browser: Globe }
+const TOOL_ICONS: Record<TeamTool, LucideIcon> = { kanban: Columns3, tasks: ListChecks, documents: FileText, instructions: ScrollText, members: Users, browser: Globe, colony: Orbit }
 type UpdateTeam = (u: { name?: string; description?: string; agentIds?: string[]; instructions?: string }) => Promise<void>
 
 function KanbanBody({ team, members }: { team: Team; members: Agent[] }) {
@@ -78,6 +79,7 @@ export default function TeamPanelDock({ layout, dispatch, team, members, allAgen
       case 'instructions': return <div key={team.id} className="flex-1 min-w-0 overflow-auto p-4"><TeamInstructionsSection instructions={team.instructions || ''} onSave={s => updateTeam({ instructions: s })} /></div>
       case 'members': return <MembersBody key={team.id} team={team} allAgents={allAgents} updateTeam={updateTeam} />
       case 'browser': return <BrowserPanel />
+      case 'colony': return <ColonyPanel />
       default: return null
     }
   })()

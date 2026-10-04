@@ -1,5 +1,5 @@
 /** Team workspace panel tabs, keys and routing helpers. Pure. Spec: 2026-10-03-team-workspace-design.md */
-export type TeamTool = 'kanban' | 'tasks' | 'documents' | 'instructions' | 'members' | 'browser'
+export type TeamTool = 'kanban' | 'tasks' | 'documents' | 'instructions' | 'members' | 'browser' | 'colony'
 export type TeamTab = TeamTool | `term:${string}`
 
 export const TEAM_TOOLS: { id: TeamTool; label: string; key: string }[] = [
@@ -9,6 +9,7 @@ export const TEAM_TOOLS: { id: TeamTool; label: string; key: string }[] = [
   { id: 'instructions', label: 'Instructions', key: 'N' },
   { id: 'members', label: 'Members', key: 'E' },
   { id: 'browser', label: 'Browser', key: 'B' },
+  { id: 'colony', label: 'Colony', key: 'O' },
 ]
 const TOOL_IDS = new Set<string>(TEAM_TOOLS.map(t => t.id))
 

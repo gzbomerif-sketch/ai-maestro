@@ -8,7 +8,7 @@ const q = (s: string) => new URLSearchParams(s)
 
 describe('team tabs', () => {
   it('lists the team tools with their keys', () => {
-    expect(TEAM_TOOLS.map(t => `${t.id}:${t.key}`)).toEqual(['kanban:K', 'tasks:A', 'documents:D', 'instructions:N', 'members:E', 'browser:B'])
+    expect(TEAM_TOOLS.map(t => `${t.id}:${t.key}`)).toEqual(['kanban:K', 'tasks:A', 'documents:D', 'instructions:N', 'members:E', 'browser:B', 'colony:O'])
   })
   it('recognises tools and member terminals only', () => {
     expect(isTeamTab('kanban')).toBe(true)
@@ -22,6 +22,12 @@ describe('team tabs', () => {
     expect(termAgentId('term:abc')).toBe('abc')
     expect(termAgentId('kanban')).toBeNull()
   })
+  it('O opens the Colony tool, same letter as the agent dock', () => {
+    expect(teamTabForKey('o', [])).toBe('colony')
+    expect(isTeamTab('colony')).toBe(true)
+    expect(TEAM_TOOLS.find(t => t.id === 'colony')?.label).toBe('Colony')
+  })
+
   it('maps keys: letters to tools, digits to the first nine members', () => {
     const members = ['m1', 'm2', 'm3']
     expect(teamTabForKey('k', members)).toBe('kanban')
