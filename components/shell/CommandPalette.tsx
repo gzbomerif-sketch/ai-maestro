@@ -16,6 +16,7 @@ export interface CommandPaletteProps {
   onSelectAgent: (agent: Agent) => void
   onSelectHome: () => void
   onSwitchClassic: () => void
+  onCreateAgent?: () => void
   teams?: { id: string; name: string }[]
   onSelectTeam?: (id: string) => void
 }
@@ -48,6 +49,7 @@ export default function CommandPalette(p: CommandPaletteProps) {
     ...(p.teams ?? []).map(t => ({ id: `team:${t.id}`, kind: 'screen' as const, label: `Team · ${t.name}`, keywords: ['team', t.name] })),
     ...SHELL_SCREENS,
     ...SETTINGS_COMMANDS,
+    ...(p.onCreateAgent ? [{ id: 'action:create-agent', kind: 'action' as const, label: 'Create agent…', keywords: ['create', 'agent', 'new'] }] : []),
   ], [p])
   const results = rankCommandResults(query, items).slice(0, 12)
 
@@ -62,6 +64,7 @@ export default function CommandPalette(p: CommandPaletteProps) {
     } else if (item.id.startsWith('team:')) p.onSelectTeam?.(item.id.slice(5))
     else if (item.id === 'screen:home') p.onSelectHome()
     else if (item.id === 'action:classic') p.onSwitchClassic()
+    else if (item.id === 'action:create-agent') p.onCreateAgent?.()
     else router.push(item.id.slice('screen:'.length))
   }
 

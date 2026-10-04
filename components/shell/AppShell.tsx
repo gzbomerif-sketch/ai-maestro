@@ -189,6 +189,7 @@ export default function AppShell(p: AppShellProps) {
         open={paletteOpen} onOpenChange={setPaletteOpen} agents={p.agents}
         statusOf={a => LABEL[entryById[a.id]?.status ?? 'offline']}
         onSelectAgent={selectAgent} onSelectHome={selectHome} onSwitchClassic={p.onSwitchClassic}
+        onCreateAgent={() => setWizardOpen(true)}
         teams={teams} onSelectTeam={selectTeam}
       />
       {wizardOpen && <AgentCreationWizard onClose={() => setWizardOpen(false)} onComplete={() => {

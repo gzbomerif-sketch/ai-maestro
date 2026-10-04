@@ -80,9 +80,12 @@ export default function StatusSidebar(p: StatusSidebarProps) {
         </button>AI Maestro
       </div>
 
-      <button type="button" onClick={p.onOpenPalette} className="flex items-center gap-3 px-2.5 py-2 rounded-[10px] text-[15px] text-ink-muted hover:bg-raised/60">
-        <Search strokeWidth={1.5} className="w-4 h-4" />Search<span className="ml-auto text-[12px] text-gray-500">⌘K</span>
-      </button>
+      <div className="flex items-center gap-2 px-2.5 py-2">
+        <button type="button" onClick={p.onOpenPalette} className="flex flex-1 items-center gap-3 px-2.5 py-2 rounded-[10px] text-[15px] text-ink-muted hover:bg-raised/60">
+          <Search strokeWidth={1.5} className="w-4 h-4" />Search<span className="ml-auto text-[12px] text-gray-500">⌘K</span>
+        </button>
+        <div title="New agent"><IconButton label="New agent" onClick={p.onNewAgent}><Plus strokeWidth={1.5} className="w-4 h-4" /></IconButton></div>
+      </div>
 
       {p.error && (
         <div className="mx-1 mt-2 flex items-center gap-2 rounded-[10px] border border-hairline px-3 py-2 text-[13px] text-ink-muted">
@@ -128,7 +131,6 @@ export default function StatusSidebar(p: StatusSidebarProps) {
         <Link href="/teams" aria-label="Teams" title="Teams" className={navLink}><Users strokeWidth={1.5} className="w-4 h-4" /></Link>
         <Link href="/team-meeting" aria-label="Meetings" title="Meetings" className={navLink}><Presentation strokeWidth={1.5} className="w-4 h-4" /></Link>
         <Link href="/plugin-builder" aria-label="Plugins" title="Plugins" className={navLink}><Boxes strokeWidth={1.5} className="w-4 h-4" /></Link>
-        <span className="ml-auto"><IconButton label="New agent" onClick={p.onNewAgent}><Plus strokeWidth={1.5} className="w-4 h-4" /></IconButton></span>
       </div>
     </aside>
   )
