@@ -26,6 +26,7 @@ import { loadTeams } from '@/lib/team-registry'
 import { type AgentTaskView, listAgentTasks, createTask, patchTask, removeTask } from '@/services/agents-tasks-service'
 
 const AGENT = 'agent-1'
+const TRAVERSAL = ['../../etc', 'a/b', '..', 'a\\b', '', 'a b', 'x\0y']
 
 function task(over: Partial<Task>): Task {
   return {
@@ -76,7 +77,7 @@ describe('listAgentTasks', () => {
     expect(taskRegistry.loadAgentTasks).not.toHaveBeenCalled()
   })
 
-  it.each(['../../etc', 'a/b', '..', 'a\\b', '', 'a b', 'x\0y'])(
+  it.each(TRAVERSAL)(
     'rejects implausible agent id %j before any registry call',
     (bad) => {
       const result = listAgentTasks(bad)
@@ -103,6 +104,18 @@ describe('createTask', () => {
     const result = createTask(AGENT, { subject })
     expect(result.status).toBe(400)
     expect((result.data as ServiceError).error).toBe('missing_field')
+    expect(taskRegistry.createAgentTask).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    ['description', { description: 5 }],
+    ['priority', { priority: '1' }],
+    ['priority', { priority: NaN }],
+  ])('400s on invalid %s', (field, extra) => {
+    const result = createTask(AGENT, { subject: 'x', ...extra } as never)
+    expect(result.status).toBe(400)
+    expect((result.data as ServiceError).error).toBe('invalid_field')
+    expect((result.data as ServiceError).field).toBe(field)
     expect(taskRegistry.createAgentTask).not.toHaveBeenCalled()
   })
 
@@ -141,6 +154,43 @@ describe('patchTask', () => {
     expect(taskRegistry.updateAgentTask).not.toHaveBeenCalled()
   })
 
+  it('passes ONLY whitelisted fields to the registry, dropping immutable keys', () => {
+    vi.mocked(taskRegistry.updateAgentTask).mockReturnValue(task({ id: 't1' }))
+    patchTask(AGENT, 't1', {
+      id: 'x', agentId: 'other', createdAt: '1970-01-01', teamId: 'team-z',
+      assigneeAgentId: 'someone', blockedBy: ['y'], updatedAt: 'now',
+      subject: '  New  ', description: 'd', status: 'review', priority: 2,
+    } as never)
+    expect(taskRegistry.updateAgentTask).toHaveBeenCalledTimes(1)
+    expect(vi.mocked(taskRegistry.updateAgentTask).mock.calls[0]).toEqual([
+      AGENT, 't1', { subject: 'New', description: 'd', status: 'review', priority: 2 },
+    ])
+  })
+
+  it('omits absent whitelisted fields from the update', () => {
+    vi.mocked(taskRegistry.updateAgentTask).mockReturnValue(task({ id: 't1' }))
+    patchTask(AGENT, 't1', { id: 'x' } as never)
+    expect(vi.mocked(taskRegistry.updateAgentTask).mock.calls[0][2]).toEqual({})
+  })
+
+  it.each([
+    ['description', { description: 5 }],
+    ['priority', { priority: '1' }],
+    ['priority', { priority: Infinity }],
+  ])('400s on invalid %s', (field, extra) => {
+    const result = patchTask(AGENT, 't1', extra as never)
+    expect(result.status).toBe(400)
+    expect((result.data as ServiceError).field).toBe(field)
+    expect(taskRegistry.updateAgentTask).not.toHaveBeenCalled()
+  })
+
+  it.each(TRAVERSAL)('rejects implausible agent id %j before any registry call', (bad) => {
+    expect(patchTask(bad, 't1', { subject: 'x' }).status).toBe(404)
+    expect(getAgent).not.toHaveBeenCalled()
+    expect(taskRegistry.updateAgentTask).not.toHaveBeenCalled()
+    expect(loadTeams).not.toHaveBeenCalled()
+  })
+
   it('404s when task not found', () => {
     vi.mocked(taskRegistry.updateAgentTask).mockReturnValue(null)
     expect(patchTask(AGENT, 'nope', { subject: 'x' }).status).toBe(404)
@@ -163,6 +213,13 @@ describe('removeTask', () => {
   it('404s when task not found', () => {
     vi.mocked(taskRegistry.deleteAgentTask).mockReturnValue(false)
     expect(removeTask(AGENT, 'nope').status).toBe(404)
+  })
+
+  it.each(TRAVERSAL)('rejects implausible agent id %j before any registry call', (bad) => {
+    expect(removeTask(bad, 't1').status).toBe(404)
+    expect(getAgent).not.toHaveBeenCalled()
+    expect(taskRegistry.deleteAgentTask).not.toHaveBeenCalled()
+    expect(loadTeams).not.toHaveBeenCalled()
   })
 
   it('404s on unknown agent', () => {

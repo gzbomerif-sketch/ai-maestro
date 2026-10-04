@@ -15,7 +15,7 @@ import {
 import { getAgent } from '@/lib/agent-registry'
 import { loadTeams } from '@/lib/team-registry'
 import type { Task, TaskStatus } from '@/types/task'
-import { type ServiceResult, missingField, notFound, invalidField } from '@/services/service-errors'
+import { type ServiceResult, missingField, notFound, invalidField, invalidRequest } from '@/services/service-errors'
 
 export type AgentTaskSource = 'personal' | 'team'
 export interface AgentTaskView extends Task { source: AgentTaskSource }
@@ -33,6 +33,17 @@ const AGENT_ID = /^[a-zA-Z0-9_-]+$/
 function requireAgent(agentId: string): ServiceResult<never> | null {
   if (typeof agentId !== 'string' || !AGENT_ID.test(agentId) || !getAgent(agentId)) {
     return notFound('Agent', typeof agentId === 'string' ? agentId.slice(0, 64) : undefined)
+  }
+  return null
+}
+
+/** Validate optional description (string) and priority (finite number). */
+function validateOptionalFields(body: { description?: unknown; priority?: unknown } | null | undefined): ServiceResult<never> | null {
+  if (body?.description !== undefined && typeof body.description !== 'string') {
+    return invalidField('description', 'description must be a string')
+  }
+  if (body?.priority !== undefined && (typeof body.priority !== 'number' || !Number.isFinite(body.priority))) {
+    return invalidField('priority', 'priority must be a number')
   }
   return null
 }
@@ -65,6 +76,8 @@ export function createTask(
 
   const subject = typeof body?.subject === 'string' ? body.subject.trim() : ''
   if (!subject) return missingField('subject')
+  const invalid = validateOptionalFields(body)
+  if (invalid) return invalid
 
   const task = createAgentTask({
     agentId,
@@ -86,6 +99,8 @@ export function patchTask(
   const rejected = requireAgent(agentId)
   if (rejected) return rejected
 
+  if (!body || typeof body !== 'object') return invalidRequest('Request body must be a JSON object')
+
   if (body?.status !== undefined && !TASK_STATUSES.includes(body.status)) {
     return invalidField('status', `status must be one of: ${TASK_STATUSES.join(', ')}`)
   }
@@ -93,10 +108,18 @@ export function patchTask(
     return invalidField('subject', 'subject must be a non-empty string')
   }
 
-  const task = updateAgentTask(agentId, taskId, {
-    ...body,
-    ...(body?.subject !== undefined ? { subject: body.subject.trim() } : {}),
-  })
+  const invalid = validateOptionalFields(body)
+  if (invalid) return invalid
+
+  // Explicit whitelist: the request body is untrusted, so never spread it
+  // (id, agentId, teamId, createdAt, blockedBy, ... must stay immutable).
+  const updates: Partial<Pick<Task, 'subject' | 'description' | 'status' | 'priority'>> = {}
+  if (body.subject !== undefined) updates.subject = body.subject.trim()
+  if (body.description !== undefined) updates.description = body.description
+  if (body.status !== undefined) updates.status = body.status
+  if (body.priority !== undefined) updates.priority = body.priority
+
+  const task = updateAgentTask(agentId, taskId, updates)
   if (!task) return notFound('Task', taskId)
   return { data: { task }, status: 200 }
 }
