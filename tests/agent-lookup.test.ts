@@ -23,4 +23,18 @@ describe('findAgentByRef', () => {
     expect(findAgentByRef([], 'a1')).toBeUndefined()
     expect(findAgentByRef(agents)).toBeUndefined()
   })
+  it('returns undefined when a name matches more than one agent (never guesses)', () => {
+    const dup = [{ id: 'h1', name: 'worker' }, { id: 'h2', name: 'Worker' }]
+    expect(findAgentByRef(dup, 'worker')).toBeUndefined()
+  })
+  it('returns undefined when a label matches more than one agent', () => {
+    const dup = [{ id: 'x1', name: 'a', label: 'Scout' }, { id: 'x2', name: 'b', label: 'scout' }]
+    expect(findAgentByRef(dup, 'Scout')).toBeUndefined()
+  })
+  it('a single hit in a tier still resolves, and id stays exact even when names collide', () => {
+    const mixed = [{ id: 'x1', name: 'a', label: 'Scout' }, { id: 'x2', name: 'b', label: 'Other' }]
+    expect(findAgentByRef(mixed, 'scout')?.id).toBe('x1')
+    const dup = [{ id: 'h1', name: 'worker' }, { id: 'h2', name: 'worker' }]
+    expect(findAgentByRef(dup, 'h2')?.id).toBe('h2')
+  })
 })

@@ -12,16 +12,22 @@ export interface AgentRefCandidate {
 
 const norm = (s?: string | null) => (s ?? '').trim().toLowerCase()
 
-/** Match order: id, then name, then alias, then label — first non-empty ref that hits wins. */
+/**
+ * Match order: id (exact), then name, alias, label (case-insensitive); the first non-empty ref that hits wins.
+ * A name/alias/label tier with more than one hit is ambiguous (shared display name, same name on two hosts):
+ * return undefined rather than guess, so the caller falls back to the initial instead of the wrong portrait.
+ */
 export function findAgentByRef<T extends AgentRefCandidate>(agents: readonly T[], ...refs: (string | null | undefined)[]): T | undefined {
   for (const ref of refs) {
     const key = norm(ref)
     if (!key) continue
-    const hit = agents.find(a => a.id === ref)
-      ?? agents.find(a => norm(a.name) === key)
-      ?? agents.find(a => norm(a.alias) === key)
-      ?? agents.find(a => norm(a.label) === key)
-    if (hit) return hit
+    const byId = agents.find(a => a.id === ref)
+    if (byId) return byId
+    for (const field of ['name', 'alias', 'label'] as const) {
+      const hits = agents.filter(a => norm(a[field]) === key)
+      if (hits.length > 1) return undefined
+      if (hits.length === 1) return hits[0]
+    }
   }
   return undefined
 }
