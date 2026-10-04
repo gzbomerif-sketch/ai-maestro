@@ -1,8 +1,17 @@
 'use client'
 
-import { useEffect, useRef, type ReactNode, type InputHTMLAttributes, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react'
-import { ChevronDown, X, CheckCircle2, AlertCircle, Info } from 'lucide-react'
+import {
+  Children, Fragment, isValidElement, useId,
+  type ChangeEvent, type OptionHTMLAttributes, type ReactElement, type ReactNode,
+  type InputHTMLAttributes, type SelectHTMLAttributes, type TextareaHTMLAttributes,
+} from 'react'
+import { CheckCircle2, AlertCircle, Info } from 'lucide-react'
 import type { ShellStatus } from '@/lib/agent-status'
+import { cn } from '@/lib/utils'
+import { Dialog as DialogRoot, DialogContent, DialogTitle } from '@/components/ui/dialog'
+import { Select as SelectRoot, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Checkbox as CheckboxRoot } from '@/components/ui/checkbox'
+import { Switch } from '@/components/ui/switch'
 
 const focus = 'focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-fill focus-visible:outline-offset-0'
 
@@ -87,12 +96,11 @@ export function Row({ title, description, control, onClick, wrap = false }: {
     : <div className={cls}>{body}</div>
 }
 
+/** On/off switch over shadcn's Switch (Radix: role=switch, Space/Enter, focus ring). */
 export function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label: string }) {
   return (
-    <button type="button" role="switch" aria-checked={checked} aria-label={label} onClick={() => onChange(!checked)}
-      className={`relative w-10 h-[22px] rounded-full transition-colors ${checked ? 'bg-accent-fill' : 'bg-control-off'} ${focus}`}>
-      <span className={`absolute top-[3px] w-4 h-4 rounded-full transition-all ${checked ? 'left-[21px] bg-white' : 'left-[3px] bg-sunken'}`} />
-    </button>
+    <Switch checked={checked} onCheckedChange={onChange} aria-label={label}
+      className="data-[state=unchecked]:bg-control-off [&>span]:data-[state=checked]:bg-primary-foreground" />
   )
 }
 
@@ -111,27 +119,64 @@ export function Textarea({ className = '', ...rest }: TextareaHTMLAttributes<HTM
   return <textarea {...rest} className={`${control} h-auto py-2 w-full min-h-[80px] resize-y ${className}`} />
 }
 
-export function Select({ children, className = '', ...rest }: SelectHTMLAttributes<HTMLSelectElement>) {
+type OptionSpec = { value: string; label: ReactNode; disabled?: boolean }
+
+/** <option> children -> items. Looks through fragments; anything else is ignored. */
+function optionsOf(children: ReactNode): OptionSpec[] {
+  return Children.toArray(children).flatMap((child): OptionSpec[] => {
+    if (!isValidElement(child)) return []
+    if (child.type === Fragment) return optionsOf((child as ReactElement<{ children?: ReactNode }>).props.children)
+    if (child.type !== 'option') return []
+    const p = (child as ReactElement<OptionHTMLAttributes<HTMLOptionElement>>).props
+    const label = p.children
+    return [{ value: String(p.value ?? Children.toArray(label).join('')), label, disabled: p.disabled }]
+  })
+}
+
+/**
+ * Drop-in for a native <select> with <option> children, rendered with shadcn's Select
+ * (Radix: styled popup, type-ahead, arrow keys). Same props and the same onChange
+ * (e.target.value is the option's value as a string). Native-only attributes beyond
+ * id, name, required, disabled, the aria-label family, title, className, value and defaultValue are not forwarded,
+ * and an option cannot have an empty-string value (Radix reserves it for "no selection").
+ */
+export function Select({
+  children, className = '', value, defaultValue, onChange, disabled, name, id, required, title,
+  'aria-label': ariaLabel, 'aria-labelledby': ariaLabelledBy, 'aria-describedby': ariaDescribedBy,
+}: SelectHTMLAttributes<HTMLSelectElement>) {
+  const asString = (v: unknown) => (v === undefined || Array.isArray(v) ? undefined : String(v))
+  const emit = (next: string) =>
+    onChange?.({ target: { value: next, name }, currentTarget: { value: next, name } } as unknown as ChangeEvent<HTMLSelectElement>)
   return (
     <span className={`relative inline-flex ${className}`}>
-      <select {...rest} className={`${control} appearance-none pr-8 min-w-[160px] cursor-pointer`}>{children}</select>
-      <ChevronDown strokeWidth={1.5} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-ink-muted" />
+      <SelectRoot value={asString(value)} defaultValue={asString(defaultValue)} onValueChange={emit}
+        disabled={disabled} name={name} required={required}>
+        <SelectTrigger id={id} title={title} aria-label={ariaLabel} aria-labelledby={ariaLabelledBy} aria-describedby={ariaDescribedBy}
+          className={cn(control, 'w-full min-w-[160px] justify-between gap-2 cursor-pointer data-[placeholder]:text-ink-muted')}>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent className="z-[1000]">
+          {optionsOf(children).map(o => <SelectItem key={o.value} value={o.value} disabled={o.disabled}>{o.label}</SelectItem>)}
+        </SelectContent>
+      </SelectRoot>
     </span>
   )
 }
 
+/** Checkbox + label over shadcn's Checkbox (Radix); the label text toggles it too. */
 export function Checkbox({ checked, onChange, label, description }: {
   checked: boolean; onChange: (v: boolean) => void; label: ReactNode; description?: ReactNode
 }) {
+  const id = useId()
   return (
-    <label className="flex items-start gap-3 cursor-pointer select-none">
-      <input type="checkbox" checked={checked} onChange={e => onChange(e.target.checked)}
-        className="mt-1 w-4 h-4 rounded-[4px] accent-accent-fill bg-sunken border-control-border focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-fill focus-visible:outline-offset-2" />
-      <span>
+    <div className="flex items-start gap-3 select-none">
+      <CheckboxRoot id={id} checked={checked} onCheckedChange={v => onChange(v === true)}
+        className="mt-1 rounded-[4px] bg-sunken border-control-border data-[state=checked]:border-primary" />
+      <label htmlFor={id} className="cursor-pointer">
         <span className="block text-[14px] text-ink">{label}</span>
         {description && <span className="block text-[13px] text-ink-muted">{description}</span>}
-      </span>
-    </label>
+      </label>
+    </div>
   )
 }
 
@@ -164,42 +209,25 @@ export function EmptyState({ icon, title, description, action }: {
   )
 }
 
-/** Modal card: Escape and backdrop close it, focus moves inside and returns on close. */
+/**
+ * Modal card over shadcn's Dialog (Radix): Escape, backdrop click and the corner X close it;
+ * focus is trapped inside and returns to where it was on close.
+ */
 export function Dialog({ open, onClose, title, children, footer, width = 520 }: {
   open: boolean; onClose: () => void; title: ReactNode; children: ReactNode; footer?: ReactNode; width?: number
 }) {
-  const ref = useRef<HTMLDivElement>(null)
-  useEffect(() => {
-    if (!open) return
-    const previous = document.activeElement as HTMLElement | null
-    const first = ref.current?.querySelector<HTMLElement>('input, select, textarea') ?? ref.current?.querySelector<HTMLElement>('button')
-    first?.focus()
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') { e.stopPropagation(); onClose() }
-      if (e.key === 'Tab' && ref.current) {
-        const items = [...ref.current.querySelectorAll<HTMLElement>('a[href], button, input, select, textarea, [tabindex]:not([tabindex="-1"])')].filter(el => !el.hasAttribute('disabled'))
-        if (items.length === 0) return
-        const [a, b] = [items[0], items[items.length - 1]]
-        if (e.shiftKey && document.activeElement === a) { e.preventDefault(); b.focus() }
-        else if (!e.shiftKey && document.activeElement === b) { e.preventDefault(); a.focus() }
-      }
-    }
-    window.addEventListener('keydown', onKey, true)
-    return () => { window.removeEventListener('keydown', onKey, true); previous?.focus?.() }
-  }, [open, onClose])
-  if (!open) return null
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-6" onMouseDown={onClose}>
-      <div ref={ref} role="dialog" aria-modal="true" onMouseDown={e => e.stopPropagation()} style={{ width }}
-        className="max-w-full max-h-[90vh] flex flex-col bg-surface border border-hairline rounded-[14px] overflow-hidden">
-        <div className="flex items-center gap-3 px-[22px] h-[56px] border-b border-hairline/70">
-          <h2 className="text-[15px] font-medium text-ink">{title}</h2>
-          <span className="ml-auto"><IconButton label="Close" onClick={onClose}><X strokeWidth={1.5} className="w-4 h-4" /></IconButton></span>
+    <DialogRoot open={open} onOpenChange={next => { if (!next) onClose() }}>
+      <DialogContent aria-describedby={undefined} style={{ width }}
+        // [&>button:last-child] is shadcn's built-in close X, moved into the 56px header row
+        className="flex flex-col gap-0 p-0 max-w-[calc(100vw-3rem)] max-h-[90vh] overflow-hidden bg-surface border-hairline rounded-[14px] sm:rounded-[14px] shadow-none [&>button:last-child]:right-[18px] [&>button:last-child]:top-[19px]">
+        <div className="flex items-center gap-3 px-[22px] h-[56px] flex-none border-b border-hairline/70">
+          <DialogTitle className="text-[15px] font-medium leading-normal tracking-normal text-ink">{title}</DialogTitle>
         </div>
         <div className="flex-1 overflow-y-auto px-[22px] py-5">{children}</div>
-        {footer && <div className="flex items-center justify-end gap-2 px-[22px] py-3.5 border-t border-hairline/70">{footer}</div>}
-      </div>
-    </div>
+        {footer && <div className="flex items-center justify-end gap-2 px-[22px] py-3.5 flex-none border-t border-hairline/70">{footer}</div>}
+      </DialogContent>
+    </DialogRoot>
   )
 }
 
