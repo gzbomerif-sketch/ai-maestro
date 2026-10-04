@@ -59,7 +59,7 @@ export function renderTeamTool(tool: WindowTool, d: TeamToolData, env: ToolEnv):
     case 'instructions': return <div className="flex-1 min-w-0 overflow-auto p-4"><TeamInstructionsSection instructions={team.instructions || ''} onSave={s => d.updateTeam({ instructions: s })} /></div>
     case 'members': return <MembersBody team={team} allAgents={d.allAgents} updateTeam={d.updateTeam} />
     case 'browser': return <BrowserPanel />
-    case 'colony': return <ColonyPanel hidden={env.minimized} />
+    case 'colony': return <ColonyPanel hidden={env.minimized} z={env.z} />
     default: return null
   }
 }

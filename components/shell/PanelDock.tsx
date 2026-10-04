@@ -30,7 +30,7 @@ export default function PanelDock({ layout, dispatch, agent, onlineAgents, unrea
       onPick={id => dispatch({ type: 'open', panel: id as PanelType })}
       emptyHint="Use ＋ or ⌘J. Terminal, Inbox, Files, Memory and more open here."
     >
-      {p.active && renderTool(p.active, { agent, onlineAgents, wakingAgentId, onWake, onShowProfile, minimized: false })}
+      {p.active && renderTool(p.active, { agent, onlineAgents, wakingAgentId, onWake, onShowProfile, minimized: false, z: 0 })}
     </DockFrame>
   )
 }

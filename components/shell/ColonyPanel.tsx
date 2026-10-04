@@ -8,9 +8,9 @@ import { Button, EmptyState, IconButton } from './ui'
 /**
  * The Colony window's body, in the agent and team workspaces alike: an empty slot the
  * persistent colony iframe (ColonyHost) pins itself over, plus the explain-yourself states
- * when there is nothing to show. The iframe itself never mounts here — see ColonyHost.
+ * when there is nothing to show. `z` is this window's stack position, mirrored onto the frame. The iframe itself never mounts here — see ColonyHost.
  */
-export default function ColonyPanel({ hidden = false }: { hidden?: boolean } = {}) {
+export default function ColonyPanel({ hidden = false, z = 0 }: { hidden?: boolean; z?: number } = {}) {
   const { setSlot, status, local, reload } = useColony()
   const slotRef = useRef<HTMLDivElement>(null)
   const showing = local && !!status?.running && !!status.url
@@ -18,9 +18,9 @@ export default function ColonyPanel({ hidden = false }: { hidden?: boolean } = {
   // A minimized window stays mounted but must release the slot, or the frame would keep floating over the chat
   useEffect(() => {
     if (!showing || hidden) return
-    setSlot(slotRef.current)
+    setSlot(slotRef.current, z)
     return () => setSlot(null)
-  }, [setSlot, showing, hidden])
+  }, [setSlot, showing, hidden, z])
 
   if (!status) return <div className="flex-1 min-h-0 bg-sunken" aria-busy="true" />
 

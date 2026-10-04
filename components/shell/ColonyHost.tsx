@@ -4,7 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState, ty
 import type { Agent } from '@/types/agent'
 import {
   COLONY_REFRESH, colonyFrameUrl, colonyReachableFrom, findAgent, nextColonyStatus, originOf,
-  parseColonyMessage, shouldShowColony, type ColonyStatus,
+  parseColonyEvent, shouldShowColony, type ColonyStatus,
 } from '@/lib/colony-message'
 import { BROWSER_SANDBOX } from './BrowserPanel'
 
@@ -13,12 +13,15 @@ const STATUS_POLL_MS = 4000
 
 export interface ColonyContextValue {
   /** A Colony tab's body registers its placeholder here; the host pins the live iframe over it. */
-  setSlot: (el: HTMLElement | null) => void
+  setSlot: (el: HTMLElement | null, z?: number) => void
   status: ColonyStatus | null
   /** True when this page runs on the machine that hosts the colony (it binds to localhost). */
   local: boolean
   /** Reload the iframe and re-read the status now. */
   reload: () => void
+  /** The agent whose bot was last selected in the colony, or null. A newer selection replaces it. */
+  selectedColonyAgentId: string | null
+  clearColonySelection: () => void
 }
 
 const ColonyContext = createContext<ColonyContextValue | null>(null)
@@ -44,6 +47,9 @@ export default function ColonyHost({ agents, onSelectAgent, children }: {
   const [status, setStatus] = useState<ColonyStatus | null>(null)
   const [nonce, setNonce] = useState(0)
   const [slot, setSlotState] = useState<HTMLElement | null>(null)
+  // The colony window's z (ManagedWindow.z): the frame stacks exactly like the window it covers
+  const [slotZ, setSlotZ] = useState(0)
+  const [selectedColonyAgentId, setSelectedColonyAgentId] = useState<string | null>(null)
   // Lazy-boot gate: the game loads on the first opened Colony tab, never in a session that
   // has not looked at it, and then stays alive for every later tab.
   const [everShown, setEverShown] = useState(false)
@@ -81,10 +87,14 @@ export default function ColonyHost({ agents, onSelectAgent, children }: {
   const local = pageOrigin !== null && colonyReachableFrom(pageOrigin.hostname)
   const colonyOrigin = originOf(status?.running ? status.url : null)
 
-  // Colony → host: Open on a bot selects that agent, whichever view the user is in.
+  // Colony → host: Open on a bot selects that agent, whichever view the user is in; merely
+  // selecting a bot is exposed as selectedColonyAgentId for whoever wants to follow along.
   useEffect(() => {
     const onMessage = (event: MessageEvent) => {
-      const agent = findAgent(agents, parseColonyMessage(event, colonyOrigin))
+      const ev = parseColonyEvent(event, colonyOrigin)
+      if (!ev) return
+      if (ev.kind === 'select') { setSelectedColonyAgentId(ev.agentId); return }
+      const agent = findAgent(agents, ev.agentId)
       if (agent) onSelectAgent(agent)
     }
     window.addEventListener('message', onMessage)
@@ -126,20 +136,21 @@ export default function ColonyHost({ agents, onSelectAgent, children }: {
     return () => cancelAnimationFrame(raf)
   }, [showing, slot])
 
-  const setSlot = useCallback((el: HTMLElement | null) => {
-    if (el) setEverShown(true)
+  const setSlot = useCallback((el: HTMLElement | null, z = 0) => {
+    if (el) { setEverShown(true); setSlotZ(z) }
     setSlotState(el)
   }, [])
   const reload = useCallback(() => setNonce(n => n + 1), [])
+  const clearColonySelection = useCallback(() => setSelectedColonyAgentId(null), [])
 
   const src = shouldShowColony(everShown, local, status) && status?.url && pageOrigin
     ? colonyFrameUrl(status.url, pageOrigin.origin) : null
 
   return (
-    <ColonyContext.Provider value={{ setSlot, status, local, reload }}>
+    <ColonyContext.Provider value={{ setSlot, status, local, reload, selectedColonyAgentId, clearColonySelection }}>
       {children}
-      {/* z-[25]: over the dock body (the overlay dock is z-20), under menus (z-40) and dialogs (z-50) */}
-      <div ref={wrapperRef} className="fixed left-0 top-0 z-[25]" style={{ visibility: 'hidden', pointerEvents: 'none' }}>
+      {/* zIndex 10 + z mirrors FloatingWindow, so windows above the colony window cover the frame too */}
+      <div ref={wrapperRef} className="fixed left-0 top-0" style={{ visibility: 'hidden', pointerEvents: 'none', zIndex: 10 + slotZ }}>
         {src && (
           <iframe key={`${src}#${nonce}`} ref={iframeRef} src={src} title="Colony" sandbox={BROWSER_SANDBOX}
             allow="clipboard-write" referrerPolicy="no-referrer" className="w-full h-full border-0 bg-sunken" />

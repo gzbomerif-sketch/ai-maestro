@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { COLONY_OPEN_AGENT, COLONY_REFRESH, UNREACHABLE, colonyFrameUrl, colonyReachableFrom, findAgent, nextColonyStatus, originOf, parseColonyMessage, shouldShowColony, type ColonyStatus } from '@/lib/colony-message'
+import { COLONY_OPEN_AGENT, COLONY_REFRESH, COLONY_SELECT_AGENT, UNREACHABLE, colonyFrameUrl, colonyReachableFrom, findAgent, nextColonyStatus, originOf, parseColonyEvent, parseColonyMessage, shouldShowColony, type ColonyStatus } from '@/lib/colony-message'
 
 const COLONY = 'http://localhost:23010'
 const msg = (data: unknown, origin = COLONY) => ({ origin, data })
@@ -20,6 +20,24 @@ describe('parseColonyMessage', () => {
     for (const data of [null, 'bot-crossing:open-agent', { type: 'other', agentId: 'abc' }, { type: COLONY_OPEN_AGENT }, { type: COLONY_OPEN_AGENT, agentId: 7 }, { type: COLONY_OPEN_AGENT, agentId: '' }, { type: COLONY_OPEN_AGENT, agentId: 'x'.repeat(129) }]) {
       expect(parseColonyMessage(msg(data), COLONY)).toBeNull()
     }
+  })
+})
+
+describe('parseColonyEvent', () => {
+  it('parses select-agent from the colony origin', () => {
+    expect(COLONY_SELECT_AGENT).toBe('bot-crossing:select-agent')
+    expect(parseColonyEvent({ origin: 'http://localhost:23010', data: { type: 'bot-crossing:select-agent', agentId: 'a1' } }, 'http://localhost:23010'))
+      .toEqual({ kind: 'select', agentId: 'a1' })
+  })
+  it('ignores select-agent from a wrong origin', () => {
+    expect(parseColonyEvent({ origin: 'http://evil.test', data: { type: 'bot-crossing:select-agent', agentId: 'a1' } }, 'http://localhost:23010')).toBeNull()
+  })
+  it('ignores malformed agent ids', () => {
+    for (const agentId of ['', 42, 'x'.repeat(129), null])
+      expect(parseColonyEvent({ origin: 'http://localhost:23010', data: { type: 'bot-crossing:select-agent', agentId } }, 'http://localhost:23010')).toBeNull()
+  })
+  it('still parses open-agent as kind open', () => {
+    expect(parseColonyEvent({ origin: 'o', data: { type: 'bot-crossing:open-agent', agentId: 'a1' } }, 'o')).toEqual({ kind: 'open', agentId: 'a1' })
   })
 })
 

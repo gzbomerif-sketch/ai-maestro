@@ -38,6 +38,8 @@ export interface ToolEnv {
   onShowProfile: (a: Agent) => void
   /** The window is minimized: still mounted (terminals keep their size and scrollback), just hidden */
   minimized: boolean
+  /** The window's stack position (ManagedWindow.z); the colony frame mirrors it */
+  z: number
 }
 
 export interface ToolContext extends ToolEnv {
@@ -61,7 +63,7 @@ export function renderTool(tool: WindowTool, ctx: ToolContext): ReactNode {
   const { agent } = ctx
   if (!agent) return null
   if (tool === 'browser') return <BrowserPanel />
-  if (tool === 'colony') return <ColonyPanel hidden={ctx.minimized} />
+  if (tool === 'colony') return <ColonyPanel hidden={ctx.minimized} z={ctx.z} />
   if (tool === 'tasks' || tool === 'skills') return <ComingSoon tool={tool} />
   if (tool === 'inbox') {
     return (

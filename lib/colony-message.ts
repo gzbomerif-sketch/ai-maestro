@@ -18,13 +18,26 @@ export interface ColonyStatus {
   log: string[]
 }
 
-/** The agent id a message asks to open, or null for anything to ignore. */
-export function parseColonyMessage(event: { origin: string; data: unknown }, colonyOrigin: string | null): string | null {
+/** Posted by the colony when a bot is selected (the HUD card appears); never sent on deselect. */
+export const COLONY_SELECT_AGENT = 'bot-crossing:select-agent'
+
+export type ColonyEvent = { kind: 'open' | 'select'; agentId: string }
+
+/** What a colony message asks for, or null for anything to ignore. */
+export function parseColonyEvent(event: { origin: string; data: unknown }, colonyOrigin: string | null): ColonyEvent | null {
   if (!colonyOrigin || event.origin !== colonyOrigin) return null
   const data = event.data as { type?: unknown; agentId?: unknown } | null
-  if (!data || typeof data !== 'object' || data.type !== COLONY_OPEN_AGENT) return null
+  if (!data || typeof data !== 'object') return null
+  const kind = data.type === COLONY_OPEN_AGENT ? 'open' : data.type === COLONY_SELECT_AGENT ? 'select' : null
+  if (!kind) return null
   const id = data.agentId
-  return typeof id === 'string' && id.length > 0 && id.length <= 128 ? id : null
+  return typeof id === 'string' && id.length > 0 && id.length <= 128 ? { kind, agentId: id } : null
+}
+
+/** The agent id a message asks to open, or null for anything to ignore (select events included). */
+export function parseColonyMessage(event: { origin: string; data: unknown }, colonyOrigin: string | null): string | null {
+  const parsed = parseColonyEvent(event, colonyOrigin)
+  return parsed?.kind === 'open' ? parsed.agentId : null
 }
 
 export function findAgent<T extends { id: string }>(agents: T[], id: string | null): T | null {

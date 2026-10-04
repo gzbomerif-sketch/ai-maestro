@@ -69,7 +69,7 @@ export default function TeamWorkspace({ teamId, sidebarCollapsed, onToggleSideba
       titleFor={w => toolLabel(w.tool, nameOf)}
       iconFor={w => { const Icon = iconForTool(w.tool); return <Icon strokeWidth={1.5} className="w-3.5 h-3.5" /> }}
       renderContent={w => renderTool(w.tool, {
-        agent: null, onlineAgents, wakingAgentId, onWake, onShowProfile, minimized: w.minimized,
+        agent: null, onlineAgents, wakingAgentId, onWake, onShowProfile, minimized: w.minimized, z: w.z,
         team: { team, members, allAgents, updateTeam },
       })}
       overlay={api => <MiniPreview hidden={api.isShowing('browser')} onOpen={() => api.openTool('browser')} />}

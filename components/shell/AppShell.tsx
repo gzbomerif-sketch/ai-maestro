@@ -117,7 +117,7 @@ export default function AppShell(p: AppShellProps) {
             return n > 0 ? `${label} (${n})` : label
           }}
           renderContent={w => renderTool(w.tool, {
-            agent, onlineAgents: p.onlineAgents, wakingAgentId: p.wakingAgentId, onWake: p.onWake, onShowProfile: p.onShowProfile, minimized: w.minimized,
+            agent, onlineAgents: p.onlineAgents, wakingAgentId: p.wakingAgentId, onWake: p.onWake, onShowProfile: p.onShowProfile, minimized: w.minimized, z: w.z,
           })}
           overlay={api => <MiniPreview hidden={api.isShowing('browser')} onOpen={() => api.openTool('browser')} />}
           top={api =>
