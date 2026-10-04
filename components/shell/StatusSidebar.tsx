@@ -80,11 +80,11 @@ export default function StatusSidebar(p: StatusSidebarProps) {
         </button>AI Maestro
       </div>
 
-      <div className="flex items-center gap-2 px-2.5 py-2">
+      <div className="flex items-center gap-2">
         <button type="button" onClick={p.onOpenPalette} className="flex flex-1 items-center gap-3 px-2.5 py-2 rounded-[10px] text-[15px] text-ink-muted hover:bg-raised/60">
           <Search strokeWidth={1.5} className="w-4 h-4" />Search<span className="ml-auto text-[12px] text-gray-500">⌘K</span>
         </button>
-        <div title="New agent"><IconButton label="New agent" onClick={p.onNewAgent}><Plus strokeWidth={1.5} className="w-4 h-4" /></IconButton></div>
+        <IconButton label="New agent" onClick={p.onNewAgent}><Plus strokeWidth={1.5} className="w-4 h-4" /></IconButton>
       </div>
 
       {p.error && (

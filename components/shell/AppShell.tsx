@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { PanelLeft } from 'lucide-react'
+import { PanelLeft, Plus } from 'lucide-react'
 import type { Agent } from '@/types/agent'
 import { useSessionActivity } from '@/hooks/useSessionActivity'
 import { useUnreadCounts } from '@/hooks/useUnreadCounts'
@@ -179,9 +179,10 @@ export default function AppShell(p: AppShellProps) {
         <HomeScreen groups={groups} agents={p.agents} unread={unread} now={now} onSelectAgent={selectAgent} onNewAgent={() => setWizardOpen(true)} />
       )}
 
-      {layout.sidebarCollapsed && !agent && (
-        <div className="absolute top-3 left-3 z-10">
+      {layout.sidebarCollapsed && (
+        <div className="absolute top-3 left-3 z-10 flex items-center gap-2">
           <IconButton label="Expand sidebar (⌘B)" onClick={() => dispatch({ type: 'toggleSidebar' })}><PanelLeft strokeWidth={1.5} className="w-4 h-4" /></IconButton>
+          <IconButton label="New agent" onClick={() => setWizardOpen(true)}><Plus strokeWidth={1.5} className="w-4 h-4" /></IconButton>
         </div>
       )}
 
