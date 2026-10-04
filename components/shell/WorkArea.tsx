@@ -2,9 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type Dispatch, type ReactNode } from 'react'
 import { isEditableTarget, layoutShortcut, shouldRestoreOnEscape } from '@/lib/panel-layout'
-import { visibleWindows, type ManagedWindow, type WindowAction, type WindowTool } from '@/lib/window-manager'
+import { stackRanks, visibleWindows, type ManagedWindow, type WindowAction, type WindowTool } from '@/lib/window-manager'
 import { isUsableArea, type Area } from '@/lib/window-chrome'
-import { toggleAllActions, topMaximized, topWindow, windowScopeFor } from '@/lib/window-tools'
+import { MODAL_SELECTOR, toggleAllActions, topMaximized, topWindow, windowScopeFor } from '@/lib/window-tools'
 import { useWindows } from '@/hooks/useWindows'
 import { WindowLayer } from './WindowLayer'
 
@@ -22,9 +22,6 @@ export interface WorkAreaApi {
   /** A window of this tool is open and not minimized */
   isShowing: (tool: WindowTool) => boolean
 }
-
-/** Single-key shortcuts and chords must not fire while a dialog or menu has the keyboard. */
-const MODAL = '[role="dialog"],[aria-modal="true"],[role="menu"]'
 
 /**
  * Chat (the base layer) under a layer of floating tool windows that covers only the chat region (the top bar stays clear). Shared by the agent and team views.
@@ -69,7 +66,8 @@ export default function WorkArea({ scopeId, keyToTool, renderContent, titleFor, 
     return () => ro.disconnect()
   }, [])
 
-  const windows = useMemo(() => (mounted ? visibleWindows(state, scopeId) : []), [mounted, state, scopeId])
+  // Drawn z is the rank within this workspace (1..k), so 10 + z stays below the shell's menus (z-30/40) and dialogs (z-50)
+  const windows = useMemo(() => (mounted ? stackRanks(visibleWindows(state, scopeId)) : []), [mounted, state, scopeId])
   const allMinimized = windows.length > 0 && windows.every(w => w.minimized)
 
   const openTool = useCallback((tool: WindowTool) => openIn(tool, windowScopeFor(tool, scopeId)), [openIn, scopeId])
@@ -113,7 +111,7 @@ export default function WorkArea({ scopeId, keyToTool, renderContent, titleFor, 
         return
       }
       if (e.defaultPrevented || e.repeat || e.isComposing || e.metaKey || e.ctrlKey || e.altKey) return
-      if (isEditableTarget(target) || target?.closest?.(MODAL)) return
+      if (isEditableTarget(target) || target?.closest?.(MODAL_SELECTOR)) return
       const tool = toTool(e.key)
       if (!tool) return
       e.preventDefault()
@@ -131,8 +129,9 @@ export default function WorkArea({ scopeId, keyToTool, renderContent, titleFor, 
         {center}
         {overlay?.(api)}
         {mounted && area && (
-          // Own stacking context: window z-order never competes with menus, dialogs or the colony frame
-          <div className="pointer-events-none absolute inset-0 z-20">
+          // No z-index here on purpose: windows (10 + z), the colony frame (ColonyFrame, 10 + its window's z),
+          // menus (z-30/40) and dialogs (z-50) must all compare in the shell root's one stacking context
+          <div className="pointer-events-none absolute inset-0">
             <WindowLayer
               windows={windows} dispatch={dispatch} area={area}
               titleFor={titleFor} iconFor={iconFor}

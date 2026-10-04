@@ -849,7 +849,7 @@ export default function AgentProfile({ isOpen, onClose, agentId, sessionStatus, 
 
                 {expandedSections.tasks && (
                   <div className="-mx-4">
-                    <AgentTaskList agentId={agent.id} />
+                    <AgentTaskList agentId={agent.id} hostUrl={hostUrl} />
                   </div>
                 )}
               </section>

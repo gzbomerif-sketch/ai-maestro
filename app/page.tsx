@@ -15,6 +15,7 @@ import MigrationBanner from '@/components/MigrationBanner'
 import { VersionChecker } from '@/components/VersionChecker'
 import AgentTabContent from '@/components/shell/AgentTabContent'
 import AppShell from '@/components/shell/AppShell'
+import { useActiveShell } from '@/components/ThemeApplier'
 import { readPref, readNumber, readString, writePref, SHELL_KEY } from '@/lib/safe-storage'
 import { useAgents } from '@/hooks/useAgents'
 import { TerminalProvider } from '@/contexts/TerminalContext'
@@ -92,6 +93,8 @@ export default function DashboardPage() {
   const effectiveLayout = layoutOverride || (deviceType === 'phone' ? 'phone' : deviceType)
   const isMobile = effectiveLayout === 'phone'
   const isTablet = effectiveLayout === 'tablet'
+  // Paper theme is scoped to the command center: tell ThemeApplier which shell this page shows
+  useActiveShell(isMobile ? 'phone' : isTablet ? 'tablet' : shell)
   const toggleLayout = () => {
     const next = isTablet ? 'desktop' : 'tablet'
     setLayoutOverride(next)

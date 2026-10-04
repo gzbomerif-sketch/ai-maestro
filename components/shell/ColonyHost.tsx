@@ -25,6 +25,18 @@ export interface ColonyContextValue {
 }
 
 const ColonyContext = createContext<ColonyContextValue | null>(null)
+/** The frame wrapper element, rendered wherever <ColonyFrame /> sits (see below). */
+const ColonyFrameContext = createContext<ReactNode>(null)
+
+/**
+ * Where the colony frame lives in the DOM: AppShell puts this inside its root, after the workspace,
+ * so the frame (10 + its window's z) stacks in the same context as the windows, menus and dialogs
+ * instead of above the whole shell. It must sit at a fixed slot that is never unmounted by agent /
+ * team / home switches — remounting it would reload the iframe.
+ */
+export function ColonyFrame() {
+  return <>{useContext(ColonyFrameContext)}</>
+}
 
 export function useColony(): ColonyContextValue {
   const v = useContext(ColonyContext)
@@ -33,7 +45,7 @@ export function useColony(): ColonyContextValue {
 }
 
 /**
- * The one live colony. The iframe lives HERE, fixed at the shell root, and is only ever
+ * The one live colony. The iframe is owned HERE (rendered through <ColonyFrame /> at the shell root) and is only ever
  * repositioned over whichever Colony tab is open — agent dock or team workspace. Moving an
  * iframe in the DOM reloads it, which is exactly the camera-resetting bug this exists to fix,
  * so the tabs render an empty slot div (ColonyPanel) and never the frame itself. Only one
@@ -146,16 +158,21 @@ export default function ColonyHost({ agents, onSelectAgent, children }: {
   const src = shouldShowColony(everShown, local, status) && status?.url && pageOrigin
     ? colonyFrameUrl(status.url, pageOrigin.origin) : null
 
+  // zIndex 10 + z mirrors FloatingWindow, so windows above the colony window cover the frame too
+  const frame = (
+    <div ref={wrapperRef} className="fixed left-0 top-0" style={{ visibility: 'hidden', pointerEvents: 'none', zIndex: 10 + slotZ }}>
+      {src && (
+        <iframe key={`${src}#${nonce}`} ref={iframeRef} src={src} title="Colony" sandbox={BROWSER_SANDBOX}
+          allow="clipboard-write" referrerPolicy="no-referrer" className="w-full h-full border-0 bg-sunken" />
+      )}
+    </div>
+  )
+
   return (
     <ColonyContext.Provider value={{ setSlot, status, local, reload, selectedColonyAgentId, clearColonySelection }}>
-      {children}
-      {/* zIndex 10 + z mirrors FloatingWindow, so windows above the colony window cover the frame too */}
-      <div ref={wrapperRef} className="fixed left-0 top-0" style={{ visibility: 'hidden', pointerEvents: 'none', zIndex: 10 + slotZ }}>
-        {src && (
-          <iframe key={`${src}#${nonce}`} ref={iframeRef} src={src} title="Colony" sandbox={BROWSER_SANDBOX}
-            allow="clipboard-write" referrerPolicy="no-referrer" className="w-full h-full border-0 bg-sunken" />
-        )}
-      </div>
+      <ColonyFrameContext.Provider value={frame}>
+        {children}
+      </ColonyFrameContext.Provider>
     </ColonyContext.Provider>
   )
 }

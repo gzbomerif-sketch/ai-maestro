@@ -3,6 +3,10 @@ import {
   buildSkillScaffold,
   isSkillDirty,
   isValidSkillName,
+  skillDraftKey,
+  readSkillDraft,
+  rememberSkillDraft,
+  clearSkillDraft,
   parseSkillDescription,
   setSkillDescription,
   yamlScalar,
@@ -128,3 +132,31 @@ describe('isSkillDirty', () => {
     expect(isSkillDirty(base, { ...base, description: 'e' })).toBe(true)
   })
 })
+
+describe('skill draft cache (survives window close / agent switch)', () => {
+  const loaded = { content: 'server', description: 'd' }
+  it('keys by agent and skill name', () => {
+    expect(skillDraftKey('a1', 'review')).toBe('a1:review')
+  })
+  it('remembers a dirty draft and hands it back, then forgets it on clear', () => {
+    const key = skillDraftKey('a1', 'review')
+    rememberSkillDraft(key, loaded, { content: 'edited', description: 'd2' })
+    expect(readSkillDraft(key)).toEqual({ content: 'edited', description: 'd2', dirty: true })
+    clearSkillDraft(key)
+    expect(readSkillDraft(key)).toBeUndefined()
+  })
+  it('a draft that matches what was loaded is not kept', () => {
+    const key = skillDraftKey('a1', 'clean')
+    rememberSkillDraft(key, loaded, { content: 'edited', description: 'd' })
+    rememberSkillDraft(key, loaded, { ...loaded })
+    expect(readSkillDraft(key)).toBeUndefined()
+  })
+  it('drafts of different skills do not collide', () => {
+    rememberSkillDraft(skillDraftKey('a1', 'x'), loaded, { content: 'x', description: 'd' })
+    rememberSkillDraft(skillDraftKey('a2', 'x'), loaded, { content: 'y', description: 'd' })
+    expect(readSkillDraft('a1:x')?.content).toBe('x')
+    expect(readSkillDraft('a2:x')?.content).toBe('y')
+    clearSkillDraft('a1:x'); clearSkillDraft('a2:x')
+  })
+})
+

@@ -1,11 +1,14 @@
 'use client'
 
 import { createContext, useEffect, useMemo, useRef, useState } from 'react'
-import { Loader2, MessageSquarePlus, Pencil, SquareTerminal, Sparkles, LayoutDashboard, X } from 'lucide-react'
+import { createPortal } from 'react-dom'
+import { Loader2, MessageSquare, MessageSquarePlus, Pencil, SquareTerminal, Sparkles, LayoutDashboard, X } from 'lucide-react'
 import type { Agent } from '@/types/agent'
 import { PRESENCE_STYLE } from '@/lib/agent-presence'
 import { displayName } from '@/lib/agent-status'
 import { isEditableTarget } from '@/lib/panel-layout'
+import { MODAL_SELECTOR } from '@/lib/window-tools'
+import { getAgentBaseUrl } from '@/lib/agent-utils'
 import { useSessionActivity } from '@/hooks/useSessionActivity'
 import { Button as ActionButton } from '@/components/ui/button'
 import AgentAvatar, { shellStatusFor } from '@/components/AgentAvatar'
@@ -82,11 +85,13 @@ export function buildProfilePatch(agent: Agent, draft: ProfileDraft): ProfilePat
 export interface ColonyCardEnv {
   agents: Agent[]
   unread: Record<string, number>
-  /** An agent is mid-wake: New conversation waits */
+  /** An agent is mid-wake: the conversation action waits */
   wakingAgentId: string | null
   onOpenWorkspace: (agent: Agent) => void
   onOpenTerminal: (agent: Agent) => void
   onOpenSkills: (agent: Agent) => void
+  /** Asleep or offline: the conversation action wakes a fresh session ("New conversation"); online it only opens the chat ("Open chat") */
+  needsWake: (agent: Agent) => boolean
   /** Select the agent and, if it is asleep, run the shell's wake flow */
   onNewConversation: (agent: Agent) => void
   /** The agent list changed (a profile edit): re-read it so the sidebar follows */
@@ -119,6 +124,7 @@ export default function ColonyProfileCard({ agent, env, hidden = false, onClose 
   const status = shellStatusFor(agent, presence)
   const unread = env.unread[agent.id] ?? 0
   const busy = env.wakingAgentId === agent.id
+  const wakes = env.needsWake(agent)
 
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState<ProfileDraft>(() => draftOf(agent))
@@ -143,7 +149,7 @@ export default function ColonyProfileCard({ agent, env, hidden = false, onClose 
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape' || e.defaultPrevented || pickerOpen) return
       const target = e.target as Element | null
-      if (target?.closest?.('[role="dialog"],[aria-modal="true"],[role="menu"]')) return
+      if (target?.closest?.(MODAL_SELECTOR)) return
       if (isEditableTarget(target) && !rootRef.current?.contains(target)) return
       e.preventDefault()
       if (editing) { setEditing(false); setError(null) } else onClose()
@@ -252,12 +258,12 @@ export default function ColonyProfileCard({ agent, env, hidden = false, onClose 
 
       <section className="border-t border-hairline/70">
         <h3 className="px-4 pt-3 text-[13px] text-ink-muted">Tasks</h3>
-        <AgentTaskList agentId={agent.id} compact />
+        <AgentTaskList agentId={agent.id} hostUrl={getAgentBaseUrl(agent)} compact />
       </section>
 
       <div className="mt-auto grid grid-cols-2 gap-2 p-4 border-t border-hairline/70">
         <ActionButton variant="default" size="sm" disabled={busy} onClick={() => env.onNewConversation(agent)}>
-          {busy ? <Loader2 className="animate-spin" /> : <MessageSquarePlus />}New conversation
+          {busy ? <Loader2 className="animate-spin" /> : wakes ? <MessageSquarePlus /> : <MessageSquare />}{wakes ? 'New conversation' : 'Open chat'}
         </ActionButton>
         <ActionButton variant="outline" size="sm" onClick={() => env.onOpenWorkspace(agent)}>
           <LayoutDashboard />Open workspace
@@ -270,11 +276,15 @@ export default function ColonyProfileCard({ agent, env, hidden = false, onClose 
         </ActionButton>
       </div>
 
-      <AvatarPicker
-        isOpen={pickerOpen} onClose={() => setPickerOpen(false)}
-        onSelect={url => setDraft(d => ({ ...d, avatar: url }))}
-        currentAvatar={draft.avatar || agent.avatar} usedAvatars={usedAvatars}
-      />
+      {/* Portaled to <body>: inside the Colony window it would be trapped under the window's stacking context */}
+      {pickerOpen && typeof document !== 'undefined' && createPortal(
+        <AvatarPicker
+          isOpen={pickerOpen} onClose={() => setPickerOpen(false)}
+          onSelect={url => setDraft(d => ({ ...d, avatar: url }))}
+          currentAvatar={draft.avatar || agent.avatar} usedAvatars={usedAvatars}
+        />,
+        document.body,
+      )}
     </aside>
   )
 }

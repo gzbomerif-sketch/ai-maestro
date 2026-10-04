@@ -74,7 +74,7 @@ export default function ColonyPanel({ hidden = false, z = 0 }: { hidden?: boolea
     <div className="flex-1 min-h-0 flex flex-col bg-sunken">
       <div className="flex-1 min-h-0 flex">
         <div ref={slotRef} className="flex-1 min-w-0" />
-        {/* The colony frame is pinned over the slot above the whole shell (see ColonyHost), so the card
+        {/* The colony frame is pinned over the slot, stacked with this window (see ColonyHost), so the card
             is a sibling column the slot yields to, not an overlay it would hide behind. */}
         {selected && cardEnv && (
           <div className="flex-none w-[min(24rem,45%)] min-h-0">

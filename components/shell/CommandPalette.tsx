@@ -1,11 +1,12 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Search } from 'lucide-react'
 import type { Agent } from '@/types/agent'
 import { displayName } from '@/lib/agent-status'
 import AgentAvatar from '@/components/AgentAvatar'
+import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem as PaletteItem, CommandList } from '@/components/ui/command'
+import { DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { rankCommandResults, shouldOpenPalette, SETTINGS_COMMANDS, SHELL_SCREENS, type CommandItem } from '@/lib/command-palette'
 
 export interface CommandPaletteProps {
@@ -22,11 +23,14 @@ export interface CommandPaletteProps {
 }
 
 
+/**
+ * ⌘K palette on shadcn's Command (cmdk in a Radix dialog). Ranking stays ours (rankCommandResults,
+ * shouldFilter off, top 12); cmdk owns the selection: ↑/↓ clamp at the ends, Enter or click runs,
+ * hover selects, a new query selects the first result. Esc and a backdrop click close (Radix).
+ */
 export default function CommandPalette(p: CommandPaletteProps) {
   const router = useRouter()
   const [query, setQuery] = useState('')
-  const [index, setIndex] = useState(0)
-  const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -41,7 +45,7 @@ export default function CommandPalette(p: CommandPaletteProps) {
   }, [p])
 
   useEffect(() => {
-    if (p.open) { setQuery(''); setIndex(0); setTimeout(() => inputRef.current?.focus(), 0) }
+    if (p.open) setQuery('')
   }, [p.open])
 
   const items = useMemo<CommandItem[]>(() => [
@@ -53,8 +57,7 @@ export default function CommandPalette(p: CommandPaletteProps) {
   ], [p])
   const results = rankCommandResults(query, items).slice(0, 12)
 
-  if (!p.open) return null
-
+  // Close first, then act: the destination's own focus/dialogs must not fight the closing palette
   const run = (item: CommandItem | undefined) => {
     if (!item) return
     p.onOpenChange(false)
@@ -68,36 +71,34 @@ export default function CommandPalette(p: CommandPaletteProps) {
     else router.push(item.id.slice('screen:'.length))
   }
 
-  const onKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') { e.preventDefault(); p.onOpenChange(false) }
-    else if (e.key === 'ArrowDown') { e.preventDefault(); setIndex(i => Math.min(i + 1, results.length - 1)) }
-    else if (e.key === 'ArrowUp') { e.preventDefault(); setIndex(i => Math.max(i - 1, 0)) }
-    else if (e.key === 'Enter') { e.preventDefault(); run(results[index]) }
-  }
-
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex items-start justify-center pt-[12vh]" onMouseDown={() => p.onOpenChange(false)}>
-      <div role="dialog" aria-label="Command palette" onMouseDown={e => e.stopPropagation()}
-        className="w-[560px] max-w-[92vw] rounded-[14px] border border-hairline bg-surface overflow-hidden">
-        <div className="flex items-center gap-3 px-4 h-[52px] border-b border-hairline/70">
-          <Search strokeWidth={1.5} className="w-4 h-4 text-ink-muted" />
-          <input ref={inputRef} autoFocus value={query} onChange={e => { setQuery(e.target.value); setIndex(0) }} onKeyDown={onKeyDown}
-            placeholder="Jump to an agent or screen…" aria-label="Search"
-            className="flex-1 bg-transparent text-[15px] text-ink placeholder:text-gray-500 focus:outline-none" />
-          <span className="text-[12px] text-gray-500">Esc</span>
-        </div>
-        <ul role="listbox" className="max-h-[360px] overflow-y-auto p-1.5">
-          {results.length === 0 && <li className="px-3 py-6 text-center text-[14px] text-ink-muted">No matches</li>}
-          {results.map((r, i) => (
-            <li key={r.id} role="option" aria-selected={i === index} onMouseEnter={() => setIndex(i)} onClick={() => run(r)}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-[10px] text-[15px] cursor-pointer ${i === index ? 'bg-raised text-ink' : 'text-gray-300'}`}>
+    <CommandDialog
+      open={p.open} onOpenChange={p.onOpenChange}
+      className="top-[12vh] translate-y-0 w-[560px] max-w-[92vw] rounded-[14px] sm:rounded-[14px] border-hairline bg-surface text-ink [&>button]:hidden"
+      commandProps={{
+        shouldFilter: false,
+        label: 'Command palette',
+        className: 'relative bg-surface text-ink [&_[cmdk-input-wrapper]]:h-[52px] [&_[cmdk-input-wrapper]]:gap-1 [&_[cmdk-input-wrapper]]:border-hairline/70 [&_[cmdk-input-wrapper]]:px-4 [&_[cmdk-input-wrapper]_svg]:h-4 [&_[cmdk-input-wrapper]_svg]:w-4 [&_[cmdk-input-wrapper]_svg]:text-ink-muted [&_[cmdk-input-wrapper]_svg]:opacity-100',
+      }}
+    >
+      <DialogTitle className="sr-only">Command palette</DialogTitle>
+      <DialogDescription className="sr-only">Jump to an agent, team or screen</DialogDescription>
+      <CommandInput value={query} onValueChange={setQuery} placeholder="Jump to an agent or screen…" aria-label="Search"
+        className="h-[52px] pr-10 text-[15px] text-ink placeholder:text-ink-muted" />
+      <span aria-hidden className="pointer-events-none absolute right-4 top-[17px] text-[12px] text-ink-muted">Esc</span>
+      <CommandList className="max-h-[360px] p-1.5">
+        <CommandEmpty className="px-3 py-6 text-center text-[14px] text-ink-muted">No matches</CommandEmpty>
+        <CommandGroup className="p-0 px-0 text-ink">
+          {results.map(r => (
+            <PaletteItem key={r.id} value={r.id} onSelect={() => run(r)}
+              className="gap-3 rounded-[10px] px-3 py-2.5 text-[15px] text-ink cursor-pointer data-[selected='true']:bg-raised data-[selected=true]:text-ink">
               {r.kind === 'agent' && <AgentAvatar agent={p.agents.find(a => `agent:${a.id}` === r.id) ?? null} size="xs" />}
               <span className="truncate">{r.label}</span>
-              <span className="ml-auto text-[12px] text-gray-500">{r.kind === 'agent' ? r.hint : r.kind === 'action' ? 'Action' : 'Go to'}</span>
-            </li>
+              <span className="ml-auto text-[12px] text-ink-muted">{r.kind === 'agent' ? r.hint : r.kind === 'action' ? 'Action' : 'Go to'}</span>
+            </PaletteItem>
           ))}
-        </ul>
-      </div>
-    </div>
+        </CommandGroup>
+      </CommandList>
+    </CommandDialog>
   )
 }

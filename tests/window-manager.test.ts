@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { windowReducer, windowId, parseWindows, visibleWindows, EMPTY_WINDOWS, WINDOW_DEFAULTS, WINDOWS_STORAGE_KEY } from '@/lib/window-manager'
+import { windowReducer, windowId, parseWindows, visibleWindows, stackRanks, EMPTY_WINDOWS, WINDOW_DEFAULTS, WINDOWS_STORAGE_KEY, type WindowState } from '@/lib/window-manager'
 
 const AREA = { w: 1600, h: 900 }
 const open = (s = EMPTY_WINDOWS, tool: any = 'terminal', agentId?: string) =>
@@ -128,7 +128,7 @@ describe('window-manager', () => {
     expect(s.windows[0].id).toBe('a1:term:abc')
     expect(s.windows[0].tool).toBe('term:abc')
   })
-  it('focus raises z monotonically; unknown id is a no-op returning the same state', () => {
+  it('focus raises the window to the top; unknown id is a no-op returning the same state', () => {
     let s = open(open(), 'inbox')
     const t0 = s.windows.find(w => w.id === '_:terminal')!
     s = windowReducer(s, { type: 'focus', id: '_:terminal' })
@@ -138,14 +138,16 @@ describe('window-manager', () => {
     const same = windowReducer(s, { type: 'focus', id: 'nope:terminal' })
     expect(same).toBe(s)
   })
-  it('close removes only that window and never resets nextZ', () => {
+  it('close removes only that window; the next open lands on top of a compacted stack', () => {
     let s = open(open(), 'inbox')
     const nz = s.nextZ
     s = windowReducer(s, { type: 'close', id: '_:terminal' })
     expect(s.windows.map(w => w.id)).toEqual(['_:inbox'])
     expect(s.nextZ).toBe(nz)
     s = open(s, 'files')
-    expect(s.windows.find(w => w.id === '_:files')!.z).toBe(nz)
+    expect(s.windows.find(w => w.id === '_:inbox')!.z).toBe(1)
+    expect(s.windows.find(w => w.id === '_:files')!.z).toBe(2)
+    expect(s.nextZ).toBe(3)
   })
   it('minimize then restore toggles the flag and restore focuses', () => {
     let s = open(open(), 'inbox')
@@ -256,5 +258,86 @@ describe('window-manager', () => {
       { ...base, id: 'team:t1:term:a1', tool: 'term:a1', agentId: 'team:t1' },
     ] }))
     expect(ok?.windows.map(w => w.id)).toEqual(['team:t1:kanban', 'team:t1:term:a1'])
+  })
+
+  // ---- z compaction (the colony frame and menus compare against 10 + z, so z must stay small) ----
+  const zOf = (s: WindowState, id: string) => s.windows.find(w => w.id === id)!.z
+  it('z stays bounded by the window count after 100 focus toggles', () => {
+    let s = open(open(open(EMPTY_WINDOWS, 'colony'), 'terminal', 'a1'), 'inbox', 'a1')
+    for (let i = 0; i < 100; i++) {
+      s = windowReducer(s, { type: 'focus', id: i % 2 ? 'a1:terminal' : '_:colony' })
+      for (const w of s.windows) expect(w.z).toBeLessThanOrEqual(s.windows.length)
+      expect(s.nextZ).toBe(s.windows.length + 1)
+    }
+    expect(new Set(s.windows.map(w => w.z)).size).toBe(s.windows.length)
+  })
+  it('focus compacts to 1..n, keeps the relative order of the others and puts the focused one on top', () => {
+    const base = { x: 0, y: 0, w: 500, h: 400, minimized: false, maximized: false }
+    let s: WindowState = { nextZ: 90, windows: [
+      { ...base, id: '_:terminal', tool: 'terminal', z: 40 },
+      { ...base, id: '_:inbox', tool: 'inbox', z: 7 },
+      { ...base, id: '_:files', tool: 'files', z: 89 },
+      { ...base, id: '_:docs', tool: 'docs', z: 12 },
+    ] }
+    s = windowReducer(s, { type: 'focus', id: '_:docs' })
+    expect([zOf(s, '_:inbox'), zOf(s, '_:terminal'), zOf(s, '_:files'), zOf(s, '_:docs')]).toEqual([1, 2, 3, 4])
+    expect(s.nextZ).toBe(5)
+  })
+  it('re-opening (open-focus) and restore compact too', () => {
+    let s = open(open(open(), 'inbox'), 'files')
+    for (let i = 0; i < 20; i++) s = open(s, i % 2 ? 'terminal' : 'inbox')
+    expect(Math.max(...s.windows.map(w => w.z))).toBe(3)
+    s = windowReducer(s, { type: 'minimize', id: '_:files' })
+    s = windowReducer(s, { type: 'restore', id: '_:files' })
+    expect(zOf(s, '_:files')).toBe(3)
+    expect(s.nextZ).toBe(4)
+  })
+  it('open/close churn never grows z past the window count', () => {
+    let s = open()
+    for (let i = 0; i < 50; i++) {
+      s = open(s, 'inbox')
+      s = windowReducer(s, { type: 'close', id: '_:inbox' })
+    }
+    s = open(s, 'files')
+    expect(s.windows.map(w => w.z)).toEqual([1, 2])
+  })
+  it('focus on the window already on top is a no-op returning the same state', () => {
+    const s = open(open(), 'inbox')
+    expect(windowReducer(s, { type: 'focus', id: '_:inbox' })).toBe(s)
+  })
+  it('parseWindows renormalizes stored z to 1..n in stacking order', () => {
+    const base = { x: 0, y: 0, w: 500, h: 400, minimized: false, maximized: false }
+    const s = parseWindows(JSON.stringify({ nextZ: 500, windows: [
+      { ...base, id: '_:terminal', tool: 'terminal', z: 300 },
+      { ...base, id: '_:inbox', tool: 'inbox', z: 41 },
+      { ...base, id: '_:files', tool: 'files', z: 499 },
+    ] }))!
+    expect(s.windows.map(w => [w.id, w.z])).toEqual([['_:terminal', 2], ['_:inbox', 1], ['_:files', 3]])
+    expect(s.nextZ).toBe(4)
+  })
+  it('stackRanks renumbers a visible subset 1..k in z order, reusing unchanged objects', () => {
+    let s = open(EMPTY_WINDOWS, 'colony')
+    for (const a of ['a1', 'a2', 'a3']) s = open(open(s, 'terminal', a), 'inbox', a)
+    s = windowReducer(s, { type: 'focus', id: '_:colony' })
+    const ranked = stackRanks(visibleWindows(s, 'a3'))
+    expect(Object.fromEntries(ranked.map(w => [w.id, w.z]))).toEqual({ 'a3:terminal': 1, 'a3:inbox': 2, '_:colony': 3 })
+    const already = stackRanks(ranked)
+    already.forEach((w, i) => expect(w).toBe(ranked[i]))
+  })
+
+  // ---- cascade is per workspace ----
+  it('cascade counts only the windows of the workspace being opened into, and wraps every 8', () => {
+    let s = EMPTY_WINDOWS
+    for (const t of ['terminal', 'inbox', 'files']) s = open(s, t, 'a1')
+    s = open(s, 'terminal', 'a2')
+    expect(s.windows.find(w => w.id === 'a2:terminal')).toMatchObject({ x: 48, y: 48 })
+    s = open(s, 'colony')
+    expect(s.windows.find(w => w.id === '_:colony')).toMatchObject({ x: 48, y: 48 })
+    s = open(s, 'inbox', 'a2')                         // a2 sees colony + its terminal
+    expect(s.windows.find(w => w.id === 'a2:inbox')).toMatchObject({ x: 48 + 64, y: 48 + 64 })
+    let t = EMPTY_WINDOWS
+    const tools = ['terminal', 'inbox', 'files', 'memory', 'graph', 'docs', 'canvas', 'search', 'playback'] as const
+    for (const tool of tools) t = open(t, tool, 'a1')
+    expect(t.windows.find(w => w.tool === 'playback')).toMatchObject({ x: 48, y: 48 })
   })
 })

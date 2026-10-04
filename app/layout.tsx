@@ -4,6 +4,7 @@ import Providers from '@/components/Providers'
 import ClientDiagnostics from '@/components/ClientDiagnostics'
 import ThemeApplier from '@/components/ThemeApplier'
 import { THEME_PREF_KEY } from '@/lib/theme'
+import { SHELL_KEY } from '@/lib/safe-storage'
 import './globals.css'
 
 // UI font: Stack Sans Text, loaded by <link> in <head> (next/font in Next 14
@@ -35,9 +36,10 @@ export const viewport: Viewport = {
   userScalable: false,
 }
 
-// Runs before first paint so a Paper (or light-OS System) user never sees an Ink flash.
-// Mirrors resolveTheme() in lib/theme.ts; ThemeApplier takes over after hydration.
-const THEME_BOOT = `try{var p=localStorage.getItem('${THEME_PREF_KEY}');var l=p==='paper'||(p==='system'&&!matchMedia('(prefers-color-scheme: dark)').matches);if(l){var c=document.body.classList;c.remove('theme-ink');c.add('theme-paper')}}catch(e){}`
+// Runs before first paint so a Paper (or light-OS System) user never sees an Ink flash. Paper is for the
+// command-center shell only, so this mirrors expectCommandCenter() + resolveTheme() in lib/theme.ts;
+// ThemeApplier takes over after hydration, from the shell page.tsx publishes on <body data-shell>.
+const THEME_BOOT = `try{var s=localStorage.getItem('${SHELL_KEY}'),m=localStorage.getItem('aimaestro-layout-mode'),t=matchMedia('(pointer: coarse)').matches||'ontouchstart' in window||navigator.maxTouchPoints>0;var cc=location.pathname==='/'&&s!=='classic'&&(m==='desktop'||(m!=='tablet'&&innerWidth>=1024&&!t));var p=localStorage.getItem('${THEME_PREF_KEY}');var l=cc&&(p==='paper'||(p==='system'&&!matchMedia('(prefers-color-scheme: dark)').matches));if(l){var c=document.body.classList;c.remove('theme-ink');c.add('theme-paper')}}catch(e){}`
 
 export default function RootLayout({
   children,

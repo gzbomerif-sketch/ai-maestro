@@ -61,6 +61,11 @@ export function isCurrentEpoch(current: number, startedAt: number): boolean {
   return current === startedAt
 }
 
+/** The agent's tasks route on its own host ('' = this host, see getAgentBaseUrl). */
+export function agentTasksUrl(agentId: string, hostUrl = ''): string {
+  return `${hostUrl}/api/agents/${encodeURIComponent(agentId)}/tasks`
+}
+
 // ---------------------------------------------------------------------------
 // Hook
 // ---------------------------------------------------------------------------
@@ -75,7 +80,8 @@ export interface UseAgentTasksResult {
   refresh: () => void
 }
 
-export function useAgentTasks(agentId: string | null): UseAgentTasksResult {
+/** `hostUrl` is the agent's base URL (getAgentBaseUrl): remote-host agents keep their tasks on their own host. */
+export function useAgentTasks(agentId: string | null, hostUrl = ''): UseAgentTasksResult {
   const [tasks, setTasks] = useState<AgentTaskView[]>([])
   const [loading, setLoading] = useState(false)
   const tasksRef = useRef<AgentTaskView[]>([])
@@ -95,7 +101,7 @@ export function useAgentTasks(agentId: string | null): UseAgentTasksResult {
   const fetchTasks = useCallback(async () => {
     if (!agentId) return
     try {
-      const res = await fetch(`/api/agents/${encodeURIComponent(agentId)}/tasks`)
+      const res = await fetch(agentTasksUrl(agentId, hostUrl))
       if (!res.ok) throw new Error('Failed to fetch tasks')
       const data = await res.json()
       if (agentRef.current !== agentId || inflight.current > 0) return
@@ -103,7 +109,7 @@ export function useAgentTasks(agentId: string | null): UseAgentTasksResult {
     } catch {
       // keep what we have; the next poll retries
     }
-  }, [agentId, commit])
+  }, [agentId, hostUrl, commit])
 
   useEffect(() => {
     epoch.current++
@@ -116,7 +122,7 @@ export function useAgentTasks(agentId: string | null): UseAgentTasksResult {
     return () => clearInterval(timer)
   }, [agentId, fetchTasks, commit])
 
-  const base = agentId ? `/api/agents/${encodeURIComponent(agentId)}/tasks` : ''
+  const base = agentId ? agentTasksUrl(agentId, hostUrl) : ''
 
   /** Optimistic mutation: apply, send, roll back to the pre-mutation list on failure. */
   const mutate = useCallback(async (optimistic: (prev: AgentTaskView[]) => AgentTaskView[], send: () => Promise<Response>, failure: string) => {

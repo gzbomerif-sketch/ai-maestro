@@ -3,7 +3,8 @@
  *
  * Edits the SKILL.md of one custom skill of an agent: read-only name,
  * description, monospace body. Save PATCHes the skill content route; closing
- * with unsaved changes asks for confirmation first.
+ * with unsaved changes asks for confirmation first, and unsaved edits survive an
+ * unmount (window close, agent switch) in a module-level draft cache.
  */
 
 'use client'
@@ -119,6 +120,31 @@ export function isSkillDirty(initial: SkillDraft, current: SkillDraft): boolean 
   return initial.content !== current.content || initial.description !== current.description
 }
 
+/**
+ * Unsaved edits outlive the editor: closing the Skills window or switching agents unmounts it, and the
+ * draft comes back on the next open of the same skill. Cleared on a successful save or an explicit Discard.
+ */
+type CachedSkillDraft = SkillDraft & { dirty: true }
+const skillDrafts = new Map<string, CachedSkillDraft>()
+
+export function skillDraftKey(agentId: string, name: string): string {
+  return `${agentId}:${name}`
+}
+
+export function readSkillDraft(key: string): CachedSkillDraft | undefined {
+  return skillDrafts.get(key)
+}
+
+/** Keep `current` while it differs from what was loaded; a draft back at the loaded text is dropped. */
+export function rememberSkillDraft(key: string, loaded: SkillDraft, current: SkillDraft): void {
+  if (isSkillDirty(loaded, current)) skillDrafts.set(key, { ...current, dirty: true })
+  else skillDrafts.delete(key)
+}
+
+export function clearSkillDraft(key: string): void {
+  skillDrafts.delete(key)
+}
+
 interface SkillContentEditorProps {
   agentId: string
   name: string
@@ -147,6 +173,7 @@ export default function SkillContentEditor({
   const [confirmOpen, setConfirmOpen] = useState(false)
 
   const skillUrl = `${hostUrl}/api/agents/${agentId}/skills/custom/${encodeURIComponent(name)}`
+  const draftKey = skillDraftKey(agentId, name)
 
   useEffect(() => {
     let cancelled = false
@@ -161,9 +188,11 @@ export default function SkillContentEditor({
       .then(data => {
         if (cancelled) return
         const draft = { content: data.content, description: parseSkillDescription(data.content) }
+        // Unsaved edits from an earlier open of this skill win over the loaded text (still dirty against it)
+        const cached = readSkillDraft(draftKey)
         setInitial(draft)
-        setContent(draft.content)
-        setDescription(draft.description)
+        setContent(cached?.content ?? draft.content)
+        setDescription(cached?.description ?? draft.description)
       })
       .catch(err => {
         if (!cancelled) setLoadError(err instanceof Error ? err.message : 'Failed to load skill')
@@ -171,9 +200,25 @@ export default function SkillContentEditor({
     return () => {
       cancelled = true
     }
-  }, [skillUrl])
+  }, [skillUrl, draftKey])
 
   const dirty = initial !== null && isSkillDirty(initial, { content, description })
+
+  // Mirror the draft into the cache as it changes, so an unmount (window closed, agent switched) keeps it
+  useEffect(() => {
+    if (initial) rememberSkillDraft(draftKey, initial, { content, description })
+  }, [draftKey, initial, content, description])
+
+  // A reload or tab close with unsaved edits asks first (the in-memory cache would not survive it)
+  useEffect(() => {
+    if (!dirty) return
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault()
+      e.returnValue = ''
+    }
+    window.addEventListener('beforeunload', onBeforeUnload)
+    return () => window.removeEventListener('beforeunload', onBeforeUnload)
+  }, [dirty])
 
   const requestClose = useCallback(() => {
     if (dirty) setConfirmOpen(true)
@@ -201,6 +246,7 @@ export default function SkillContentEditor({
         const data = await res.json().catch(() => ({}))
         throw new Error(data.error || 'Failed to save skill')
       }
+      clearSkillDraft(draftKey)
       setContent(nextContent)
       setInitial({ content: nextContent, description })
       setJustSaved(true)
@@ -292,6 +338,7 @@ export default function SkillContentEditor({
             <Button
               variant="destructive"
               onClick={() => {
+                clearSkillDraft(draftKey)
                 setConfirmOpen(false)
                 onClose()
               }}

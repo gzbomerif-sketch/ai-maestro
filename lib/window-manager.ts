@@ -79,16 +79,32 @@ function patch(s: WindowState, id: string, fn: (w: ManagedWindow) => ManagedWind
   return next === cur ? s : { ...s, windows: s.windows.map(w => (w.id === id ? next : w)) }
 }
 
-/** Bring a window to the top (and optionally un-minimize it). No-op when nothing would change. */
+/**
+ * Renumber z to 1..n in the current stacking order (ties keep array order), optionally lifting `topId`
+ * to the top. Array order and untouched objects are kept. z stays small this way: the colony frame,
+ * menus (z-30/40) and dialogs (z-50) all share one stacking context with windows at 10 + z.
+ */
+function compact(windows: ManagedWindow[], topId?: string): WindowState {
+  const order = [...windows].sort((a, b) => a.z - b.z)
+  if (topId !== undefined) {
+    const i = order.findIndex(w => w.id === topId)
+    if (i !== -1) order.push(...order.splice(i, 1))
+  }
+  const rank = new Map(order.map((w, i) => [w.id, i + 1]))
+  return {
+    windows: windows.map(w => (w.z === rank.get(w.id) ? w : { ...w, z: rank.get(w.id)! })),
+    nextZ: windows.length + 1,
+  }
+}
+
+/** Bring a window to the top (and optionally un-minimize it), compacting z. No-op when nothing would change. */
 function raise(s: WindowState, id: string, unminimize: boolean): WindowState {
   const w = s.windows.find(x => x.id === id)
   if (!w) return s
-  const onTop = w.z === s.nextZ - 1
+  const onTop = s.windows.every(x => x.id === id || x.z < w.z)
   if (onTop && (!unminimize || !w.minimized)) return s
-  return {
-    windows: s.windows.map(x => (x.id === id ? { ...x, z: onTop ? x.z : s.nextZ, minimized: unminimize ? false : x.minimized } : x)),
-    nextZ: onTop ? s.nextZ : s.nextZ + 1,
-  }
+  const c = compact(s.windows, id)
+  return unminimize ? { ...c, windows: c.windows.map(x => (x.id === id && x.minimized ? { ...x, minimized: false } : x)) } : c
 }
 
 export function windowReducer(s: WindowState, a: WindowAction): WindowState {
@@ -96,14 +112,12 @@ export function windowReducer(s: WindowState, a: WindowAction): WindowState {
     case 'open': {
       const id = windowId(a.tool, a.agentId)
       if (s.windows.some(w => w.id === id)) return raise(s, id, true)
-      const rect = fitRect({
-        x: CASCADE_ORIGIN + CASCADE_STEP * s.windows.length,
-        y: CASCADE_ORIGIN + CASCADE_STEP * s.windows.length,
-        w: WINDOW_DEFAULTS.w,
-        h: WINDOW_DEFAULTS.h,
-      }, a.area)
-      const win: ManagedWindow = { id, tool: a.tool, ...(a.agentId !== undefined ? { agentId: a.agentId } : {}), ...rect, z: s.nextZ, minimized: false, maximized: false }
-      return { windows: [...s.windows, win], nextZ: s.nextZ + 1 }
+      // Cascade within the workspace being opened into, so other agents' windows do not push it off
+      const step = CASCADE_STEP * (visibleWindows(s, a.agentId ?? null).length % 8)
+      const rect = fitRect({ x: CASCADE_ORIGIN + step, y: CASCADE_ORIGIN + step, w: WINDOW_DEFAULTS.w, h: WINDOW_DEFAULTS.h }, a.area)
+      const c = compact(s.windows)
+      const win: ManagedWindow = { id, tool: a.tool, ...(a.agentId !== undefined ? { agentId: a.agentId } : {}), ...rect, z: c.nextZ, minimized: false, maximized: false }
+      return { windows: [...c.windows, win], nextZ: c.nextZ + 1 }
     }
     case 'close': {
       if (!s.windows.some(w => w.id === a.id)) return s
@@ -183,11 +197,19 @@ export function parseWindows(raw: string | null): WindowState | null {
     seen.add(w.id)
     windows.push(w)
   }
-  const nextZ = Math.max(1, ...windows.map(w => w.z + 1))
-  return { windows, nextZ: isNum(r.nextZ) && r.nextZ >= nextZ ? Math.floor(r.nextZ) : nextZ }
+  // Stored z may predate compaction (or be hand-edited): renumber to 1..n, keeping the stacking order
+  return compact(windows)
 }
 
 /** Global windows plus the given agent's windows (minimized included; the layer decides how to draw them). */
 export function visibleWindows(s: WindowState, agentId: string | null): ManagedWindow[] {
   return s.windows.filter(w => w.agentId === undefined || w.agentId === agentId)
+}
+
+/**
+ * The given windows (e.g. visibleWindows) with z renumbered 1..k in stacking order, for drawing:
+ * windows of other workspaces never inflate the z a workspace paints with. Unchanged objects are reused.
+ */
+export function stackRanks(windows: ManagedWindow[]): ManagedWindow[] {
+  return compact(windows).windows
 }

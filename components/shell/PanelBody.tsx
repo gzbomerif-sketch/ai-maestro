@@ -60,7 +60,7 @@ export function renderTool(tool: WindowTool, ctx: ToolContext): ReactNode {
   if (tool === 'tasks') {
     return (
       <div className="flex-1 min-h-0 overflow-auto bg-sunken">
-        <AgentTaskList agentId={agent.id} />
+        <AgentTaskList agentId={agent.id} hostUrl={getAgentBaseUrl(agent)} />
       </div>
     )
   }

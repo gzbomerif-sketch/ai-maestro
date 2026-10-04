@@ -38,7 +38,7 @@ export default function ProjectTree({ agents, groupsById, activeAgentId, unread,
               {l2 !== 'default' && <div className="px-2.5 pt-1 text-[12px] text-gray-500">{l2}</div>}
               {list.map(a => (
                 <button type="button" key={a.id} onClick={() => onSelectAgent(a)}
-                  className={`w-full flex items-center gap-3 px-2.5 py-2 rounded-[10px] text-[15px] transition-colors duration-[120ms] ease-out focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-fill focus-visible:outline-offset-2 ${a.id === activeAgentId ? 'relative before:absolute before:left-0 before:top-2 before:bottom-2 before:w-[2px] before:rounded-full before:bg-accent-fill bg-raised text-ink' : 'text-gray-300 hover:bg-raised/60'}`}>
+                  className={`w-full flex items-center gap-3 px-2.5 py-2 rounded-[10px] text-[15px] transition-colors [transition-duration:120ms] ease-out focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-fill focus-visible:outline-offset-2 ${a.id === activeAgentId ? 'relative before:absolute before:left-0 before:top-2 before:bottom-2 before:w-[2px] before:rounded-full before:bg-accent-fill bg-raised text-ink' : 'text-gray-300 hover:bg-raised/60'}`}>
                   <AgentAvatar agent={a} size="xs" />
                   <span className="truncate">{displayName(a)}</span>
                   <span className="ml-auto flex items-center gap-1.5">

@@ -184,10 +184,10 @@ function TaskRow({ task, compact, onToggle, onUpdate, onRemove }: {
 /**
  * One agent's tasks: personal todos (editable) plus team tasks assigned to it
  * (read-only here, they live on the team kanban). `compact` is the profile
- * card variant: quick-add and checkboxes only.
+ * card variant: quick-add and checkboxes only. `hostUrl` is the agent's base URL (getAgentBaseUrl).
  */
-export default function AgentTaskList({ agentId, compact = false }: { agentId: string | null; compact?: boolean }) {
-  const { tasks, loading, add, toggle, update, remove } = useAgentTasks(agentId)
+export default function AgentTaskList({ agentId, compact = false, hostUrl = '' }: { agentId: string | null; compact?: boolean; hostUrl?: string }) {
+  const { tasks, loading, add, toggle, update, remove } = useAgentTasks(agentId, hostUrl)
   const [draft, setDraft] = useState('')
   const [error, setError] = useState<string | null>(null)
 

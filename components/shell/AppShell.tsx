@@ -17,7 +17,7 @@ import AgentCreationWizard from '@/components/AgentCreationWizard'
 import StatusSidebar from './StatusSidebar'
 import AgentTopBar from './AgentTopBar'
 import ResizeHandle from './ResizeHandle'
-import ColonyHost from './ColonyHost'
+import ColonyHost, { ColonyFrame } from './ColonyHost'
 import { ColonyCardEnvContext, type ColonyCardEnv } from './ColonyProfileCard'
 import WorkArea, { type WorkAreaApi } from './WorkArea'
 import TeamWorkspace from './TeamWorkspace'
@@ -106,16 +106,18 @@ export default function AppShell(p: AppShellProps) {
     workApi.current.openTool(pendingTool.tool)
     setPendingTool(null)
   }, [pendingTool, teamId, agent?.id])
+  // Same rule as the top bar's Wake button: not online (asleep or offline) means wake it
+  const needsWake = (a: Agent) => { const st = entryById[a.id]?.status ?? 'offline'; return st === 'asleep' || st === 'offline' }
   const colonyCard: ColonyCardEnv = {
     agents: p.agents, unread, wakingAgentId: p.wakingAgentId,
     onOpenWorkspace: selectAgent,
     onOpenTerminal: a => openToolFor('terminal', a),
     onOpenSkills: a => openToolFor('skills', a),
-    // Same rule as the top bar's Wake button: not online (asleep or offline) means wake it
+    needsWake,
+    // Asleep/offline: a fresh session (New conversation). Online: just open its chat (Open chat).
     onNewConversation: a => {
       selectAgent(a)
-      const st = entryById[a.id]?.status ?? 'offline'
-      if (st === 'asleep' || st === 'offline') p.onWake(a)
+      if (needsWake(a)) p.onWake(a)
     },
     onAgentsChanged: p.onAgentsChanged,
   }
@@ -178,6 +180,9 @@ export default function AppShell(p: AppShellProps) {
       ) : (
         <HomeScreen groups={groups} agents={p.agents} unread={unread} now={now} onSelectAgent={selectAgent} onNewAgent={() => setWizardOpen(true)} />
       )}
+
+      {/* Fixed slot, after the workspace: the frame ties with its own window's z and must paint over it */}
+      <ColonyFrame />
 
       {layout.sidebarCollapsed && (
         <div className="absolute top-3 left-3 z-10 flex items-center gap-2">

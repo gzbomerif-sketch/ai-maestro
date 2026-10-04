@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { AGENT_TOOLS, agentToolForKey, windowScopeFor, toolLabel, topWindow, topMaximized, toggleAllActions } from '@/lib/window-tools'
+import { AGENT_TOOLS, agentToolForKey, windowScopeFor, toolLabel, topWindow, topMaximized, toggleAllActions, MODAL_SELECTOR } from '@/lib/window-tools'
 import type { ManagedWindow } from '@/lib/window-manager'
 
 const win = (id: string, o: Partial<ManagedWindow> = {}): ManagedWindow =>
@@ -41,5 +41,9 @@ describe('window tools', () => {
     expect(toggleAllActions([win('a', { z: 2 }), win('b', { z: 1, minimized: true })])).toEqual([{ type: 'minimize', id: 'a' }])
     expect(toggleAllActions([win('a', { z: 2, minimized: true }), win('b', { z: 1, minimized: true })])).toEqual([{ type: 'restore', id: 'b' }, { type: 'restore', id: 'a' }])
     expect(toggleAllActions([])).toEqual([])
+  })
+  it('MODAL_SELECTOR covers dialogs, menus and Radix Select (listbox/combobox type-ahead)', () => {
+    for (const role of ['dialog', 'menu', 'listbox', 'combobox']) expect(MODAL_SELECTOR).toContain(`[role="${role}"]`)
+    expect(MODAL_SELECTOR).toContain('[aria-modal="true"]')
   })
 })

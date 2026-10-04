@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   isTeamTask, nextToggleStatus, normalizeSubject, applyTaskPatch,
-  applyOptimisticToggle, removeTaskFromList, orderTasks, isCurrentEpoch, type AgentTaskView,
+  applyOptimisticToggle, removeTaskFromList, orderTasks, isCurrentEpoch, agentTasksUrl, type AgentTaskView,
 } from '@/hooks/useAgentTasks'
 import { priorityValue, priorityFromValue, nextDescDraft, shouldSaveDescription } from '@/components/tasks/AgentTaskList'
 
@@ -102,4 +102,10 @@ describe('description draft sync', () => {
     expect(shouldSaveDescription(true, 'new', 'old')).toBe(true)
     expect(shouldSaveDescription(true, 'same', 'same')).toBe(false)
   })
+})
+
+describe('agentTasksUrl', () => {
+  it('is same-origin for local agents', () => expect(agentTasksUrl('a 1')).toBe('/api/agents/a%201/tasks'))
+  it('targets the agent host for remote agents', () =>
+    expect(agentTasksUrl('a1', 'http://mini:23000')).toBe('http://mini:23000/api/agents/a1/tasks'))
 })
