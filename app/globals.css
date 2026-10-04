@@ -142,14 +142,17 @@
   --card-foreground: var(--c-ink);
   --popover: var(--c-raised);
   --popover-foreground: var(--c-ink);
-  --primary: var(--c-accent);
-  --primary-foreground: var(--c-accent-fill);
+  /* Primary = the solid brand fill with white text (~5:1). The light --c-accent is
+     a text/focus tint, too pale to carry a filled button. White is literal, not
+     --fg-white, so it stays white on the blue fill under any theme. */
+  --primary: var(--c-accent-fill);
+  --primary-foreground: 255 255 255;
   --secondary: var(--c-control-off);
   --secondary-foreground: var(--c-ink);
   --muted: var(--c-sunken);
   --muted-foreground: var(--c-ink-muted);
   --border: var(--c-hairline);
-  --input: var(--c-hairline);
+  --input: var(--c-control-border);
   --ring: var(--c-accent);
   --destructive: var(--c-danger);
   --destructive-foreground: var(--fg-white);

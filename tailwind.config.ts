@@ -84,7 +84,9 @@ const config: Config = {
         // onto --c-* channels), so the tokens stay the single source of truth.
         // NOTE: shadcn's own `accent` (hover highlight) is NOT mapped — `accent`
         // above is the brand accent. Vendored components in components/ui use
-        // bg-control-off / text-ink for that role instead.
+        // bg-control-off / text-ink for that role instead. After any
+        // `shadcn add <x> --overwrite`, repair with:
+        //   sed -i '' -E "s/text-accent-foreground/text-ink/g; s/bg-accent/bg-control-off/g" components/ui/*.tsx
         background: 'rgb(var(--background) / <alpha-value>)',
         foreground: 'rgb(var(--foreground) / <alpha-value>)',
         card: {
