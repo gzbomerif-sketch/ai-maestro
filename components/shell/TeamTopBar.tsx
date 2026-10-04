@@ -5,9 +5,8 @@ import type { Agent } from '@/types/agent'
 import type { Team, Meeting } from '@/types/team'
 import { displayName, formatAge } from '@/lib/agent-status'
 import { Button, IconButton } from './ui'
+import AgentAvatar from '@/components/AgentAvatar'
 import { WindowLauncher, type MenuItem } from './PanelMenu'
-
-const initials = (n: string) => n.replace(/[^a-zA-Z0-9]+/g, ' ').trim().split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || '?'
 
 export default function TeamTopBar({ team, meeting, members, now, starting, onStart, onEnd, tools, openToolIds, onOpenTool, hasWindows, allMinimized, onToggleAll, sidebarCollapsed, onToggleSidebar }: {
   team: Team
@@ -39,7 +38,7 @@ export default function TeamTopBar({ team, meeting, members, now, starting, onSt
         <div className="flex" aria-label={`${members.length} members`}>
           {shown.map((m, i) => (
             <span key={m.id} title={displayName(m)}
-              className={`grid place-items-center w-6 h-6 rounded-full bg-raised border-2 border-sunken text-[9px] text-gray-300 ${i ? '-ml-1.5' : ''}`}>{initials(displayName(m))}</span>
+              className={`inline-flex rounded-full bg-sunken border-2 border-sunken ${i ? '-ml-1.5' : ''}`}><AgentAvatar agent={m} size="xs" /></span>
           ))}
           {members.length > shown.length && <span className="-ml-1.5 grid place-items-center w-6 h-6 rounded-full bg-raised border-2 border-sunken text-[9px] text-gray-400">+{members.length - shown.length}</span>}
         </div>

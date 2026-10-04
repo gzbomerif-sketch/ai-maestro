@@ -112,6 +112,7 @@ export default function TaskKanbanBoard({
               onDrop={handleDrop}
               onSelectTask={setSelectedTask}
               onQuickAdd={handleQuickAdd}
+              agents={agents}
             />
           ))}
         </div>

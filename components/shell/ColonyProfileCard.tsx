@@ -3,14 +3,12 @@
 import { createContext, useEffect, useMemo, useRef, useState } from 'react'
 import { Loader2, MessageSquarePlus, Pencil, SquareTerminal, Sparkles, LayoutDashboard, X } from 'lucide-react'
 import type { Agent } from '@/types/agent'
-import { PRESENCE_STYLE, type AgentPresence } from '@/lib/agent-presence'
-import type { ShellStatus } from '@/lib/agent-status'
+import { PRESENCE_STYLE } from '@/lib/agent-presence'
 import { displayName } from '@/lib/agent-status'
-import type { FaceActivity } from '@/lib/avatar-motion'
 import { isEditableTarget } from '@/lib/panel-layout'
 import { useSessionActivity } from '@/hooks/useSessionActivity'
 import { Button as ActionButton } from '@/components/ui/button'
-import AgentFace from '@/components/AgentFace'
+import AgentAvatar, { shellStatusFor } from '@/components/AgentAvatar'
 import AvatarPicker from '@/components/AvatarPicker'
 import { Badge, Button, EmptyState, Field, IconButton, Notice, StatusDot, Textarea } from './ui'
 
@@ -21,27 +19,6 @@ export function resolveColonySelection(agents: Agent[], id: string | null): { ag
   if (!id) return { agent: null, stale: false }
   const agent = agents.find(a => a.id === id) ?? null
   return { agent, stale: agent === null }
-}
-
-/** presenceOf's vocabulary → the shell's status dot vocabulary. Display only: presence itself comes from presenceOf. */
-export function presenceStatus(presence: AgentPresence): ShellStatus {
-  return presence === 'ready' ? 'idle' : presence
-}
-
-/** presenceOf's vocabulary → how the animated face behaves. */
-export function faceActivityFor(presence: AgentPresence): FaceActivity {
-  switch (presence) {
-    case 'working': return 'active'
-    case 'needs-you': return 'waiting'
-    case 'offline': return 'offline'
-    default: return 'idle'
-  }
-}
-
-/** The avatar as an image URL AgentFace can paint, or null for an emoji / nothing (the caller shows a fallback). */
-export function avatarImageSrc(avatar?: string): string | null {
-  if (!avatar) return null
-  return /^(https?:\/\/|\/)/.test(avatar) ? avatar : null
 }
 
 export interface ProfileDraft {
@@ -138,9 +115,8 @@ export default function ColonyProfileCard({ agent, env, hidden = false, onClose 
 }) {
   const { presenceOf } = useSessionActivity()
   const presence = presenceOf(agent)
-  const status = presenceStatus(presence)
+  const status = shellStatusFor(agent, presence)
   const unread = env.unread[agent.id] ?? 0
-  const imgSrc = avatarImageSrc(agent.avatar)
   const busy = env.wakingAgentId === agent.id
 
   const [editing, setEditing] = useState(false)
@@ -207,11 +183,7 @@ export default function ColonyProfileCard({ agent, env, hidden = false, onClose 
     <aside ref={rootRef} aria-label={`${name} profile`}
       className="w-full max-w-sm h-full flex flex-col overflow-y-auto bg-surface border-l border-hairline/70 text-ink">
       <header className="flex items-start gap-3 p-4">
-        <div className="flex-none w-16 h-16 rounded-[14px] overflow-hidden bg-sunken border border-hairline grid place-items-center text-2xl text-ink-muted">
-          {imgSrc
-            ? <AgentFace src={imgSrc} width={64} activity={faceActivityFor(presence)} alt={name} />
-            : <span aria-hidden>{agent.avatar || name.charAt(0).toUpperCase()}</span>}
-        </div>
+        <AgentAvatar agent={agent} size="lg" />
         <div className="min-w-0 flex-1 pt-1">
           <h2 className="text-[16px] font-medium text-ink truncate">{name}</h2>
           {agent.label && agent.name && agent.label !== agent.name && (

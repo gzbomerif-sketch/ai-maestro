@@ -170,7 +170,8 @@ export default function AgentTabContent({
               name: a.name || a.alias || a.id,  // Technical name for lookups
               alias: a.label || a.name || a.alias || a.id,  // Display name for UI
               tmuxSessionName: a.session?.tmuxSessionName,
-              hostId: a.hostId
+              hostId: a.hostId,
+              avatar: a.avatar
             }))}
             hostUrl={getAgentBaseUrl(agent)}
             isActive={true}

@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { Mail, Send, Inbox, Archive, Trash2, AlertCircle, Clock, CheckCircle, Forward, Copy, ChevronDown, Server, ShieldCheck, Globe, HelpCircle, SquarePen } from 'lucide-react'
 import { Button, IconButton } from '@/components/shell/ui'
 import type { Message, MessageSummary } from '@/lib/messageQueue'
+import { findAgentByRef } from '@/lib/agent-lookup'
+import AgentAvatar from '@/components/AgentAvatar'
 
 /**
  * Agent recipient info for messaging
@@ -14,6 +16,7 @@ export interface AgentRecipient {
   alias: string           // Display name for UI (e.g., "CRM")
   tmuxSessionName?: string // Tmux session name (for backward compatibility)
   hostId?: string         // Host ID for cross-host messaging (e.g., 'macbook-pro', 'mac-mini')
+  avatar?: string         // Agent avatar (portrait path, URL or emoji) for sender avatars
 }
 
 interface MessageCenterProps {
@@ -65,6 +68,14 @@ export default function MessageCenter({ sessionName, agentId, allAgents, hostUrl
   // Toast notification state (replaces native alert/confirm)
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null)
   const [pendingDelete, setPendingDelete] = useState<string | null>(null)
+
+  // The sender as an avatar subject: the registered agent when we know it, else a name-only stand-in
+  const senderOf = (m: { from: string; fromAlias?: string; fromLabel?: string }) => {
+    const known = findAgentByRef(allAgents, m.from, m.fromAlias, m.fromLabel)
+    return known
+      ? { id: known.id, name: known.name, label: known.alias, avatar: known.avatar }
+      : { id: m.from, name: m.fromAlias || m.from, label: m.fromLabel }
+  }
 
   // Show a toast notification that auto-dismisses
   const showToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'info') => {
@@ -732,6 +743,7 @@ export default function MessageCenter({ sessionName, agentId, allAgents, hostUrl
                             </span>
                           )}
                         </div>
+                        <AgentAvatar agent={senderOf(msg)} size="sm" />
                         <div className="min-w-0">
                           <div className="flex items-center gap-2">
                             <span className={`text-sm font-semibold truncate ${msg.status === 'unread' ? 'text-gray-100' : 'text-gray-300'}`}>
@@ -804,6 +816,7 @@ export default function MessageCenter({ sessionName, agentId, allAgents, hostUrl
                           <Globe className="w-4 h-4" />
                         )}
                       </span>
+                      <AgentAvatar agent={senderOf(selectedMessage)} size="sm" />
                       <div className="flex-1 min-w-0">
                         <div className="text-sm font-medium text-gray-200 truncate">
                           {(selectedMessage as any).fromLabel || selectedMessage.fromAlias || selectedMessage.from}

@@ -74,7 +74,7 @@ export default function TaskPanel({
             onToggle={() => toggleSection('in_progress')}
           >
             {inProgressTasks.map(t => (
-              <TaskCard key={t.id} task={t} onSelect={setSelectedTask} onStatusChange={handleStatusChange} />
+              <TaskCard key={t.id} task={t} onSelect={setSelectedTask} onStatusChange={handleStatusChange} agents={agents} />
             ))}
           </TaskSection>
         )}
@@ -90,7 +90,7 @@ export default function TaskPanel({
             <p className="text-[11px] text-gray-600 px-3 py-2">No pending tasks</p>
           ) : (
             pendingTasks.map(t => (
-              <TaskCard key={t.id} task={t} onSelect={setSelectedTask} onStatusChange={handleStatusChange} />
+              <TaskCard key={t.id} task={t} onSelect={setSelectedTask} onStatusChange={handleStatusChange} agents={agents} />
             ))
           )}
         </TaskSection>
@@ -104,7 +104,7 @@ export default function TaskPanel({
             onToggle={() => toggleSection('completed')}
           >
             {completedTasks.map(t => (
-              <TaskCard key={t.id} task={t} onSelect={setSelectedTask} onStatusChange={handleStatusChange} />
+              <TaskCard key={t.id} task={t} onSelect={setSelectedTask} onStatusChange={handleStatusChange} agents={agents} />
             ))}
           </TaskSection>
         )}

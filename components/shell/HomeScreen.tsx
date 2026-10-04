@@ -3,7 +3,8 @@
 import { Plus } from 'lucide-react'
 import type { Agent } from '@/types/agent'
 import { displayName, formatAge, type StatusEntry, type StatusGroups } from '@/lib/agent-status'
-import { Card, Row, Button, StatusDot } from './ui'
+import { Card, Row, Button } from './ui'
+import AgentAvatar from '@/components/AgentAvatar'
 
 const STATE_LABEL: Record<string, string> = { 'needs-you': 'Needs you', working: 'Working', idle: 'Idle', asleep: 'Asleep', offline: 'Offline' }
 
@@ -38,7 +39,7 @@ export default function HomeScreen({ groups, agents, unread, now, onSelectAgent,
             <Card className="mb-7">
               {attention.map(({ e, text }) => (
                 <Row key={e.agent.id}
-                  title={<span className="flex items-center gap-3"><StatusDot status={e.status} />{displayName(e.agent)}</span>}
+                  title={<span className="flex items-center gap-3"><AgentAvatar agent={e.agent} size="sm" showStatus />{displayName(e.agent)}</span>}
                   description={text}
                   control={<Button onClick={() => onSelectAgent(e.agent)}>Open</Button>} />
               ))}
@@ -50,7 +51,7 @@ export default function HomeScreen({ groups, agents, unread, now, onSelectAgent,
           {all.map(e => (
             <button type="button" key={e.agent.id} onClick={() => onSelectAgent(e.agent)}
               className="text-left flex flex-col gap-2.5 rounded-[14px] border border-hairline bg-surface p-3.5 hover:bg-raised/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-fill">
-              <span className="flex items-center gap-2"><StatusDot status={e.status} /><span className="text-[14px] font-medium text-ink truncate">{displayName(e.agent)}</span></span>
+              <span className="flex items-center gap-2"><AgentAvatar agent={e.agent} size="sm" showStatus /><span className="text-[14px] font-medium text-ink truncate">{displayName(e.agent)}</span></span>
               <span className="text-[12px] text-ink-muted">{STATE_LABEL[e.status]}{e.since && e.status !== 'offline' ? ` ${formatAge(e.since, now)}` : ''}</span>
             </button>
           ))}

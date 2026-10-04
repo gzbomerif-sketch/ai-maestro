@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Users, Save, X, Plus, Trash2, ListTodo, FileText, Clock } from 'lucide-react'
 import type { Team } from '@/types/team'
 import type { Agent } from '@/types/agent'
+import AgentAvatar from '@/components/AgentAvatar'
 
 interface TeamOverviewSectionProps {
   team: Team
@@ -161,9 +162,7 @@ export default function TeamOverviewSection({ team, agents, taskCount, docCount,
                   onClick={() => handleAddAgent(agent.id)}
                   className="w-full flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-700 transition-colors text-left"
                 >
-                  <div className="w-6 h-6 rounded-full bg-gray-700 flex items-center justify-center text-[10px] text-gray-300 flex-shrink-0">
-                    {(agent.label || agent.name || agent.alias || '?')[0].toUpperCase()}
-                  </div>
+                  <AgentAvatar agent={agent} size="sm" />
                   <span className="text-sm text-gray-300 truncate">{agent.label || agent.name || agent.alias || agent.id.slice(0, 8)}</span>
                 </button>
               ))
@@ -181,9 +180,7 @@ export default function TeamOverviewSection({ team, agents, taskCount, docCount,
                 key={agent.id}
                 className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800/50 transition-colors group"
               >
-                <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center text-xs text-gray-300 flex-shrink-0">
-                  {(agent.label || agent.name || agent.alias || '?')[0].toUpperCase()}
-                </div>
+                <AgentAvatar agent={agent} size="sm" />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm text-gray-200 truncate">{agent.label || agent.name || agent.alias || agent.id.slice(0, 8)}</p>
                   <p className="text-xs text-gray-500 truncate">{agent.session?.status === 'online' ? 'Online' : 'Offline'}</p>

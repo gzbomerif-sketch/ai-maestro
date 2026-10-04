@@ -5,6 +5,7 @@ import { ChevronRight } from 'lucide-react'
 import type { Agent } from '@/types/agent'
 import { displayName, type StatusEntry } from '@/lib/agent-status'
 import { StatusDot, Badge } from './ui'
+import AgentAvatar from '@/components/AgentAvatar'
 
 export function buildTagTree(agents: Agent[]): [string, [string, Agent[]][]][] {
   const tree = new Map<string, Map<string, Agent[]>>()
@@ -38,6 +39,7 @@ export default function ProjectTree({ agents, groupsById, activeAgentId, unread,
               {list.map(a => (
                 <button type="button" key={a.id} onClick={() => onSelectAgent(a)}
                   className={`w-full flex items-center gap-3 px-2.5 py-2 rounded-[10px] text-[15px] ${a.id === activeAgentId ? 'bg-raised text-ink' : 'text-gray-300 hover:bg-raised/60'}`}>
+                  <AgentAvatar agent={a} size="xs" />
                   <span className="truncate">{displayName(a)}</span>
                   <span className="ml-auto flex items-center gap-1.5">
                     {unread[a.id] > 0 && <Badge>{unread[a.id]}</Badge>}

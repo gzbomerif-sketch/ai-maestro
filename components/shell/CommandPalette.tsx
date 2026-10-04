@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Search } from 'lucide-react'
 import type { Agent } from '@/types/agent'
 import { displayName } from '@/lib/agent-status'
+import AgentAvatar from '@/components/AgentAvatar'
 import { rankCommandResults, shouldOpenPalette, SETTINGS_COMMANDS, SHELL_SCREENS, type CommandItem } from '@/lib/command-palette'
 
 export interface CommandPaletteProps {
@@ -87,6 +88,7 @@ export default function CommandPalette(p: CommandPaletteProps) {
           {results.map((r, i) => (
             <li key={r.id} role="option" aria-selected={i === index} onMouseEnter={() => setIndex(i)} onClick={() => run(r)}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-[10px] text-[15px] cursor-pointer ${i === index ? 'bg-raised text-ink' : 'text-gray-300'}`}>
+              {r.kind === 'agent' && <AgentAvatar agent={p.agents.find(a => `agent:${a.id}` === r.id) ?? null} size="xs" />}
               <span className="truncate">{r.label}</span>
               <span className="ml-auto text-[12px] text-gray-500">{r.kind === 'agent' ? r.hint : r.kind === 'action' ? 'Action' : 'Go to'}</span>
             </li>

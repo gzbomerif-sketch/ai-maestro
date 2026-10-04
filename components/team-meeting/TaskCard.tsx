@@ -1,12 +1,17 @@
 'use client'
 
-import { Archive, Circle, CheckCircle2, PlayCircle, Eye, Lock, User } from 'lucide-react'
+import { Archive, Circle, CheckCircle2, PlayCircle, Eye, Lock } from 'lucide-react'
 import type { TaskWithDeps, TaskStatus } from '@/types/task'
+import type { Agent } from '@/types/agent'
+import { findAgentByRef } from '@/lib/agent-lookup'
+import AgentAvatar from '@/components/AgentAvatar'
 
 interface TaskCardProps {
   task: TaskWithDeps
   onSelect: (task: TaskWithDeps) => void
   onStatusChange: (taskId: string, status: TaskStatus) => void
+  /** Agents in scope, so the assignee's real avatar can be shown */
+  agents?: Agent[]
 }
 
 const statusConfig: Record<TaskStatus, { icon: typeof Circle; color: string; bg: string }> = {
@@ -17,7 +22,7 @@ const statusConfig: Record<TaskStatus, { icon: typeof Circle; color: string; bg:
   completed: { icon: CheckCircle2, color: 'text-emerald-400', bg: 'bg-emerald-400' },
 }
 
-export default function TaskCard({ task, onSelect, onStatusChange }: TaskCardProps) {
+export default function TaskCard({ task, onSelect, onStatusChange, agents }: TaskCardProps) {
   const config = statusConfig[task.status]
   const StatusIcon = config.icon
 
@@ -61,7 +66,7 @@ export default function TaskCard({ task, onSelect, onStatusChange }: TaskCardPro
         <div className="flex items-center gap-2 mt-1">
           {task.assigneeName && (
             <span className="flex items-center gap-1 text-[10px] text-gray-500">
-              <User className="w-2.5 h-2.5" />
+              <AgentAvatar agent={findAgentByRef(agents ?? [], task.assigneeAgentId, task.assigneeName) ?? { id: task.assigneeAgentId ?? task.id, name: task.assigneeName }} size="xs" />
               {task.assigneeName}
             </span>
           )}

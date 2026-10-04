@@ -29,7 +29,8 @@ function isFullAgent(agent: AgentAvatarSubject | null): agent is Agent {
   return !!agent && Array.isArray((agent as Agent).sessions)
 }
 
-function shellStatusFor(agent: Agent, presence: AgentPresence): ShellStatus {
+/** presenceOf's vocabulary → the shell's status-dot vocabulary (one mapping, incl. the asleep case). */
+export function shellStatusFor(agent: Agent, presence: AgentPresence): ShellStatus {
   if (presence === 'ready') return 'idle'
   if (presence === 'offline') return isHibernated(agent) ? 'asleep' : 'offline'
   return presence

@@ -1,8 +1,9 @@
 import { describe, it, expect } from 'vitest'
 import type { Agent } from '@/types/agent'
 import {
-  resolveColonySelection, parseTagsCsv, buildProfilePatch, draftOf, presenceStatus, faceActivityFor, avatarImageSrc,
+  resolveColonySelection, parseTagsCsv, buildProfilePatch, draftOf,
 } from '@/components/shell/ColonyProfileCard'
+import { shellStatusFor } from '@/components/AgentAvatar'
 
 const agent = (o: Partial<Agent> = {}): Agent =>
   ({ id: 'a1', name: 'alpha', program: 'Claude Code', taskDescription: 'Ship it', tags: ['api', 'ts'], avatar: '/avatars/men_01.png', sessions: [], ...o }) as Agent
@@ -56,24 +57,17 @@ describe('buildProfilePatch', () => {
   })
 })
 
-describe('presence mapping', () => {
-  it('maps presenceOf vocabulary to the shell dot and the face', () => {
-    expect(presenceStatus('ready')).toBe('idle')
-    expect(presenceStatus('working')).toBe('working')
-    expect(presenceStatus('needs-you')).toBe('needs-you')
-    expect(presenceStatus('offline')).toBe('offline')
-    expect(faceActivityFor('working')).toBe('active')
-    expect(faceActivityFor('needs-you')).toBe('waiting')
-    expect(faceActivityFor('ready')).toBe('idle')
-    expect(faceActivityFor('offline')).toBe('offline')
+describe('presence mapping (shared with AgentAvatar)', () => {
+  it('maps presenceOf vocabulary to the shell status dot', () => {
+    const a = agent()
+    expect(shellStatusFor(a, 'ready')).toBe('idle')
+    expect(shellStatusFor(a, 'working')).toBe('working')
+    expect(shellStatusFor(a, 'needs-you')).toBe('needs-you')
   })
-})
-
-describe('avatarImageSrc', () => {
-  it('accepts image URLs and paths, rejects emoji and empty', () => {
-    expect(avatarImageSrc('/avatars/men_01.png')).toBe('/avatars/men_01.png')
-    expect(avatarImageSrc('https://x.test/a.png')).toBe('https://x.test/a.png')
-    expect(avatarImageSrc('🤖')).toBeNull()
-    expect(avatarImageSrc(undefined)).toBeNull()
+  it('tells a hibernated agent (asleep) from one that is simply offline', () => {
+    const online = { session: { status: 'online' } } as Partial<Agent>
+    expect(shellStatusFor(agent({ sessions: [{ index: 0, status: 'offline' }] as Agent['sessions'] }), 'offline')).toBe('asleep')
+    expect(shellStatusFor(agent({ sessions: [] }), 'offline')).toBe('offline')
+    expect(shellStatusFor(agent({ ...online, sessions: [{ index: 0, status: 'online' }] as Agent['sessions'] }), 'working')).toBe('working')
   })
 })

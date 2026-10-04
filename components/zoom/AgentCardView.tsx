@@ -254,7 +254,8 @@ export default function AgentCardView({
               name: a.name || a.alias || a.id,
               alias: a.label || a.name || a.alias || a.id,
               tmuxSessionName: a.session?.tmuxSessionName,
-              hostId: a.hostId
+              hostId: a.hostId,
+              avatar: a.avatar
             }))}
             hostUrl={agent.hostUrl}
             isActive={activeTab === 'messages'}

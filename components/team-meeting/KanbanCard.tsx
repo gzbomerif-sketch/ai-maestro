@@ -1,11 +1,16 @@
 'use client'
 
-import { Archive, Circle, PlayCircle, Eye, CheckCircle2, Lock, User } from 'lucide-react'
+import { Archive, Circle, PlayCircle, Eye, CheckCircle2, Lock } from 'lucide-react'
 import type { TaskWithDeps, TaskStatus } from '@/types/task'
+import type { Agent } from '@/types/agent'
+import { findAgentByRef } from '@/lib/agent-lookup'
+import AgentAvatar from '@/components/AgentAvatar'
 
 interface KanbanCardProps {
   task: TaskWithDeps
   onSelect: (task: TaskWithDeps) => void
+  /** Agents in scope, so the assignee's real avatar can be shown */
+  agents?: Agent[]
 }
 
 const statusIcon: Record<TaskStatus, typeof Circle> = {
@@ -16,7 +21,7 @@ const statusIcon: Record<TaskStatus, typeof Circle> = {
   completed: CheckCircle2,
 }
 
-export default function KanbanCard({ task, onSelect }: KanbanCardProps) {
+export default function KanbanCard({ task, onSelect, agents }: KanbanCardProps) {
   const Icon = statusIcon[task.status]
 
   const handleDragStart = (e: React.DragEvent) => {
@@ -54,7 +59,7 @@ export default function KanbanCard({ task, onSelect }: KanbanCardProps) {
 
         {task.assigneeName && (
           <span className="flex items-center gap-1 text-[10px] text-gray-500 truncate">
-            <User className="w-2.5 h-2.5 flex-shrink-0" />
+            <AgentAvatar agent={findAgentByRef(agents ?? [], task.assigneeAgentId, task.assigneeName) ?? { id: task.assigneeAgentId ?? task.id, name: task.assigneeName }} size="xs" />
             {task.assigneeName}
           </span>
         )}

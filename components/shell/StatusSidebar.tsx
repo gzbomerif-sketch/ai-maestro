@@ -7,6 +7,7 @@ import type { Agent } from '@/types/agent'
 import { displayName, formatAge, type StatusEntry, type StatusGroups } from '@/lib/agent-status'
 import { readPref, writePref, SIDEBAR_MODE_KEY } from '@/lib/safe-storage'
 import { StatusDot, SectionLabel, Badge, IconButton } from './ui'
+import AgentAvatar from '@/components/AgentAvatar'
 import ProjectTree from './ProjectTree'
 import TeamSection from './TeamSection'
 import type { Team, Meeting } from '@/types/team'
@@ -33,8 +34,6 @@ export interface StatusSidebarProps {
   onCreateTeam: (name: string) => Promise<string | null>
 }
 
-const initials = (name: string) => name.replace(/[^a-zA-Z0-9]+/g, ' ').trim().split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || '?'
-
 function AgentRow({ entry, active, unread, now, onSelect }: {
   entry: StatusEntry; active: boolean; unread: number; now: number; onSelect: () => void
 }) {
@@ -45,7 +44,7 @@ function AgentRow({ entry, active, unread, now, onSelect }: {
   return (
     <button type="button" onClick={onSelect} aria-current={active ? 'page' : undefined}
       className={`w-full flex items-center gap-3 px-2.5 py-2 rounded-[10px] text-[15px] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-fill ${active ? 'bg-raised text-ink' : 'text-gray-300 hover:bg-raised/60'}`}>
-      <span className="text-[10px] text-gray-400 bg-raised/80 rounded-[5px] px-1.5 min-w-[22px] text-center">{initials(name)}</span>
+      <AgentAvatar agent={entry.agent} size="xs" />
       <span className="truncate">{name}</span>
       <span className="ml-auto flex items-center gap-1.5">{unread > 0 && <Badge>{unread}</Badge>}{right}</span>
     </button>

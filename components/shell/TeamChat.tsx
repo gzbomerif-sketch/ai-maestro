@@ -7,6 +7,8 @@ import type { Team, Meeting } from '@/types/team'
 import { useMeetingMessages } from '@/hooks/useMeetingMessages'
 import { displayName, formatAge } from '@/lib/agent-status'
 import { meetingText } from '@/lib/team-panels'
+import { findAgentByRef } from '@/lib/agent-lookup'
+import AgentAvatar from '@/components/AgentAvatar'
 import { Button, EmptyState, Notice } from './ui'
 
 /** The team's meeting chat: everyone's messages, and a composer that broadcasts or targets one member. */
@@ -67,9 +69,12 @@ export default function TeamChat({ team, meeting, members, onStart, starting }: 
             <div className="max-w-[70%] rounded-2xl px-4 py-2.5 bg-raised text-ink text-[15px] whitespace-pre-wrap">{meetingText(m.preview)}</div>
           </div>
         ) : (
-          <div key={m.id} className="max-w-[80%]">
-            <div className="text-[12px] text-ink-muted"><span className="text-ink font-medium">{m.displayFrom}</span> · {formatAge(m.timestamp, now) || 'now'}</div>
-            <div className="text-[15px] text-ink whitespace-pre-wrap mt-0.5">{meetingText(m.preview)}</div>
+          <div key={m.id} className="max-w-[80%] flex items-start gap-2.5">
+            <AgentAvatar agent={findAgentByRef(members, m.from, m.fromAlias, m.fromLabel) ?? { id: m.from, name: m.fromAlias || m.from, label: m.fromLabel }} size="sm" className="mt-0.5" />
+            <div className="min-w-0">
+              <div className="text-[12px] text-ink-muted"><span className="text-ink font-medium">{m.displayFrom}</span> · {formatAge(m.timestamp, now) || 'now'}</div>
+              <div className="text-[15px] text-ink whitespace-pre-wrap mt-0.5">{meetingText(m.preview)}</div>
+            </div>
           </div>
         ))}
         <div ref={endRef} />

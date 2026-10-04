@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Plus } from 'lucide-react'
 import type { TaskWithDeps, TaskStatus } from '@/types/task'
+import type { Agent } from '@/types/agent'
 import KanbanCard from './KanbanCard'
 
 interface ColumnConfig {
@@ -18,9 +19,10 @@ interface KanbanColumnProps {
   onDrop: (taskId: string, status: TaskStatus) => void
   onSelectTask: (task: TaskWithDeps) => void
   onQuickAdd?: (status: TaskStatus) => void
+  agents?: Agent[]
 }
 
-export default function KanbanColumn({ config, tasks, onDrop, onSelectTask, onQuickAdd }: KanbanColumnProps) {
+export default function KanbanColumn({ config, tasks, onDrop, onSelectTask, onQuickAdd, agents }: KanbanColumnProps) {
   const [isDragOver, setIsDragOver] = useState(false)
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -70,7 +72,7 @@ export default function KanbanColumn({ config, tasks, onDrop, onSelectTask, onQu
       {/* Card list */}
       <div className="flex-1 overflow-y-auto p-2 space-y-2 min-h-[100px]">
         {tasks.map(task => (
-          <KanbanCard key={task.id} task={task} onSelect={onSelectTask} />
+          <KanbanCard key={task.id} task={task} onSelect={onSelectTask} agents={agents} />
         ))}
 
         {tasks.length === 0 && (

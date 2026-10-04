@@ -5,6 +5,7 @@ import { Moon, Power, ExternalLink, MoreHorizontal, PanelLeft, Loader2 } from 'l
 import type { Agent } from '@/types/agent'
 import { displayName, formatAge, type StatusEntry } from '@/lib/agent-status'
 import { Button, IconButton } from './ui'
+import AgentAvatar from '@/components/AgentAvatar'
 import { WindowLauncher, type MenuItem } from './PanelMenu'
 
 export interface AgentTopBarProps {
@@ -52,6 +53,7 @@ export default function AgentTopBar(p: AgentTopBarProps) {
       <div className="flex items-center gap-2.5 text-[16px] text-ink-muted min-w-0">
         <span className="truncate">{host === 'local' ? 'this Mac' : host}</span>
         <span>/</span>
+        <AgentAvatar agent={p.agent} size="sm" />
         <span className="text-ink font-medium truncate">{displayName(p.agent)}</span>
       </div>
       <span className={`flex items-center gap-2 text-[13px] ml-2 whitespace-nowrap flex-none ${tone}`}>
