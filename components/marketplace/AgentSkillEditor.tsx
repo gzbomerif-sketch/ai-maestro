@@ -2,7 +2,8 @@
  * Agent Skill Editor Component
  *
  * Manages the skills attached to an agent.
- * Shows current skills and allows adding/removing from marketplace.
+ * Shows current skills and allows adding/removing from marketplace,
+ * creating custom skills and editing their SKILL.md.
  */
 
 'use client'
@@ -21,11 +22,15 @@ import {
   ChevronDown,
   ChevronRight,
   Brain,
+  Pencil,
   X
 } from 'lucide-react'
 import type { MarketplaceSkill, AgentSkillsConfig } from '@/types/marketplace'
+import { Button } from '@/components/ui/button'
+import { Switch } from '@/components/ui/switch'
 import SkillBrowser from './SkillBrowser'
 import SkillDetailModal from './SkillDetailModal'
+import SkillContentEditor, { buildSkillScaffold, isValidSkillName } from './SkillContentEditor'
 
 interface AgentSkillEditorProps {
   agentId: string
@@ -57,6 +62,11 @@ export default function AgentSkillEditor({
   // UI State
   const [showBrowser, setShowBrowser] = useState(false)
   const [selectedSkill, setSelectedSkill] = useState<MarketplaceSkill | null>(null)
+  const [editingSkill, setEditingSkill] = useState<string | null>(null)
+  const [showNewSkill, setShowNewSkill] = useState(false)
+  const [newName, setNewName] = useState('')
+  const [newDescription, setNewDescription] = useState('')
+  const [newSkillError, setNewSkillError] = useState<string | null>(null)
   const [expandedSections, setExpandedSections] = useState({
     marketplace: true,
     aiMaestro: true,
@@ -203,15 +213,73 @@ export default function AgentSkillEditor({
     }
   }
 
+  // Create a custom skill from the scaffold, then open it for editing
+  const handleCreateSkill = async () => {
+    const name = newName.trim()
+    const description = newDescription.trim()
+    if (!isValidSkillName(name)) {
+      setNewSkillError('Name may only contain letters, numbers, dashes and underscores')
+      return
+    }
+    if (!description) {
+      setNewSkillError('Description is required')
+      return
+    }
+    if (skills?.custom.some(s => s.name.toLowerCase() === name.toLowerCase())) {
+      setNewSkillError(`A custom skill named ${name} already exists`)
+      return
+    }
+    setSaving(true)
+    setNewSkillError(null)
+    try {
+      const res = await fetch(`${hostUrl}/api/agents/${agentId}/skills`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, description, content: buildSkillScaffold(name, description) })
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.error || 'Failed to create skill')
+      }
+      await loadSkills()
+      onSkillsChange?.()
+      setShowNewSkill(false)
+      setNewName('')
+      setNewDescription('')
+      setEditingSkill(name)
+    } catch (err) {
+      setNewSkillError(err instanceof Error ? err.message : 'Failed to create skill')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   // Toggle section
   const toggleSection = (section: keyof typeof expandedSections) => {
     setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }))
   }
 
+  // The editor owns its own state: keep it ahead of the loading spinner so a
+  // reload after Save does not unmount it
+  if (editingSkill) {
+    return (
+      <SkillContentEditor
+        agentId={agentId}
+        name={editingSkill}
+        hostUrl={hostUrl}
+        onClose={() => setEditingSkill(null)}
+        onSaved={() => {
+          loadSkills()
+          onSkillsChange?.()
+        }}
+      />
+    )
+  }
+
   if (loading) {
     return (
-      <div className="bg-gray-900/50 rounded-lg border border-gray-800 p-6">
-        <div className="flex items-center justify-center gap-2 text-gray-400">
+      <div className="bg-surface rounded-lg border border-hairline p-6">
+        <div className="flex items-center justify-center gap-2 text-ink-muted">
           <RefreshCw className="w-4 h-4 animate-spin" />
           Loading skills...
         </div>
@@ -219,44 +287,44 @@ export default function AgentSkillEditor({
     )
   }
 
+  const sectionButton = 'flex-1 min-w-0 px-4 py-3 flex items-center gap-2 text-left hover:bg-control-off transition-colors'
+  const fieldClass = 'w-full rounded-md border border-control-border bg-sunken px-3 py-1.5 text-sm text-ink placeholder:text-ink-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="bg-gray-900/50 rounded-lg border border-gray-800 overflow-hidden">
-        <div className="px-4 py-3 border-b border-gray-800 flex items-center justify-between">
+      <div className="bg-surface rounded-lg border border-hairline overflow-hidden">
+        <div className="px-4 py-3 border-b border-hairline flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Zap className="w-4 h-4 text-blue-400" />
-            <span className="text-sm font-medium text-gray-200">Agent Skills</span>
+            <Zap className="w-4 h-4 text-accent" />
+            <span className="text-sm font-medium text-ink">Agent Skills</span>
             {skills && (
-              <span className="text-xs text-gray-500">
+              <span className="text-xs text-ink-muted">
                 {skills.marketplace.length + (skills.aiMaestro.enabled ? skills.aiMaestro.skills.length : 0) + skills.custom.length} skills
               </span>
             )}
           </div>
           <div className="flex items-center gap-2">
             {saveSuccess && (
-              <span className="text-xs text-emerald-400 flex items-center gap-1">
+              <span className="text-xs text-ok flex items-center gap-1">
                 <Check className="w-3 h-3" />
                 Saved
               </span>
             )}
             {saving && (
-              <RefreshCw className="w-4 h-4 text-gray-400 animate-spin" />
+              <RefreshCw className="w-4 h-4 text-ink-muted animate-spin" />
             )}
-            <button
-              onClick={() => setShowBrowser(true)}
-              className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium rounded-md flex items-center gap-1.5 transition-colors"
-            >
-              <Plus className="w-3 h-3" />
+            <Button size="sm" onClick={() => setShowBrowser(true)}>
+              <Plus />
               Add Skill
-            </button>
+            </Button>
           </div>
         </div>
 
         {/* Error */}
         {error && (
-          <div className="px-4 py-2 bg-red-500/10 border-b border-red-500/20">
-            <div className="flex items-center gap-2 text-red-400 text-xs">
+          <div className="px-4 py-2 bg-danger/10 border-b border-danger/20">
+            <div className="flex items-center gap-2 text-danger text-xs">
               <AlertCircle className="w-3 h-3" />
               {error}
             </div>
@@ -264,35 +332,32 @@ export default function AgentSkillEditor({
         )}
 
         {/* Skills Lists */}
-        <div className="divide-y divide-gray-800">
+        <div className="divide-y divide-hairline">
           {/* Marketplace Skills */}
           <div>
-            <button
-              onClick={() => toggleSection('marketplace')}
-              className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-800/30 transition-colors"
-            >
-              <div className="flex items-center gap-2">
+            <div className="flex items-center">
+              <button onClick={() => toggleSection('marketplace')} className={sectionButton}>
                 {expandedSections.marketplace ? (
-                  <ChevronDown className="w-4 h-4 text-gray-500" />
+                  <ChevronDown className="w-4 h-4 text-ink-muted" />
                 ) : (
-                  <ChevronRight className="w-4 h-4 text-gray-500" />
+                  <ChevronRight className="w-4 h-4 text-ink-muted" />
                 )}
-                <Package className="w-4 h-4 text-gray-400" />
-                <span className="text-sm font-medium text-gray-300">Marketplace Skills</span>
-                <span className="text-xs text-gray-500">
+                <Package className="w-4 h-4 text-ink-muted" />
+                <span className="text-sm font-medium text-ink">Marketplace Skills</span>
+                <span className="text-xs text-ink-muted">
                   ({skills?.marketplace.length || 0})
                 </span>
-              </div>
-            </button>
+              </button>
+            </div>
 
             {expandedSections.marketplace && (
               <div className="px-4 pb-4">
                 {skills?.marketplace.length === 0 ? (
-                  <div className="text-xs text-gray-500 pl-6">
+                  <div className="text-xs text-ink-muted pl-6">
                     No marketplace skills installed.{' '}
                     <button
                       onClick={() => setShowBrowser(true)}
-                      className="text-blue-400 hover:text-blue-300"
+                      className="text-accent hover:underline"
                     >
                       Browse skills
                     </button>
@@ -302,15 +367,15 @@ export default function AgentSkillEditor({
                     {skills?.marketplace.map(skill => (
                       <div
                         key={skill.id}
-                        className="flex items-center justify-between p-2 bg-gray-800/50 rounded-md group"
+                        className="flex items-center justify-between p-2 bg-raised rounded-md group"
                       >
                         <div className="flex items-center gap-2 min-w-0">
-                          <Zap className="w-3.5 h-3.5 text-blue-400 flex-shrink-0" />
+                          <Zap className="w-3.5 h-3.5 text-accent flex-shrink-0" />
                           <div className="min-w-0">
-                            <span className="text-sm text-gray-200 truncate block">
+                            <span className="text-sm text-ink truncate block">
                               {skill.name}
                             </span>
-                            <span className="text-xs text-gray-500 truncate block">
+                            <span className="text-xs text-ink-muted truncate block">
                               {skill.plugin} • {skill.marketplace}
                             </span>
                           </div>
@@ -318,8 +383,9 @@ export default function AgentSkillEditor({
                         <button
                           onClick={() => handleRemoveSkill(skill.id)}
                           disabled={saving}
-                          className="p-1 text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all disabled:opacity-50"
+                          className="p-1 text-ink-muted hover:text-danger opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-all disabled:opacity-50"
                           title="Remove skill"
+                          aria-label={`Remove ${skill.name}`}
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -333,38 +399,26 @@ export default function AgentSkillEditor({
 
           {/* AI Maestro Skills */}
           <div>
-            <button
-              onClick={() => toggleSection('aiMaestro')}
-              className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-800/30 transition-colors"
-            >
-              <div className="flex items-center gap-2">
+            <div className="flex items-center pr-4">
+              <button onClick={() => toggleSection('aiMaestro')} className={sectionButton}>
                 {expandedSections.aiMaestro ? (
-                  <ChevronDown className="w-4 h-4 text-gray-500" />
+                  <ChevronDown className="w-4 h-4 text-ink-muted" />
                 ) : (
-                  <ChevronRight className="w-4 h-4 text-gray-500" />
+                  <ChevronRight className="w-4 h-4 text-ink-muted" />
                 )}
-                <Brain className="w-4 h-4 text-purple-400" />
-                <span className="text-sm font-medium text-gray-300">AI Maestro Skills</span>
-                <span className="text-xs text-gray-500">
+                <Brain className="w-4 h-4 text-accent" />
+                <span className="text-sm font-medium text-ink">AI Maestro Skills</span>
+                <span className="text-xs text-ink-muted">
                   ({skills?.aiMaestro.enabled ? skills.aiMaestro.skills.length : 0} of {AI_MAESTRO_SKILLS.length})
                 </span>
-              </div>
-              <div
-                onClick={e => e.stopPropagation()}
-                className="flex items-center gap-2"
-              >
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={skills?.aiMaestro.enabled}
-                    onChange={e => handleToggleAllAiMaestro(e.target.checked)}
-                    className="sr-only peer"
-                    disabled={saving}
-                  />
-                  <div className="w-9 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-300 after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-500"></div>
-                </label>
-              </div>
-            </button>
+              </button>
+              <Switch
+                checked={skills?.aiMaestro.enabled ?? false}
+                onCheckedChange={checked => handleToggleAllAiMaestro(checked)}
+                disabled={saving}
+                aria-label="Enable AI Maestro skills"
+              />
+            </div>
 
             {expandedSections.aiMaestro && skills?.aiMaestro.enabled && (
               <div className="px-4 pb-4">
@@ -374,29 +428,25 @@ export default function AgentSkillEditor({
                     return (
                       <div
                         key={skill.id}
-                        className="flex items-center justify-between p-2 bg-gray-800/50 rounded-md"
+                        className="flex items-center justify-between p-2 bg-raised rounded-md"
                       >
                         <div className="flex items-center gap-2 min-w-0">
-                          <Zap className="w-3.5 h-3.5 text-purple-400 flex-shrink-0" />
+                          <Zap className="w-3.5 h-3.5 text-accent flex-shrink-0" />
                           <div className="min-w-0">
-                            <span className="text-sm text-gray-200 truncate block">
+                            <span className="text-sm text-ink truncate block">
                               {skill.name}
                             </span>
-                            <span className="text-xs text-gray-500 truncate block">
+                            <span className="text-xs text-ink-muted truncate block">
                               {skill.description}
                             </span>
                           </div>
                         </div>
-                        <label className="relative inline-flex items-center cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={isEnabled}
-                            onChange={e => handleToggleAiMaestroSkill(skill.id, e.target.checked)}
-                            className="sr-only peer"
-                            disabled={saving}
-                          />
-                          <div className="w-8 h-4 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-400 after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-purple-500"></div>
-                        </label>
+                        <Switch
+                          checked={isEnabled}
+                          onCheckedChange={checked => handleToggleAiMaestroSkill(skill.id, checked)}
+                          disabled={saving}
+                          aria-label={`Enable ${skill.name}`}
+                        />
                       </div>
                     )
                   })}
@@ -407,56 +457,125 @@ export default function AgentSkillEditor({
 
           {/* Custom Skills */}
           <div>
-            <button
-              onClick={() => toggleSection('custom')}
-              className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-800/30 transition-colors"
-            >
-              <div className="flex items-center gap-2">
+            <div className="flex items-center pr-4">
+              <button onClick={() => toggleSection('custom')} className={sectionButton}>
                 {expandedSections.custom ? (
-                  <ChevronDown className="w-4 h-4 text-gray-500" />
+                  <ChevronDown className="w-4 h-4 text-ink-muted" />
                 ) : (
-                  <ChevronRight className="w-4 h-4 text-gray-500" />
+                  <ChevronRight className="w-4 h-4 text-ink-muted" />
                 )}
-                <Code className="w-4 h-4 text-amber-400" />
-                <span className="text-sm font-medium text-gray-300">Custom Skills</span>
-                <span className="text-xs text-gray-500">
+                <Code className="w-4 h-4 text-warn" />
+                <span className="text-sm font-medium text-ink">Custom Skills</span>
+                <span className="text-xs text-ink-muted">
                   ({skills?.custom.length || 0})
                 </span>
-              </div>
-            </button>
+              </button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setExpandedSections(prev => ({ ...prev, custom: true }))
+                  setShowNewSkill(v => !v)
+                  setNewSkillError(null)
+                }}
+              >
+                <Plus />
+                New skill
+              </Button>
+            </div>
 
             {expandedSections.custom && (
-              <div className="px-4 pb-4">
+              <div className="px-4 pb-4 space-y-3">
+                {showNewSkill && (
+                  <form
+                    className="ml-6 p-3 space-y-2 bg-raised rounded-md border border-hairline"
+                    onSubmit={e => {
+                      e.preventDefault()
+                      handleCreateSkill()
+                    }}
+                  >
+                    <div className="space-y-1">
+                      <label htmlFor="new-skill-name" className="text-xs font-medium text-ink-muted">Name</label>
+                      <input
+                        id="new-skill-name"
+                        value={newName}
+                        onChange={e => setNewName(e.target.value)}
+                        placeholder="code-review"
+                        autoFocus
+                        className={`${fieldClass} font-mono`}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label htmlFor="new-skill-description" className="text-xs font-medium text-ink-muted">Description</label>
+                      <input
+                        id="new-skill-description"
+                        value={newDescription}
+                        onChange={e => setNewDescription(e.target.value)}
+                        placeholder="What this skill is for"
+                        className={fieldClass}
+                      />
+                    </div>
+                    {newSkillError && (
+                      <div className="flex items-center gap-2 text-danger text-xs">
+                        <AlertCircle className="w-3 h-3" />
+                        {newSkillError}
+                      </div>
+                    )}
+                    <div className="flex justify-end gap-2">
+                      <Button type="button" variant="ghost" size="sm" onClick={() => setShowNewSkill(false)}>
+                        Cancel
+                      </Button>
+                      <Button type="submit" size="sm" disabled={saving || !newName.trim() || !newDescription.trim()}>
+                        Create
+                      </Button>
+                    </div>
+                  </form>
+                )}
+
                 {skills?.custom.length === 0 ? (
-                  <div className="text-xs text-gray-500 pl-6">
-                    No custom skills defined. Custom skills can be created by adding SKILL.md files to the agent&apos;s skills directory.
-                  </div>
+                  !showNewSkill && (
+                    <div className="text-xs text-ink-muted pl-6">
+                      No custom skills yet. Use New skill to create one.
+                    </div>
+                  )
                 ) : (
                   <div className="space-y-2 pl-6">
                     {skills?.custom.map(skill => (
                       <div
                         key={skill.name}
-                        className="flex items-center justify-between p-2 bg-gray-800/50 rounded-md group"
+                        className="flex items-center justify-between p-2 bg-raised rounded-md group"
                       >
                         <div className="flex items-center gap-2 min-w-0">
-                          <Code className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />
+                          <Code className="w-3.5 h-3.5 text-warn flex-shrink-0" />
                           <div className="min-w-0">
-                            <span className="text-sm text-gray-200 truncate block">
+                            <span className="text-sm text-ink truncate block">
                               {skill.name}
                             </span>
-                            <span className="text-xs text-gray-500 truncate block">
+                            <span className="text-xs text-ink-muted truncate block">
                               {skill.path}
                             </span>
                           </div>
                         </div>
-                        <button
-                          onClick={() => handleRemoveSkill(`custom:${skill.name}`)}
-                          disabled={saving}
-                          className="p-1 text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all disabled:opacity-50"
-                          title="Remove skill"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => setEditingSkill(skill.name)}
+                            disabled={saving}
+                            className="p-1 text-ink-muted hover:text-ink opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-all disabled:opacity-50"
+                            title="Edit skill"
+                            aria-label={`Edit ${skill.name}`}
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleRemoveSkill(`custom:${skill.name}`)}
+                            disabled={saving}
+                            className="p-1 text-ink-muted hover:text-danger opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-all disabled:opacity-50"
+                            title="Remove skill"
+                            aria-label={`Remove ${skill.name}`}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -474,19 +593,16 @@ export default function AgentSkillEditor({
             className="absolute inset-0 bg-black/70 backdrop-blur-sm"
             onClick={() => setShowBrowser(false)}
           />
-          <div className="relative w-full max-w-5xl max-h-[85vh] bg-gray-900 rounded-xl border border-gray-800 shadow-2xl overflow-hidden flex flex-col">
+          <div className="relative w-full max-w-5xl max-h-[85vh] bg-surface rounded-xl border border-hairline shadow-2xl overflow-hidden flex flex-col">
             {/* Modal Header */}
-            <div className="px-6 py-4 border-b border-gray-800 flex items-center justify-between flex-shrink-0">
+            <div className="px-6 py-4 border-b border-hairline flex items-center justify-between flex-shrink-0">
               <div className="flex items-center gap-2">
-                <Plus className="w-5 h-5 text-blue-400" />
-                <h2 className="text-lg font-semibold text-gray-100">Add Skills</h2>
+                <Plus className="w-5 h-5 text-accent" />
+                <h2 className="text-lg font-semibold text-ink">Add Skills</h2>
               </div>
-              <button
-                onClick={() => setShowBrowser(false)}
-                className="p-1.5 text-gray-400 hover:text-gray-300 hover:bg-gray-800 rounded-md transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setShowBrowser(false)} aria-label="Close">
+                <X />
+              </Button>
             </div>
 
             {/* Modal Content */}
@@ -507,13 +623,10 @@ export default function AgentSkillEditor({
             </div>
 
             {/* Modal Footer */}
-            <div className="px-6 py-3 border-t border-gray-800 bg-gray-900/50 flex justify-end flex-shrink-0">
-              <button
-                onClick={() => setShowBrowser(false)}
-                className="px-4 py-2 text-sm text-gray-400 hover:text-gray-300 transition-colors"
-              >
+            <div className="px-6 py-3 border-t border-hairline bg-surface flex justify-end flex-shrink-0">
+              <Button variant="ghost" onClick={() => setShowBrowser(false)}>
                 Done
-              </button>
+              </Button>
             </div>
           </div>
         </div>,

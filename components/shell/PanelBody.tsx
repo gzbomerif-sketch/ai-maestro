@@ -3,6 +3,7 @@
 import type { ReactNode } from 'react'
 import MessageCenter from '@/components/MessageCenter'
 import ErrorBoundary from '@/components/ErrorBoundary'
+import { AgentSkillEditor } from '@/components/marketplace'
 import { agentToSession, getAgentBaseUrl } from '@/lib/agent-utils'
 import type { Agent } from '@/types/agent'
 import type { PanelType } from '@/lib/panel-layout'
@@ -27,6 +28,7 @@ function toRecipients(onlineAgents: Agent[]) {
     alias: a.label || a.name || a.alias || a.id,
     tmuxSessionName: a.session?.tmuxSessionName,
     hostId: a.hostId,
+    avatar: a.avatar,
   }))
 }
 
@@ -64,7 +66,14 @@ export function renderTool(tool: WindowTool, ctx: ToolContext): ReactNode {
   if (!agent) return null
   if (tool === 'browser') return <BrowserPanel />
   if (tool === 'colony') return <ColonyPanel hidden={ctx.minimized} z={ctx.z} />
-  if (tool === 'tasks' || tool === 'skills') return <ComingSoon tool={tool} />
+  if (tool === 'tasks') return <ComingSoon tool={tool} />
+  if (tool === 'skills') {
+    return (
+      <div className="flex-1 min-h-0 overflow-auto bg-sunken p-4">
+        <AgentSkillEditor agentId={agent.id} hostUrl={getAgentBaseUrl(agent)} />
+      </div>
+    )
+  }
   if (tool === 'inbox') {
     return (
       <div className="flex-1 min-h-0 flex overflow-hidden">
