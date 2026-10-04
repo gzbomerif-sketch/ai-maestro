@@ -132,7 +132,7 @@ export default function AppShell(p: AppShellProps) {
     needsWake,
     // Asleep/offline: a fresh session (New conversation). Online: just open its chat (Open chat).
     onNewConversation: a => {
-      selectAgent(a)
+      openWorkspaceFor(a)
       if (needsWake(a)) p.onWake(a)
     },
     onAgentsChanged: p.onAgentsChanged,

@@ -265,7 +265,7 @@ export default function ColonyProfileCard({ agent, env, hidden = false, onClose 
       </section>
 
       <div className="mt-auto grid grid-cols-2 gap-2 p-4 border-t border-hairline/70">
-        <ActionButton variant="default" size="sm" disabled={busy} onClick={() => env.onNewConversation(agent)}>
+        <ActionButton variant="default" size="sm" disabled={busy} onClick={() => { env.onNewConversation(agent); clearColonySelection() }}>
           {busy ? <Loader2 className="animate-spin" /> : wakes ? <MessageSquarePlus /> : <MessageSquare />}{wakes ? 'New conversation' : 'Open chat'}
         </ActionButton>
         <ActionButton variant="outline" size="sm" onClick={() => { env.onOpenWorkspace(agent); clearColonySelection() }}>
