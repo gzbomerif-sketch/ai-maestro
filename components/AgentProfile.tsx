@@ -7,7 +7,7 @@ import {
   X, User, Building2, Briefcase, Code2, Cpu, Tag,
   Activity, CheckCircle, Clock, Zap,
   DollarSign, Database, BookOpen, Link2, Edit2, Save,
-  ChevronDown, ChevronRight, Plus, Trash2, TrendingUp, TrendingDown,
+  ChevronDown, ChevronRight, ListTodo, Plus, Trash2, TrendingUp, TrendingDown,
   Cloud, Monitor, Server, Play, Wifi, WifiOff, Folder, Download, Send,
   GitBranch, FolderGit2, RefreshCw, ExternalLink, AlertTriangle, Brain,
   FolderTree, Terminal
@@ -19,6 +19,7 @@ import DeleteAgentDialog from './DeleteAgentDialog'
 import MemoryViewer from './MemoryViewer'
 import SkillsSection from './SkillsSection'
 import { AgentSkillEditor } from './marketplace'
+import AgentTaskList from './tasks/AgentTaskList'
 import AvatarPicker from './AvatarPicker'
 import EmailAddressesSection from './EmailAddressesSection'
 
@@ -63,6 +64,7 @@ export default function AgentProfile({ isOpen, onClose, agentId, sessionStatus, 
     email: false,
     repositories: false,
     memory: false,
+    tasks: true,
     installedSkills: false,
     skillSettings: false,
     metrics: true,
@@ -827,6 +829,28 @@ export default function AgentProfile({ isOpen, onClose, agentId, sessionStatus, 
 
                 {expandedSections.memory && (
                   <MemoryViewer agentId={agent.id} hostUrl={hostUrl} isActive={true} />
+                )}
+              </section>
+
+              {/* Tasks Section */}
+              <section>
+                <button
+                  onClick={() => toggleSection('tasks')}
+                  className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-gray-500 mb-4 hover:text-gray-400 transition-all"
+                >
+                  {expandedSections.tasks ? (
+                    <ChevronDown className="w-4 h-4" />
+                  ) : (
+                    <ChevronRight className="w-4 h-4" />
+                  )}
+                  <ListTodo className="w-4 h-4" />
+                  Tasks
+                </button>
+
+                {expandedSections.tasks && (
+                  <div className="-mx-4">
+                    <AgentTaskList agentId={agent.id} />
+                  </div>
                 )}
               </section>
 

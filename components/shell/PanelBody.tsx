@@ -8,12 +8,11 @@ import { agentToSession, getAgentBaseUrl } from '@/lib/agent-utils'
 import type { Agent } from '@/types/agent'
 import type { PanelType } from '@/lib/panel-layout'
 import type { WindowTool } from '@/lib/window-manager'
-import { toolLabel } from '@/lib/window-tools'
 import AgentTabContent, { type AgentTab } from './AgentTabContent'
 import BrowserPanel from './BrowserPanel'
 import ColonyPanel from './ColonyPanel'
 import { renderTeamTool, type TeamToolData } from './TeamTools'
-import { EmptyState } from './ui'
+import AgentTaskList from '@/components/tasks/AgentTaskList'
 
 const TAB_FOR: Record<Exclude<PanelType, 'inbox' | 'browser' | 'colony'>, AgentTab> = {
   terminal: 'terminal', files: 'worktree', memory: 'memory', graph: 'graph', docs: 'docs',
@@ -51,14 +50,6 @@ export interface ToolContext extends ToolEnv {
   team?: TeamToolData
 }
 
-function ComingSoon({ tool }: { tool: WindowTool }) {
-  return (
-    <div className="flex-1 min-h-0 grid place-items-center overflow-auto bg-sunken">
-      <EmptyState title={toolLabel(tool)} description="Coming soon. This tool will open here in a later update." />
-    </div>
-  )
-}
-
 /** One tool's content inside its floating window. Every window's content comes through here. */
 export function renderTool(tool: WindowTool, ctx: ToolContext): ReactNode {
   if (ctx.team) return renderTeamTool(tool, ctx.team, ctx)
@@ -66,7 +57,13 @@ export function renderTool(tool: WindowTool, ctx: ToolContext): ReactNode {
   if (!agent) return null
   if (tool === 'browser') return <BrowserPanel />
   if (tool === 'colony') return <ColonyPanel hidden={ctx.minimized} z={ctx.z} />
-  if (tool === 'tasks') return <ComingSoon tool={tool} />
+  if (tool === 'tasks') {
+    return (
+      <div className="flex-1 min-h-0 overflow-auto bg-sunken">
+        <AgentTaskList agentId={agent.id} />
+      </div>
+    )
+  }
   if (tool === 'skills') {
     return (
       <div className="flex-1 min-h-0 overflow-auto bg-sunken p-4">

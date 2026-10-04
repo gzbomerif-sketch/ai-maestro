@@ -10,7 +10,8 @@ import { useSessionActivity } from '@/hooks/useSessionActivity'
 import { Button as ActionButton } from '@/components/ui/button'
 import AgentAvatar, { shellStatusFor } from '@/components/AgentAvatar'
 import AvatarPicker from '@/components/AvatarPicker'
-import { Badge, Button, EmptyState, Field, IconButton, Notice, StatusDot, Textarea } from './ui'
+import AgentTaskList from '@/components/tasks/AgentTaskList'
+import { Badge, Button, Field, IconButton, Notice, StatusDot, Textarea } from './ui'
 
 // ── Pure helpers (tested in tests/colony-profile-card.test.ts) ─────────────────────────────
 
@@ -251,8 +252,7 @@ export default function ColonyProfileCard({ agent, env, hidden = false, onClose 
 
       <section className="border-t border-hairline/70">
         <h3 className="px-4 pt-3 text-[13px] text-ink-muted">Tasks</h3>
-        {/* AgentTaskList lands here (Track B) */}
-        <EmptyState title="Tasks arrive with the next update" />
+        <AgentTaskList agentId={agent.id} compact />
       </section>
 
       <div className="mt-auto grid grid-cols-2 gap-2 p-4 border-t border-hairline/70">
