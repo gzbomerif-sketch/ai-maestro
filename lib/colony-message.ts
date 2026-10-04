@@ -51,3 +51,31 @@ export function originOf(url: string | null): string | null {
 export function colonyReachableFrom(hostname: string): boolean {
   return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '[::1]'
 }
+
+/** What the host reports when AI Maestro itself cannot be asked. */
+export const UNREACHABLE: ColonyStatus = { enabled: true, running: false, url: null, reason: 'Could not reach AI Maestro for the colony status.', fix: null, log: [] }
+
+/**
+ * Fold one status poll into the last known state. A single failed fetch keeps the previous
+ * status: the fetch is same-origin, so a lone failure is usually the dev server mid-compile,
+ * and conceding immediately would unmount the iframe and throw away the colony state this
+ * feature exists to preserve. Two misses in a row concede for real.
+ */
+export function nextColonyStatus(
+  prev: ColonyStatus | null,
+  fetched: ColonyStatus | null,
+  failures: number,
+): { status: ColonyStatus; failures: number } {
+  if (fetched) return { status: fetched, failures: 0 }
+  const n = failures + 1
+  return { status: prev && n < 2 ? prev : UNREACHABLE, failures: n }
+}
+
+/**
+ * Whether the live iframe should exist at all. `everShown` is the lazy-boot gate: the colony
+ * is a whole 3D game, so it boots the first time a Colony tab opens — never in a session that
+ * has not looked — and then stays mounted so later tabs find it alive.
+ */
+export function shouldShowColony(everShown: boolean, local: boolean, status: ColonyStatus | null): boolean {
+  return everShown && local && !!status?.running && !!status.url
+}

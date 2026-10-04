@@ -3,15 +3,13 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import type { Agent } from '@/types/agent'
 import {
-  COLONY_REFRESH, colonyFrameUrl, colonyReachableFrom, findAgent, originOf, parseColonyMessage,
-  type ColonyStatus,
+  COLONY_REFRESH, colonyFrameUrl, colonyReachableFrom, findAgent, nextColonyStatus, originOf,
+  parseColonyMessage, shouldShowColony, type ColonyStatus,
 } from '@/lib/colony-message'
 import { BROWSER_SANDBOX } from './BrowserPanel'
 
 /** Status is re-read on this interval so a colony that dies, or finishes starting, shows up. */
 const STATUS_POLL_MS = 4000
-
-const UNREACHABLE: ColonyStatus = { enabled: true, running: false, url: null, reason: 'Could not reach AI Maestro for the colony status.', fix: null, log: [] }
 
 export interface ColonyContextValue {
   /** A Colony tab's body registers its placeholder here; the host pins the live iframe over it. */
@@ -46,6 +44,9 @@ export default function ColonyHost({ agents, onSelectAgent, children }: {
   const [status, setStatus] = useState<ColonyStatus | null>(null)
   const [nonce, setNonce] = useState(0)
   const [slot, setSlotState] = useState<HTMLElement | null>(null)
+  // Lazy-boot gate: the game loads on the first opened Colony tab, never in a session that
+  // has not looked at it, and then stays alive for every later tab.
+  const [everShown, setEverShown] = useState(false)
   const [pageOrigin, setPageOrigin] = useState<{ hostname: string; origin: string } | null>(null)
   const wrapperRef = useRef<HTMLDivElement>(null)
   const iframeRef = useRef<HTMLIFrameElement>(null)
@@ -53,18 +54,24 @@ export default function ColonyHost({ agents, onSelectAgent, children }: {
   // window is read in an effect so the server render of this client component stays safe
   useEffect(() => { setPageOrigin({ hostname: window.location.hostname, origin: window.location.origin }) }, [])
 
-  // Status poll: same cadence and same-object dedupe the dock panel used before it moved here
+  // Status poll: same cadence and same-object dedupe the dock panel used before it moved
+  // here, folded through nextColonyStatus so one failed fetch cannot unmount the colony.
   useEffect(() => {
     let alive = true
+    let failures = 0
     let timer: ReturnType<typeof setTimeout> | undefined
     const load = async () => {
-      let next = UNREACHABLE
+      let fetched: ColonyStatus | null = null
       try {
         const res = await fetch('/api/colony/status', { cache: 'no-store' })
-        if (res.ok) next = await res.json() as ColonyStatus
-      } catch { /* keep UNREACHABLE */ }
+        if (res.ok) fetched = await res.json() as ColonyStatus
+      } catch { /* counted below */ }
       if (!alive) return
-      setStatus(prev => JSON.stringify(prev) === JSON.stringify(next) ? prev : next)
+      setStatus(prev => {
+        const next = nextColonyStatus(prev, fetched, failures)
+        failures = next.failures
+        return JSON.stringify(prev) === JSON.stringify(next.status) ? prev : next.status
+      })
       timer = setTimeout(load, STATUS_POLL_MS)
     }
     void load()
@@ -96,7 +103,7 @@ export default function ColonyHost({ agents, onSelectAgent, children }: {
 
   // Pin the frame to the slot. rAF rather than observers: one rect read per frame follows
   // panel drags, maximize and window resizes alike, and stops when no slot is mounted.
-  const showing = !!slot && local && !!status?.running && !!status.url
+  const showing = !!slot && shouldShowColony(everShown, local, status)
   useEffect(() => {
     const wrapper = wrapperRef.current
     if (!wrapper) return
@@ -119,10 +126,13 @@ export default function ColonyHost({ agents, onSelectAgent, children }: {
     return () => cancelAnimationFrame(raf)
   }, [showing, slot])
 
-  const setSlot = useCallback((el: HTMLElement | null) => setSlotState(el), [])
+  const setSlot = useCallback((el: HTMLElement | null) => {
+    if (el) setEverShown(true)
+    setSlotState(el)
+  }, [])
   const reload = useCallback(() => setNonce(n => n + 1), [])
 
-  const src = local && status?.running && status.url && pageOrigin
+  const src = shouldShowColony(everShown, local, status) && status?.url && pageOrigin
     ? colonyFrameUrl(status.url, pageOrigin.origin) : null
 
   return (
