@@ -30,7 +30,7 @@ export default function MiniPreview({ hidden, onOpen }: { hidden: boolean; onOpe
       <div className="flex items-center gap-2 px-2.5 h-[28px] text-[12px] text-ink-muted">
         <span className="truncate font-mono">{host}</span>
         <button type="button" aria-label="Close mini preview" onClick={() => dispatch({ type: 'setMini', mini: false })}
-          className="ml-auto grid place-items-center w-5 h-5 rounded-[6px] hover:text-ink hover:bg-raised">
+          className="ml-auto grid place-items-center w-5 h-5 rounded-[6px] hover:text-ink hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-fill focus-visible:outline-offset-2">
           <X strokeWidth={1.5} className="w-3.5 h-3.5" />
         </button>
       </div>

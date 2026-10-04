@@ -49,12 +49,12 @@ export default function DockFrame({ panel, dispatch, scope, tabs, active, onActi
             return (
               <div key={t.id} className={`group flex items-center rounded-[9px] ${on ? 'bg-raised' : 'hover:bg-raised/50'}`}>
                 <button type="button" role="tab" aria-selected={on} onClick={() => onActivate(t.id)}
-                  className={`flex items-center gap-1.5 pl-2.5 pr-1 py-1 text-[13px] whitespace-nowrap ${on ? 'text-ink' : 'text-ink-muted'}`}>
+                  className={`flex items-center gap-1.5 pl-2.5 pr-1 py-1 text-[13px] whitespace-nowrap ${on ? 'text-ink' : 'text-ink-muted'} focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-fill focus-visible:outline-offset-2`}>
                   <Icon strokeWidth={1.5} className="w-3.5 h-3.5" />{t.label}
                   {!!t.badge && t.badge > 0 && <Badge>{t.badge}</Badge>}
                 </button>
                 <button type="button" aria-label={`Close ${t.label}`} onClick={() => onClose(t.id)}
-                  className={`mr-1 grid place-items-center w-5 h-5 rounded-[6px] text-gray-500 hover:text-ink focus-visible:opacity-100 ${on ? '' : 'opacity-0 group-hover:opacity-100'}`}>
+                  className={`mr-1 grid place-items-center w-5 h-5 rounded-[6px] text-gray-500 hover:text-ink focus-visible:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-fill focus-visible:outline-offset-2 ${on ? '' : 'opacity-0 group-hover:opacity-100'}`}>
                   <X strokeWidth={1.5} className="w-3 h-3" />
                 </button>
               </div>

@@ -110,11 +110,11 @@ export function FloatingWindow({ win, dispatch, area, title, icon, children, onS
         ...(maximized ? {} : { left: win.x, top: win.y, width: win.w, height: win.h }),
       }}
     >
-      <div className={cn('flex h-full w-full flex-col overflow-hidden border border-hairline bg-surface shadow-lg', maximized ? 'rounded-none' : 'rounded-[12px]')}>
+      <div className={cn('flex h-full w-full flex-col overflow-hidden border border-hairline bg-surface shadow-window', maximized ? 'rounded-none' : 'rounded-[12px]')}>
         <div
           {...handlers('move')}
           onDoubleClick={e => { if (!(e.target as HTMLElement).closest('button')) dispatch({ type: 'toggleMaximize', id: win.id }) }}
-          className={cn('flex h-10 flex-none touch-none select-none items-center gap-1 border-b border-hairline bg-raised pl-3 pr-1', !maximized && 'cursor-grab')}
+          className={cn('flex h-10 flex-none touch-none select-none items-center gap-1 border-b border-hairline bg-raised shadow-window-titlebar pl-3 pr-1', !maximized && 'cursor-grab')}
         >
           <span className="flex min-w-0 flex-1 items-center gap-2 text-[13px] text-ink">
             {icon && <span aria-hidden className="flex flex-none items-center text-ink-muted">{icon}</span>}

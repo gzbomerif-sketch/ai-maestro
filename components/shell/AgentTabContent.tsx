@@ -61,7 +61,7 @@ export default function AgentTabContent({
               <p className="text-xs text-gray-600 mb-4">Use the Streaming tab. To get the terminal back, hibernate and wake the agent in Terminal mode.</p>
               <button
                 onClick={() => setActiveTab('streaming')}
-                className="px-6 py-3 bg-amber-600 text-white rounded-lg hover:bg-amber-500 transition-all flex items-center gap-2 mx-auto"
+                className="px-6 py-3 bg-amber-600 text-white rounded-lg hover:bg-amber-500 transition-all flex items-center gap-2 mx-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-fill focus-visible:outline-offset-2"
               >
                 <Zap className="w-4 h-4" /> Go to Streaming
               </button>
@@ -78,7 +78,7 @@ export default function AgentTabContent({
               <button
                 onClick={() => handleWakeAgent(agent)}
                 disabled={wakingAgentId === agent.id}
-                className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 mx-auto"
+                className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 mx-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-fill focus-visible:outline-offset-2"
               >
                 {wakingAgentId === agent.id ? (
                   <>
@@ -105,7 +105,7 @@ export default function AgentTabContent({
               <p className="text-xs text-gray-600 mb-4">This agent is running outside tmux (plain terminal, API-only, or remote host). No terminal view available.</p>
               <button
                 onClick={() => handleShowAgentProfile(agent)}
-                className="px-6 py-3 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-all"
+                className="px-6 py-3 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-fill focus-visible:outline-offset-2"
               >
                 View Profile
               </button>
@@ -132,7 +132,7 @@ export default function AgentTabContent({
               <button
                 onClick={() => handleWakeAgent(agent)}
                 disabled={wakingAgentId === agent.id}
-                className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 mx-auto"
+                className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 mx-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-fill focus-visible:outline-offset-2"
               >
                 {wakingAgentId === agent.id ? (
                   <>

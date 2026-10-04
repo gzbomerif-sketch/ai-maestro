@@ -126,7 +126,7 @@ export function Checkbox({ checked, onChange, label, description }: {
   return (
     <label className="flex items-start gap-3 cursor-pointer select-none">
       <input type="checkbox" checked={checked} onChange={e => onChange(e.target.checked)}
-        className="mt-1 w-4 h-4 rounded-[4px] accent-accent-fill bg-sunken border-control-border" />
+        className="mt-1 w-4 h-4 rounded-[4px] accent-accent-fill bg-sunken border-control-border focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-fill focus-visible:outline-offset-2" />
       <span>
         <span className="block text-[14px] text-ink">{label}</span>
         {description && <span className="block text-[13px] text-ink-muted">{description}</span>}

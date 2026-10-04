@@ -33,7 +33,7 @@ export default function TeamSection({ teams, meetings, activeTeamId, onSelectTea
     <div>
       <SectionLabel count={teams.length || undefined}
         action={<button type="button" aria-label="New team" title="New team" onClick={() => setCreating(true)}
-          className="grid place-items-center w-5 h-5 rounded-[6px] text-ink-muted hover:text-ink hover:bg-raised"><Plus strokeWidth={1.5} className="w-3.5 h-3.5" /></button>}>
+          className="grid place-items-center w-5 h-5 rounded-[6px] text-ink-muted hover:text-ink hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-fill focus-visible:outline-offset-2"><Plus strokeWidth={1.5} className="w-3.5 h-3.5" /></button>}>
         Teams
       </SectionLabel>
       {teams.map(t => {
@@ -41,7 +41,7 @@ export default function TeamSection({ teams, meetings, activeTeamId, onSelectTea
         const on = t.id === activeTeamId
         return (
           <button key={t.id} type="button" onClick={() => onSelectTeam(t.id)} aria-current={on ? 'page' : undefined}
-            className={`w-full flex items-center gap-3 px-2.5 py-2 rounded-[10px] text-[15px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-fill ${on ? 'bg-raised text-ink' : 'text-gray-300 hover:bg-raised/60'}`}>
+            className={`w-full flex items-center gap-3 px-2.5 py-2 rounded-[10px] text-[15px] transition-colors duration-[120ms] ease-out focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-fill ${on ? 'relative before:absolute before:left-0 before:top-2 before:bottom-2 before:w-[2px] before:rounded-full before:bg-accent-fill bg-raised text-ink' : 'text-gray-300 hover:bg-raised/60'}`}>
             <span className="truncate">{t.name}</span>
             <span className="ml-auto text-[12px]">
               {live ? <span className="text-ok">● live</span> : <span className="text-gray-500">{t.agentIds.length || ''}</span>}

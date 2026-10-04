@@ -57,7 +57,7 @@ export default function BrowserPanel() {
         className="flex-1 w-full min-h-0 bg-white border-0" />
       <div className="flex-none flex items-center gap-2 px-3 h-[30px] border-t border-hairline/70 text-[12px] text-gray-500">
         Page blank? Some sites block being embedded.
-        <button type="button" onClick={() => window.open(url, '_blank', 'noopener,noreferrer')} className="text-ink-muted hover:text-ink underline-offset-2 hover:underline">Open in new tab</button>
+        <button type="button" onClick={() => window.open(url, '_blank', 'noopener,noreferrer')} className="text-ink-muted hover:text-ink underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-fill focus-visible:outline-offset-2">Open in new tab</button>
       </div>
     </div>
   )

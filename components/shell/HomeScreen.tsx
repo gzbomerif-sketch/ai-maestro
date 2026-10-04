@@ -56,7 +56,7 @@ export default function HomeScreen({ groups, agents, unread, now, onSelectAgent,
             </button>
           ))}
           <button type="button" onClick={onNewAgent}
-            className="grid place-items-center rounded-[14px] border border-dashed border-hairline text-ink-muted hover:text-ink min-h-[78px]">
+            className="grid place-items-center rounded-[14px] border border-dashed border-hairline text-ink-muted hover:text-ink min-h-[78px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-fill focus-visible:outline-offset-2">
             <span className="flex items-center gap-2 text-[14px]"><Plus strokeWidth={1.5} className="w-4 h-4" />New</span>
           </button>
         </div>

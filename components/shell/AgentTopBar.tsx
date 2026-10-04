@@ -64,13 +64,13 @@ export default function AgentTopBar(p: AgentTopBarProps) {
           ? <Button onClick={p.onWake} disabled={p.busy}>{p.busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Power strokeWidth={1.5} className="w-4 h-4" />}Wake</Button>
           : <Button onClick={p.onSleep} disabled={p.busy}>{p.busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Moon strokeWidth={1.5} className="w-4 h-4" />}Sleep</Button>}
         <a href={`/zoom/agent?id=${encodeURIComponent(p.agent.id)}`} target="_blank" rel="noopener noreferrer" aria-label="Pop out" title="Pop out"
-          className="grid place-items-center w-[34px] h-[34px] rounded-[10px] border border-control-border text-ink hover:bg-raised"><ExternalLink strokeWidth={1.5} className="w-4 h-4" /></a>
+          className="grid place-items-center w-[34px] h-[34px] rounded-[10px] border border-control-border text-ink hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-fill focus-visible:outline-offset-2"><ExternalLink strokeWidth={1.5} className="w-4 h-4" /></a>
         <div ref={ref} className="relative">
           <IconButton label="More actions" onClick={() => setMenu(m => !m)} active={menu}><MoreHorizontal strokeWidth={1.5} className="w-4 h-4" /></IconButton>
           {menu && (
             <div role="menu" className="absolute right-0 top-full mt-1 z-30 min-w-[180px] rounded-[12px] border border-hairline bg-surface p-1">
-              <button type="button" role="menuitem" onClick={() => { setMenu(false); p.onProfile() }} className="w-full text-left px-3 py-2 rounded-[8px] text-[14px] text-gray-300 hover:bg-raised/60">Profile</button>
-              <button type="button" role="menuitem" onClick={() => { setMenu(false); p.onExport() }} className="w-full text-left px-3 py-2 rounded-[8px] text-[14px] text-gray-300 hover:bg-raised/60">Export transcript</button>
+              <button type="button" role="menuitem" onClick={() => { setMenu(false); p.onProfile() }} className="w-full text-left px-3 py-2 rounded-[8px] text-[14px] text-gray-300 hover:bg-raised/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-fill focus-visible:outline-offset-2">Profile</button>
+              <button type="button" role="menuitem" onClick={() => { setMenu(false); p.onExport() }} className="w-full text-left px-3 py-2 rounded-[8px] text-[14px] text-gray-300 hover:bg-raised/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-fill focus-visible:outline-offset-2">Export transcript</button>
             </div>
           )}
         </div>

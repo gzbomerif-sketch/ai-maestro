@@ -142,6 +142,10 @@ const config: Config = {
         sans: ['var(--font-sans)', 'Helvetica Neue', 'Arial', 'sans-serif'],
         mono: ['var(--font-mono)', 'Consolas', 'Monaco', 'Courier New', 'monospace'],
       },
+      boxShadow: {
+        window: '0 1px 2px rgba(0,0,0,0.5), 0 8px 24px rgba(0,0,0,0.45)',
+        'window-titlebar': 'inset 0 1px 0 0 rgba(255,255,255,0.04)',
+      },
     },
   },
   plugins: [animate],

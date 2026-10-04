@@ -96,7 +96,7 @@ export default function TeamChat({ team, meeting, members, onStart, starting }: 
             </span>
             {error && <Notice tone="error">{error}</Notice>}
             <button type="button" onClick={send} disabled={sending || !text.trim()} aria-label="Send"
-              className="ml-auto grid place-items-center w-[34px] h-[34px] rounded-full bg-accent-fill text-white disabled:opacity-40">
+              className="ml-auto grid place-items-center w-[34px] h-[34px] rounded-full bg-accent-fill text-white disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-fill focus-visible:outline-offset-2">
               {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
             </button>
           </div>
