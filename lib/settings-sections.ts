@@ -3,7 +3,7 @@
  * ?tab=) and the ⌘K palette. Pure — icons live in SettingsShell.
  */
 export type SettingsSectionId =
-  | 'hosts' | 'domains' | 'webhooks' | 'memory' | 'terminal'
+  | 'hosts' | 'domains' | 'webhooks' | 'memory' | 'appearance' | 'terminal'
   | 'marketplace' | 'experiments' | 'onboarding' | 'help' | 'about'
 
 export interface SettingsSection {
@@ -17,6 +17,7 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
   { id: 'domains', label: 'Domains', keywords: ['dns', 'address'] },
   { id: 'webhooks', label: 'Webhooks', keywords: ['events', 'integrations', 'callbacks'] },
   { id: 'memory', label: 'Memory', keywords: ['consolidation', 'classifier', 'long-term'] },
+  { id: 'appearance', label: 'Appearance', keywords: ['theme', 'dark', 'light', 'ink', 'paper', 'colour', 'color'] },
   { id: 'terminal', label: 'Terminal', keywords: ['copy', 'selection', 'xterm'] },
   { id: 'marketplace', label: 'Marketplace', keywords: ['skills', 'plugins'] },
   { id: 'experiments', label: 'Experiments', keywords: ['flags', 'features', 'beta'] },

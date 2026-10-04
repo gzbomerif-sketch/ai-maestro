@@ -793,12 +793,12 @@ export default function ChatView({ agent, isActive = false, hideHeader = false, 
         return (
           <div className="px-3 pb-3 space-y-1">
             {input.file_path && (
-              <div className="text-xs font-mono bg-gray-950/50 px-2 py-1.5 rounded text-blue-300">
+              <div className="text-xs font-mono bg-gray-950/50 px-2 py-1.5 rounded text-accent">
                 {input.file_path}
               </div>
             )}
             {input.description && (
-              <p className="text-xs text-gray-400 italic">{input.description}</p>
+              <p className="text-xs text-ink-muted italic">{input.description}</p>
             )}
             {input.old_string && (
               <pre className="text-xs bg-red-950/30 p-2 rounded overflow-x-auto max-h-32 overflow-y-auto text-red-300 border border-red-900/30">
@@ -879,7 +879,7 @@ export default function ChatView({ agent, isActive = false, hideHeader = false, 
   const presenceStyle = PRESENCE_STYLE[presence]
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 bg-gray-900">
+    <div className="flex-1 flex flex-col min-h-0 bg-sunken">
       {/* Header: which agent, where, what it is doing (shared with the terminal tab) */}
       {!hideHeader && (
         <AgentHeaderBar
@@ -904,7 +904,7 @@ export default function ChatView({ agent, isActive = false, hideHeader = false, 
               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
                 chatMode === 'power'
                   ? 'text-amber-300 bg-amber-400/15 hover:bg-amber-400/25'
-                  : 'text-gray-300 hover:bg-gray-700'
+                  : 'text-gray-300 hover:bg-raised'
               }`}
               title={chatMode === 'power' ? 'X-Ray on: showing thinking and tool calls. Click to hide them' : 'X-Ray off: click to show thinking and tool calls'}
               aria-pressed={chatMode === 'power'}
@@ -925,7 +925,7 @@ export default function ChatView({ agent, isActive = false, hideHeader = false, 
       >
         {isLoading && messages.length === 0 && (
           <div className="flex items-center justify-center h-full">
-            <Loader2 className="w-6 h-6 text-gray-400 animate-spin" />
+            <Loader2 className="w-6 h-6 text-ink-muted animate-spin" />
           </div>
         )}
 
@@ -939,7 +939,7 @@ export default function ChatView({ agent, isActive = false, hideHeader = false, 
         {!isLoading && messages.length === 0 && !error && (
           <div className="flex flex-col items-center justify-center h-full text-gray-500">
             <MessageSquare className="w-16 h-16 mb-4 opacity-30" />
-            <p className="text-base text-gray-400">Talk to {agent.label || agent.name || agent.alias || 'this agent'}</p>
+            <p className="text-base text-ink-muted">Talk to {agent.label || agent.name || agent.alias || 'this agent'}</p>
             <p className="text-xs mt-1">Send instructions, approve permissions, or ask questions</p>
           </div>
         )}
@@ -986,11 +986,11 @@ export default function ChatView({ agent, isActive = false, hideHeader = false, 
           if (isSummary) {
             return (
               <div key={message.uuid || index} className="flex items-center gap-3 my-3 px-2">
-                <div className="flex-1 border-t border-gray-700/50" />
+                <div className="flex-1 border-t border-hairline/50" />
                 <span className="text-xs text-gray-500 italic whitespace-nowrap">
                   {message.summary || 'Conversation compacted'}
                 </span>
-                <div className="flex-1 border-t border-gray-700/50" />
+                <div className="flex-1 border-t border-hairline/50" />
               </div>
             )
           }
@@ -1030,8 +1030,8 @@ export default function ChatView({ agent, isActive = false, hideHeader = false, 
                           isQueued
                             ? 'bg-yellow-600/80 text-white border border-yellow-500'
                             : isUser
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-gray-800 text-gray-200'
+                            ? 'bg-accent-fill text-white'
+                            : 'bg-raised text-gray-200'
                         }`
                   }
                 >
@@ -1137,7 +1137,7 @@ export default function ChatView({ agent, isActive = false, hideHeader = false, 
                           {questions.map((q, qIdx) => (
                             <div
                               key={qIdx}
-                              className="flex items-center gap-2 text-xs text-gray-500 px-2 py-1 rounded bg-gray-800/20"
+                              className="flex items-center gap-2 text-xs text-gray-500 px-2 py-1 rounded bg-raised/20"
                             >
                               <Check className="w-3 h-3 flex-shrink-0 text-gray-600" />
                               <span className="truncate">{q.header || q.question}</span>
@@ -1169,7 +1169,7 @@ export default function ChatView({ agent, isActive = false, hideHeader = false, 
                                   disabled={answered || isSending}
                                   className={`flex items-start gap-2 w-full text-left px-3 py-2 rounded-lg transition-all ${
                                     answered
-                                      ? 'opacity-50 cursor-default bg-gray-800/30'
+                                      ? 'opacity-50 cursor-default bg-raised/30'
                                       : 'bg-cyan-800/20 hover:bg-cyan-700/30 border border-cyan-600/30 hover:border-cyan-500/50'
                                   }`}
                                 >
@@ -1192,9 +1192,9 @@ export default function ChatView({ agent, isActive = false, hideHeader = false, 
                                     input?.focus()
                                   }}
                                   disabled={isSending}
-                                  className="flex items-center gap-2 w-full text-left px-3 py-2 rounded-lg bg-gray-800/30 hover:bg-gray-700/40 border border-gray-600/30 hover:border-gray-500/50 transition-all"
+                                  className="flex items-center gap-2 w-full text-left px-3 py-2 rounded-lg bg-raised/30 hover:bg-gray-700/40 border border-gray-600/30 hover:border-gray-500/50 transition-all"
                                 >
-                                  <span className="text-gray-400 font-bold w-5 text-center flex-shrink-0">
+                                  <span className="text-ink-muted font-bold w-5 text-center flex-shrink-0">
                                     {q.options.length + 1}
                                   </span>
                                   <span className="text-sm text-gray-300">Other</span>
@@ -1215,7 +1215,7 @@ export default function ChatView({ agent, isActive = false, hideHeader = false, 
                       onClick={() => copyToClipboard(content, index)}
                       className={`p-1 rounded text-xs transition-colors ${
                         isUser
-                          ? 'text-blue-300 hover:text-white'
+                          ? 'text-accent hover:text-white'
                           : 'text-gray-500 hover:text-gray-300'
                       }`}
                       title="Copy message"
@@ -1236,7 +1236,7 @@ export default function ChatView({ agent, isActive = false, hideHeader = false, 
         {/* Live activity indicator — shows what the agent is doing right now */}
         {activityState === 'thinking' && liveActivity && hookState?.status !== 'permission_request' && (
           <div className="flex justify-start">
-            <div className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-gray-800/60 border border-gray-700/50">
+            <div className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-raised/60 border border-hairline/50">
               <div className="flex gap-0.5">
                 <div className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-bounce" style={{ animationDelay: '0ms' }} />
                 <div className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-bounce" style={{ animationDelay: '150ms' }} />
@@ -1305,7 +1305,7 @@ export default function ChatView({ agent, isActive = false, hideHeader = false, 
                         className={`flex items-center gap-2 w-full text-left px-3 py-2 rounded-lg
                           transition-all disabled:opacity-50 ${
                           option.value === 'no'
-                            ? 'bg-gray-800/50 hover:bg-gray-700/50 border border-gray-600/30 hover:border-gray-500/50'
+                            ? 'bg-raised/50 hover:bg-gray-700/50 border border-gray-600/30 hover:border-gray-500/50'
                             : 'bg-amber-800/30 hover:bg-amber-700/40 border border-amber-600/30 hover:border-amber-500/50'
                         }`}
                       >
@@ -1329,7 +1329,7 @@ export default function ChatView({ agent, isActive = false, hideHeader = false, 
               <div className={`rounded-2xl px-4 py-3 text-white border ${
                 pending.status === 'failed'
                   ? 'bg-red-900/60 border-red-600/60'
-                  : 'bg-blue-600/70 border-blue-500/50'
+                  : 'bg-accent-fill/70 border-accent-fill/50'
               }`}>
                 <div className="flex items-center gap-2 mb-1">
                   {pending.status === 'failed' ? (
@@ -1355,7 +1355,7 @@ export default function ChatView({ agent, isActive = false, hideHeader = false, 
                     </button>
                     <button
                       onClick={() => dismissPendingMessage(pending.id)}
-                      className="px-2 py-1 text-xs rounded bg-gray-800/60 hover:bg-gray-700/60 border border-gray-600/50 transition-colors"
+                      className="px-2 py-1 text-xs rounded bg-raised/60 hover:bg-gray-700/60 border border-gray-600/50 transition-colors"
                     >
                       Dismiss
                     </button>
@@ -1374,7 +1374,7 @@ export default function ChatView({ agent, isActive = false, hideHeader = false, 
         <div className="relative flex-shrink-0">
           <button
             onClick={() => scrollToBottom()}
-            className="absolute -top-12 left-1/2 -translate-x-1/2 z-10 px-3 py-1.5 rounded-full bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium shadow-lg flex items-center gap-1.5 transition-colors"
+            className="absolute -top-12 left-1/2 -translate-x-1/2 z-10 px-3 py-1.5 rounded-full bg-accent-fill hover:bg-accent-fill/90 text-white text-xs font-medium shadow-lg flex items-center gap-1.5 transition-colors"
           >
             <ChevronDown className="w-3.5 h-3.5" />
             New messages
@@ -1383,7 +1383,7 @@ export default function ChatView({ agent, isActive = false, hideHeader = false, 
       )}
 
       {/* Input Area */}
-      <div className={ink ? 'px-8 pb-6 pt-2 flex-shrink-0' : 'border-t border-gray-700 bg-gray-800 p-4 flex-shrink-0'}>
+      <div className={ink ? 'px-8 pb-6 pt-2 flex-shrink-0' : 'border-t border-hairline bg-raised p-4 flex-shrink-0'}>
         {!isOnline && (
           <div className="mb-3 px-3 py-2 bg-yellow-900/20 border border-yellow-800 rounded-lg text-xs text-yellow-400">
             Agent is offline. Wake the session to send messages.
@@ -1406,7 +1406,7 @@ export default function ChatView({ agent, isActive = false, hideHeader = false, 
             placeholder={isOnline ? `Message ${agent.label || agent.name || agent.alias || 'agent'}${ink ? '' : '... (Enter to send)'}` : 'Agent is offline'}
             className={ink
               ? 'w-full bg-transparent text-[15px] text-ink placeholder:text-gray-500 resize-none focus:outline-none min-h-[44px] disabled:opacity-50'
-              : 'flex-1 bg-gray-900 text-gray-200 text-sm rounded-lg px-4 py-3 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 border border-gray-700 disabled:opacity-50'}
+              : 'flex-1 bg-sunken text-gray-200 text-sm rounded-lg px-4 py-3 resize-none focus:outline-none focus:ring-2 focus:ring-accent-fill border border-hairline disabled:opacity-50'}
             rows={1}
             style={{ maxHeight: '160px' }}
             disabled={!isOnline || isSending}
@@ -1419,7 +1419,7 @@ export default function ChatView({ agent, isActive = false, hideHeader = false, 
               aria-label="Send"
               className={ink
                 ? 'ml-auto grid place-items-center w-[34px] h-[34px] rounded-full bg-accent-fill text-white disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent'
-                : 'px-4 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-lg'}
+                : 'px-4 py-3 bg-accent-fill hover:bg-accent-fill/90 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-lg'}
             >
               {isSending ? <Loader2 className={ink ? 'w-4 h-4 animate-spin' : 'w-5 h-5 animate-spin'} /> : <Send className={ink ? 'w-4 h-4' : 'w-5 h-5'} />}
             </button>

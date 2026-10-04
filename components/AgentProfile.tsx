@@ -269,29 +269,29 @@ export default function AgentProfile({ isOpen, onClose, agentId, sessionStatus, 
 
       {/* Panel */}
       <div
-        className={`fixed inset-y-0 right-0 w-full md:w-[480px] bg-gray-900 border-l border-gray-800 shadow-2xl z-50 overflow-y-auto transform transition-transform duration-300 ease-in-out ${
+        className={`fixed inset-y-0 right-0 w-full md:w-[480px] bg-sunken border-l border-hairline shadow-2xl z-50 overflow-y-auto transform transition-transform duration-300 ease-in-out ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
         {loading ? (
           <div className="flex flex-col items-center justify-center h-full gap-4">
-            <div className="w-10 h-10 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
-            <div className="text-gray-400">Loading agent profile...</div>
+            <div className="w-10 h-10 border-4 border-accent-fill/30 border-t-blue-500 rounded-full animate-spin" />
+            <div className="text-ink-muted">Loading agent profile...</div>
           </div>
         ) : !agent ? (
           <div className="flex items-center justify-center h-full">
-            <div className="text-gray-400">Agent not found</div>
+            <div className="text-ink-muted">Agent not found</div>
           </div>
         ) : (
           <>
             {/* Header */}
-            <div className="sticky top-0 z-10 bg-gray-900 border-b border-gray-800 px-6 py-4 flex items-center justify-between">
-              <h2 className="text-lg font-bold text-gray-100">Agent Profile</h2>
+            <div className="sticky top-0 z-10 bg-sunken border-b border-hairline px-6 py-4 flex items-center justify-between">
+              <h2 className="text-lg font-bold text-ink">Agent Profile</h2>
               <div className="flex items-center gap-2">
                 {/* Export Button */}
                 <button
                   onClick={() => setShowExportDialog(true)}
-                  className="p-2 rounded-lg hover:bg-gray-800 transition-all text-gray-400 hover:text-gray-200"
+                  className="p-2 rounded-lg hover:bg-raised transition-all text-ink-muted hover:text-gray-200"
                   title="Export Agent"
                 >
                   <Download className="w-5 h-5" />
@@ -299,7 +299,7 @@ export default function AgentProfile({ isOpen, onClose, agentId, sessionStatus, 
                 {/* Transfer Button */}
                 <button
                   onClick={() => setShowTransferDialog(true)}
-                  className="p-2 rounded-lg hover:bg-gray-800 transition-all text-gray-400 hover:text-blue-400"
+                  className="p-2 rounded-lg hover:bg-raised transition-all text-ink-muted hover:text-accent"
                   title="Transfer to Another Host"
                 >
                   <Send className="w-5 h-5" />
@@ -312,8 +312,8 @@ export default function AgentProfile({ isOpen, onClose, agentId, sessionStatus, 
                   disabled={!hasChanges || saving}
                   className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${
                     hasChanges
-                      ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg hover:shadow-blue-500/25'
-                      : 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                      ? 'bg-accent-fill text-white hover:bg-accent-fill/90 shadow-lg hover:shadow-blue-500/25'
+                      : 'bg-gray-700 text-ink-muted cursor-not-allowed'
                   }`}
                 >
                   {saving ? (
@@ -335,7 +335,7 @@ export default function AgentProfile({ isOpen, onClose, agentId, sessionStatus, 
                 </button>
                 <button
                   onClick={onClose}
-                  className="p-2 rounded-lg hover:bg-gray-800 transition-all text-gray-400 hover:text-gray-200"
+                  className="p-2 rounded-lg hover:bg-raised transition-all text-ink-muted hover:text-gray-200"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -349,7 +349,7 @@ export default function AgentProfile({ isOpen, onClose, agentId, sessionStatus, 
                 <div className={`rounded-xl p-4 border ${
                   sessionStatus.status === 'online'
                     ? 'bg-green-500/10 border-green-500/30'
-                    : 'bg-gray-800 border-gray-700'
+                    : 'bg-raised border-hairline'
                 }`}>
                   <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
@@ -360,7 +360,7 @@ export default function AgentProfile({ isOpen, onClose, agentId, sessionStatus, 
                           </div>
                           <div>
                             <div className="text-sm font-semibold text-green-300">Online</div>
-                            <div className="text-xs text-gray-400">
+                            <div className="text-xs text-ink-muted">
                               Session: {sessionStatus.tmuxSessionName}
                             </div>
                           </div>
@@ -368,7 +368,7 @@ export default function AgentProfile({ isOpen, onClose, agentId, sessionStatus, 
                       ) : (
                         <>
                           <div className="w-10 h-10 rounded-lg bg-gray-700 flex items-center justify-center">
-                            <WifiOff className="w-5 h-5 text-gray-400" />
+                            <WifiOff className="w-5 h-5 text-ink-muted" />
                           </div>
                           <div>
                             <div className="text-sm font-semibold text-gray-300">Offline</div>
@@ -395,7 +395,7 @@ export default function AgentProfile({ isOpen, onClose, agentId, sessionStatus, 
                   {/* Session details when online */}
                   {sessionStatus.status === 'online' && sessionStatus.workingDirectory && (
                     <div className="mt-3 pt-3 border-t border-green-500/20">
-                      <div className="flex items-center gap-2 text-xs text-gray-400">
+                      <div className="flex items-center gap-2 text-xs text-ink-muted">
                         <Folder className="w-3 h-3" />
                         <span className="font-mono truncate">{sessionStatus.workingDirectory}</span>
                       </div>
@@ -408,7 +408,7 @@ export default function AgentProfile({ isOpen, onClose, agentId, sessionStatus, 
               <section>
                 <button
                   onClick={() => toggleSection('identity')}
-                  className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-gray-500 mb-4 hover:text-gray-400 transition-all"
+                  className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-gray-500 mb-4 hover:text-ink-muted transition-all"
                 >
                   {expandedSections.identity ? (
                     <ChevronDown className="w-4 h-4" />
@@ -424,7 +424,7 @@ export default function AgentProfile({ isOpen, onClose, agentId, sessionStatus, 
                     <div className="flex gap-6">
                       <button
                         onClick={() => setShowAvatarPicker(true)}
-                        className="w-24 h-24 rounded-xl border-2 border-gray-700 overflow-hidden hover:border-blue-500 hover:scale-105 transition-all flex-shrink-0 bg-gray-800 flex items-center justify-center text-4xl cursor-pointer group relative"
+                        className="w-24 h-24 rounded-xl border-2 border-hairline overflow-hidden hover:border-accent-fill hover:scale-105 transition-all flex-shrink-0 bg-raised flex items-center justify-center text-4xl cursor-pointer group relative"
                         title="Click to change avatar"
                       >
                         {agent.avatar ? (
@@ -489,7 +489,7 @@ export default function AgentProfile({ isOpen, onClose, agentId, sessionStatus, 
               <section>
                 <button
                   onClick={() => toggleSection('work')}
-                  className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-gray-500 mb-4 hover:text-gray-400 transition-all"
+                  className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-gray-500 mb-4 hover:text-ink-muted transition-all"
                 >
                   {expandedSections.work ? (
                     <ChevronDown className="w-4 h-4" />
@@ -535,7 +535,7 @@ export default function AgentProfile({ isOpen, onClose, agentId, sessionStatus, 
                     {/* Tags - Control sidebar tree position */}
                     <div className="space-y-3">
                       <div>
-                        <label className="text-xs font-medium text-gray-400 mb-2 flex items-center gap-2">
+                        <label className="text-xs font-medium text-ink-muted mb-2 flex items-center gap-2">
                           <Tag className="w-4 h-4" />
                           Sidebar Organization (Tags)
                         </label>
@@ -550,7 +550,7 @@ export default function AgentProfile({ isOpen, onClose, agentId, sessionStatus, 
                                 index === 0
                                   ? 'bg-purple-500/20 text-purple-300 border-purple-500/30 hover:bg-purple-500/30'
                                   : index === 1
-                                  ? 'bg-blue-500/20 text-blue-300 border-blue-500/30 hover:bg-blue-500/30'
+                                  ? 'bg-accent-fill/20 text-accent border-accent-fill/30 hover:bg-accent-fill/90/30'
                                   : 'bg-gray-500/20 text-gray-300 border-gray-500/30 hover:bg-gray-500/30'
                               }`}
                             >
@@ -564,7 +564,7 @@ export default function AgentProfile({ isOpen, onClose, agentId, sessionStatus, 
                           ))}
                           <button
                             onClick={() => setShowTagDialog(true)}
-                            className="px-3 py-1 border border-dashed border-gray-600 rounded-full text-sm text-gray-400 hover:border-blue-500 hover:text-blue-400 transition-all"
+                            className="px-3 py-1 border border-dashed border-gray-600 rounded-full text-sm text-ink-muted hover:border-accent-fill hover:text-accent transition-all"
                           >
                             + Add Tag
                           </button>
@@ -572,8 +572,8 @@ export default function AgentProfile({ isOpen, onClose, agentId, sessionStatus, 
                       </div>
 
                       {/* Tree Location Preview */}
-                      <div className="p-3 bg-gray-800/30 rounded-lg border border-gray-700/50">
-                        <div className="flex items-center gap-2 text-xs font-medium text-gray-400 mb-2">
+                      <div className="p-3 bg-raised/30 rounded-lg border border-hairline/50">
+                        <div className="flex items-center gap-2 text-xs font-medium text-ink-muted mb-2">
                           <FolderTree className="w-4 h-4" />
                           Sidebar Location Preview
                         </div>
@@ -583,8 +583,8 @@ export default function AgentProfile({ isOpen, onClose, agentId, sessionStatus, 
                             <span className="text-purple-300">{agent.tags?.[0] || 'ungrouped'}</span>
                           </div>
                           <div className="flex items-center gap-2 pl-4">
-                            <Folder className="w-4 h-4 text-blue-400" />
-                            <span className="text-blue-300">{agent.tags?.[1] || 'default'}</span>
+                            <Folder className="w-4 h-4 text-accent" />
+                            <span className="text-accent">{agent.tags?.[1] || 'default'}</span>
                           </div>
                           <div className="flex items-center gap-2 pl-8">
                             <span className="text-green-400">{'>'}</span>
@@ -601,7 +601,7 @@ export default function AgentProfile({ isOpen, onClose, agentId, sessionStatus, 
               <section>
                 <button
                   onClick={() => toggleSection('deployment')}
-                  className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-gray-500 mb-4 hover:text-gray-400 transition-all"
+                  className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-gray-500 mb-4 hover:text-ink-muted transition-all"
                 >
                   {expandedSections.deployment ? (
                     <ChevronDown className="w-4 h-4" />
@@ -614,16 +614,16 @@ export default function AgentProfile({ isOpen, onClose, agentId, sessionStatus, 
                 {expandedSections.deployment && agent.deployment && (
                   <div className="space-y-4">
                     {/* Deployment Type Badge */}
-                    <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
+                    <div className="bg-raised/50 rounded-lg p-4 border border-hairline">
                       <div className="flex items-center gap-3">
                         {agent.deployment.type === 'cloud' ? (
                           <>
-                            <div className="w-12 h-12 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                              <Cloud className="w-6 h-6 text-blue-400" />
+                            <div className="w-12 h-12 rounded-lg bg-accent-fill/10 flex items-center justify-center">
+                              <Cloud className="w-6 h-6 text-accent" />
                             </div>
                             <div>
-                              <div className="text-sm font-semibold text-gray-100">Cloud Deployment</div>
-                              <div className="text-xs text-gray-400 mt-0.5">
+                              <div className="text-sm font-semibold text-ink">Cloud Deployment</div>
+                              <div className="text-xs text-ink-muted mt-0.5">
                                 {agent.deployment.cloud?.provider ? `${agent.deployment.cloud.provider.toUpperCase()} • ${agent.deployment.cloud.region || 'N/A'}` : 'AWS deployment'}
                               </div>
                             </div>
@@ -631,11 +631,11 @@ export default function AgentProfile({ isOpen, onClose, agentId, sessionStatus, 
                         ) : (
                           <>
                             <div className="w-12 h-12 rounded-lg bg-gray-500/10 flex items-center justify-center">
-                              <Monitor className="w-6 h-6 text-gray-400" />
+                              <Monitor className="w-6 h-6 text-ink-muted" />
                             </div>
                             <div>
-                              <div className="text-sm font-semibold text-gray-100">Local Deployment</div>
-                              <div className="text-xs text-gray-400 mt-0.5">
+                              <div className="text-sm font-semibold text-ink">Local Deployment</div>
+                              <div className="text-xs text-ink-muted mt-0.5">
                                 {agent.deployment.local?.hostname || 'localhost'} • {agent.deployment.local?.platform || 'unknown'}
                               </div>
                             </div>
@@ -648,24 +648,24 @@ export default function AgentProfile({ isOpen, onClose, agentId, sessionStatus, 
                     {agent.deployment.type === 'cloud' && agent.deployment.cloud && (
                       <div className="space-y-3">
                         <div className="grid grid-cols-2 gap-3">
-                          <div className="bg-gray-800/30 rounded-lg p-3 border border-gray-700/50">
-                            <div className="text-xs text-gray-400 mb-1">Instance Type</div>
+                          <div className="bg-raised/30 rounded-lg p-3 border border-hairline/50">
+                            <div className="text-xs text-ink-muted mb-1">Instance Type</div>
                             <div className="text-sm font-mono text-gray-200">{agent.deployment.cloud.instanceType || 'N/A'}</div>
                           </div>
-                          <div className="bg-gray-800/30 rounded-lg p-3 border border-gray-700/50">
-                            <div className="text-xs text-gray-400 mb-1">Status</div>
+                          <div className="bg-raised/30 rounded-lg p-3 border border-hairline/50">
+                            <div className="text-xs text-ink-muted mb-1">Status</div>
                             <div className="text-sm font-mono text-gray-200 capitalize">{agent.deployment.cloud.status || 'running'}</div>
                           </div>
                         </div>
                         {agent.deployment.cloud.publicIp && (
-                          <div className="bg-gray-800/30 rounded-lg p-3 border border-gray-700/50">
-                            <div className="text-xs text-gray-400 mb-1">Public IP</div>
+                          <div className="bg-raised/30 rounded-lg p-3 border border-hairline/50">
+                            <div className="text-xs text-ink-muted mb-1">Public IP</div>
                             <div className="text-sm font-mono text-gray-200">{agent.deployment.cloud.publicIp}</div>
                           </div>
                         )}
                         {agent.deployment.cloud.apiEndpoint && (
-                          <div className="bg-gray-800/30 rounded-lg p-3 border border-gray-700/50">
-                            <div className="text-xs text-gray-400 mb-1">API Endpoint</div>
+                          <div className="bg-raised/30 rounded-lg p-3 border border-hairline/50">
+                            <div className="text-xs text-ink-muted mb-1">API Endpoint</div>
                             <div className="text-sm font-mono text-gray-200">{agent.deployment.cloud.apiEndpoint}</div>
                           </div>
                         )}
@@ -675,12 +675,12 @@ export default function AgentProfile({ isOpen, onClose, agentId, sessionStatus, 
                     {/* Local deployment details */}
                     {agent.deployment.type === 'local' && agent.deployment.local && (
                       <div className="grid grid-cols-2 gap-3">
-                        <div className="bg-gray-800/30 rounded-lg p-3 border border-gray-700/50">
-                          <div className="text-xs text-gray-400 mb-1">Hostname</div>
+                        <div className="bg-raised/30 rounded-lg p-3 border border-hairline/50">
+                          <div className="text-xs text-ink-muted mb-1">Hostname</div>
                           <div className="text-sm font-mono text-gray-200">{agent.deployment.local.hostname}</div>
                         </div>
-                        <div className="bg-gray-800/30 rounded-lg p-3 border border-gray-700/50">
-                          <div className="text-xs text-gray-400 mb-1">Platform</div>
+                        <div className="bg-raised/30 rounded-lg p-3 border border-hairline/50">
+                          <div className="text-xs text-ink-muted mb-1">Platform</div>
                           <div className="text-sm font-mono text-gray-200">{agent.deployment.local.platform}</div>
                         </div>
                       </div>
@@ -701,7 +701,7 @@ export default function AgentProfile({ isOpen, onClose, agentId, sessionStatus, 
               <section>
                 <button
                   onClick={() => toggleSection('repositories')}
-                  className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-gray-500 mb-4 hover:text-gray-400 transition-all"
+                  className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-gray-500 mb-4 hover:text-ink-muted transition-all"
                 >
                   {expandedSections.repositories ? (
                     <ChevronDown className="w-4 h-4" />
@@ -711,7 +711,7 @@ export default function AgentProfile({ isOpen, onClose, agentId, sessionStatus, 
                   <FolderGit2 className="w-4 h-4" />
                   Git Repositories
                   {repositories.length > 0 && (
-                    <span className="ml-1 px-1.5 py-0.5 text-xs bg-blue-500/20 text-blue-400 rounded">
+                    <span className="ml-1 px-1.5 py-0.5 text-xs bg-accent-fill/20 text-accent rounded">
                       {repositories.length}
                     </span>
                   )}
@@ -720,19 +720,19 @@ export default function AgentProfile({ isOpen, onClose, agentId, sessionStatus, 
                 {expandedSections.repositories && (
                   <div className="space-y-3">
                     {loadingRepos ? (
-                      <div className="flex items-center gap-2 text-gray-400 text-sm p-4 bg-gray-800/50 rounded-lg">
+                      <div className="flex items-center gap-2 text-ink-muted text-sm p-4 bg-raised/50 rounded-lg">
                         <RefreshCw className="w-4 h-4 animate-spin" />
                         Loading repositories...
                       </div>
                     ) : repositories.length === 0 ? (
-                      <div className="p-4 bg-gray-800/50 rounded-lg border border-gray-700">
-                        <p className="text-sm text-gray-400 mb-3">
+                      <div className="p-4 bg-raised/50 rounded-lg border border-hairline">
+                        <p className="text-sm text-ink-muted mb-3">
                           No repositories detected. Click below to scan the working directory.
                         </p>
                         <button
                           onClick={handleDetectRepos}
                           disabled={detectingRepos}
-                          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium transition-all disabled:opacity-50"
+                          className="flex items-center gap-2 px-4 py-2 bg-accent-fill hover:bg-accent-fill/90 text-white rounded-lg text-sm font-medium transition-all disabled:opacity-50"
                         >
                           {detectingRepos ? (
                             <>
@@ -753,7 +753,7 @@ export default function AgentProfile({ isOpen, onClose, agentId, sessionStatus, 
                         {repositories.map((repo, idx) => (
                           <div
                             key={idx}
-                            className="bg-gray-800/50 rounded-lg p-4 border border-gray-700 hover:border-gray-600 transition-all"
+                            className="bg-raised/50 rounded-lg p-4 border border-hairline hover:border-gray-600 transition-all"
                           >
                             <div className="flex items-start gap-3">
                               <div className="w-10 h-10 rounded-lg bg-orange-500/10 flex items-center justify-center flex-shrink-0">
@@ -761,9 +761,9 @@ export default function AgentProfile({ isOpen, onClose, agentId, sessionStatus, 
                               </div>
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 mb-1">
-                                  <span className="font-semibold text-gray-100">{repo.name}</span>
+                                  <span className="font-semibold text-ink">{repo.name}</span>
                                   {repo.isPrimary && (
-                                    <span className="px-1.5 py-0.5 text-xs bg-blue-500/20 text-blue-400 rounded">
+                                    <span className="px-1.5 py-0.5 text-xs bg-accent-fill/20 text-accent rounded">
                                       primary
                                     </span>
                                   )}
@@ -771,7 +771,7 @@ export default function AgentProfile({ isOpen, onClose, agentId, sessionStatus, 
                                 <div className="text-xs text-gray-500 truncate mb-1" title={repo.remoteUrl}>
                                   {repo.remoteUrl}
                                 </div>
-                                <div className="flex items-center gap-4 text-xs text-gray-400">
+                                <div className="flex items-center gap-4 text-xs text-ink-muted">
                                   {repo.currentBranch && (
                                     <span className="flex items-center gap-1">
                                       <GitBranch className="w-3 h-3" />
@@ -797,7 +797,7 @@ export default function AgentProfile({ isOpen, onClose, agentId, sessionStatus, 
                         <button
                           onClick={handleDetectRepos}
                           disabled={detectingRepos}
-                          className="flex items-center gap-2 text-sm text-gray-400 hover:text-gray-200 transition-all disabled:opacity-50"
+                          className="flex items-center gap-2 text-sm text-ink-muted hover:text-gray-200 transition-all disabled:opacity-50"
                         >
                           {detectingRepos ? (
                             <RefreshCw className="w-4 h-4 animate-spin" />
@@ -816,7 +816,7 @@ export default function AgentProfile({ isOpen, onClose, agentId, sessionStatus, 
               <section>
                 <button
                   onClick={() => toggleSection('memory')}
-                  className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-gray-500 mb-4 hover:text-gray-400 transition-all"
+                  className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-gray-500 mb-4 hover:text-ink-muted transition-all"
                 >
                   {expandedSections.memory ? (
                     <ChevronDown className="w-4 h-4" />
@@ -836,7 +836,7 @@ export default function AgentProfile({ isOpen, onClose, agentId, sessionStatus, 
               <section>
                 <button
                   onClick={() => toggleSection('tasks')}
-                  className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-gray-500 mb-4 hover:text-gray-400 transition-all"
+                  className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-gray-500 mb-4 hover:text-ink-muted transition-all"
                 >
                   {expandedSections.tasks ? (
                     <ChevronDown className="w-4 h-4" />
@@ -858,7 +858,7 @@ export default function AgentProfile({ isOpen, onClose, agentId, sessionStatus, 
               <section>
                 <button
                   onClick={() => toggleSection('installedSkills')}
-                  className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-gray-500 mb-4 hover:text-gray-400 transition-all"
+                  className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-gray-500 mb-4 hover:text-ink-muted transition-all"
                 >
                   {expandedSections.installedSkills ? (
                     <ChevronDown className="w-4 h-4" />
@@ -878,7 +878,7 @@ export default function AgentProfile({ isOpen, onClose, agentId, sessionStatus, 
               <section>
                 <button
                   onClick={() => toggleSection('skillSettings')}
-                  className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-gray-500 mb-4 hover:text-gray-400 transition-all"
+                  className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-gray-500 mb-4 hover:text-ink-muted transition-all"
                 >
                   {expandedSections.skillSettings ? (
                     <ChevronDown className="w-4 h-4" />
@@ -898,7 +898,7 @@ export default function AgentProfile({ isOpen, onClose, agentId, sessionStatus, 
               <section>
                 <button
                   onClick={() => toggleSection('metrics')}
-                  className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-gray-500 mb-4 hover:text-gray-400 transition-all"
+                  className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-gray-500 mb-4 hover:text-ink-muted transition-all"
                 >
                   {expandedSections.metrics ? (
                     <ChevronDown className="w-4 h-4" />
@@ -948,7 +948,7 @@ export default function AgentProfile({ isOpen, onClose, agentId, sessionStatus, 
               <section>
                 <button
                   onClick={() => toggleSection('documentation')}
-                  className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-gray-500 mb-4 hover:text-gray-400 transition-all"
+                  className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-gray-500 mb-4 hover:text-ink-muted transition-all"
                 >
                   {expandedSections.documentation ? (
                     <ChevronDown className="w-4 h-4" />
@@ -1017,7 +1017,7 @@ export default function AgentProfile({ isOpen, onClose, agentId, sessionStatus, 
                       </div>
                       <div className="flex-1">
                         <h4 className="font-semibold text-red-300 mb-1">Delete this agent</h4>
-                        <p className="text-sm text-gray-400 mb-3">
+                        <p className="text-sm text-ink-muted mb-3">
                           Permanently delete this agent and all associated data. This action cannot be undone.
                         </p>
                         <button
@@ -1040,14 +1040,14 @@ export default function AgentProfile({ isOpen, onClose, agentId, sessionStatus, 
       {/* Add Tag Dialog */}
       {showTagDialog && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center">
-          <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 w-full max-w-md mx-4 shadow-2xl">
+          <div className="bg-sunken border border-hairline rounded-xl p-6 w-full max-w-md mx-4 shadow-2xl">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                <Tag className="w-5 h-5 text-blue-400" />
+              <div className="w-10 h-10 rounded-lg bg-accent-fill/10 flex items-center justify-center">
+                <Tag className="w-5 h-5 text-accent" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-gray-100">Add Tag</h3>
-                <p className="text-sm text-gray-400">Tags help organize and group agents</p>
+                <h3 className="text-lg font-semibold text-ink">Add Tag</h3>
+                <p className="text-sm text-ink-muted">Tags help organize and group agents</p>
               </div>
             </div>
 
@@ -1063,7 +1063,7 @@ export default function AgentProfile({ isOpen, onClose, agentId, sessionStatus, 
                 }
               }}
               placeholder="Enter tag name..."
-              className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-gray-100 placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
+              className="w-full bg-raised border border-gray-600 rounded-lg px-4 py-3 text-ink placeholder-gray-500 focus:outline-none focus:border-accent-fill focus:ring-1 focus:ring-accent-fill transition-all"
               autoFocus
             />
 
@@ -1077,14 +1077,14 @@ export default function AgentProfile({ isOpen, onClose, agentId, sessionStatus, 
                   setShowTagDialog(false)
                   setNewTagValue('')
                 }}
-                className="flex-1 px-4 py-2 bg-gray-800 text-gray-300 rounded-lg hover:bg-gray-700 transition-all"
+                className="flex-1 px-4 py-2 bg-raised text-gray-300 rounded-lg hover:bg-gray-700 transition-all"
               >
                 Cancel
               </button>
               <button
                 onClick={handleAddTagSubmit}
                 disabled={!newTagValue.trim()}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                className="flex-1 px-4 py-2 bg-accent-fill text-white rounded-lg hover:bg-accent-fill/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
               >
                 Add Tag
               </button>
@@ -1182,7 +1182,7 @@ function EditableField({ label, value, onChange, icon, placeholder, multiline }:
 
   return (
     <div>
-      <label htmlFor={fieldId} className="text-xs font-medium text-gray-400 mb-2 flex items-center gap-2">
+      <label htmlFor={fieldId} className="text-xs font-medium text-ink-muted mb-2 flex items-center gap-2">
         {icon}
         {label}
       </label>
@@ -1196,7 +1196,7 @@ function EditableField({ label, value, onChange, icon, placeholder, multiline }:
             onBlur={handleBlur}
             autoFocus
             rows={3}
-            className="w-full px-3 py-2 bg-gray-700 border-2 border-blue-500 rounded-lg text-gray-100 placeholder-gray-400 focus:outline-none resize-none"
+            className="w-full px-3 py-2 bg-gray-700 border-2 border-accent-fill rounded-lg text-ink placeholder-gray-400 focus:outline-none resize-none"
             placeholder={placeholder}
           />
         ) : (
@@ -1208,17 +1208,17 @@ function EditableField({ label, value, onChange, icon, placeholder, multiline }:
             onChange={(e) => setLocalValue(e.target.value)}
             onBlur={handleBlur}
             autoFocus
-            className="w-full px-3 py-2 bg-gray-700 border-2 border-blue-500 rounded-lg text-gray-100 placeholder-gray-400 focus:outline-none"
+            className="w-full px-3 py-2 bg-gray-700 border-2 border-accent-fill rounded-lg text-ink placeholder-gray-400 focus:outline-none"
             placeholder={placeholder}
           />
         )
       ) : (
         <div
           onClick={() => setIsEditing(true)}
-          className="px-3 py-2 rounded-lg hover:bg-gray-700/50 cursor-text transition-all group hover:ring-2 hover:ring-gray-600 min-h-[40px]"
+          className="px-3 py-2 rounded-lg hover:bg-raised/50 cursor-text transition-all group hover:ring-2 hover:ring-gray-600 min-h-[40px]"
         >
           <span className={value ? 'text-gray-200' : 'text-gray-500'}>{value || placeholder || 'Click to edit'}</span>
-          <Edit2 className="w-3 h-3 ml-2 inline opacity-0 group-hover:opacity-100 transition-opacity text-gray-400" />
+          <Edit2 className="w-3 h-3 ml-2 inline opacity-0 group-hover:opacity-100 transition-opacity text-ink-muted" />
         </div>
       )}
     </div>
@@ -1235,13 +1235,13 @@ interface MetricCardProps {
 
 function MetricCard({ icon, value, label, trend }: MetricCardProps) {
   return (
-    <div className="bg-gray-800 rounded-xl p-4 border border-gray-700 hover:border-blue-500/50 transition-all">
+    <div className="bg-raised rounded-xl p-4 border border-hairline hover:border-accent-fill/50 transition-all">
       <div className="flex items-start justify-between mb-2">
-        <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
+        <div className="w-10 h-10 rounded-lg bg-accent-fill/10 flex items-center justify-center">
           {icon}
         </div>
         {trend && (
-          <span className="text-xs text-gray-400 bg-gray-700/50 px-2 py-1 rounded flex items-center gap-1">
+          <span className="text-xs text-ink-muted bg-gray-700/50 px-2 py-1 rounded flex items-center gap-1">
             {trend.startsWith('+') ? (
               <TrendingUp className="w-3 h-3 text-green-400" />
             ) : (
@@ -1251,8 +1251,8 @@ function MetricCard({ icon, value, label, trend }: MetricCardProps) {
           </span>
         )}
       </div>
-      <div className="text-2xl font-bold text-gray-100 mb-1">{value}</div>
-      <div className="text-sm text-gray-400">{label}</div>
+      <div className="text-2xl font-bold text-ink mb-1">{value}</div>
+      <div className="text-sm text-ink-muted">{label}</div>
     </div>
   )
 }

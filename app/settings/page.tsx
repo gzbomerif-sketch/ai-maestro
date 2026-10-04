@@ -12,6 +12,7 @@ import OnboardingSection from '@/components/settings/OnboardingSection'
 import ExperimentsSection from '@/components/settings/ExperimentsSection'
 import MarketplaceSection from '@/components/settings/MarketplaceSection'
 import MemorySection from '@/components/settings/MemorySection'
+import AppearanceSection from '@/components/settings/AppearanceSection'
 import TerminalSection from '@/components/settings/TerminalSection'
 import { parseSection, type SettingsSectionId } from '@/lib/settings-sections'
 
@@ -20,6 +21,7 @@ const SECTIONS: Record<SettingsSectionId, () => JSX.Element> = {
   domains: DomainsSection,
   webhooks: WebhooksSection,
   memory: MemorySection,
+  appearance: AppearanceSection,
   terminal: TerminalSection,
   marketplace: MarketplaceSection,
   experiments: ExperimentsSection,

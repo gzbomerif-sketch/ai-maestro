@@ -320,10 +320,10 @@ export default function WorkTree({ sessionName, agentId, agentAlias, hostId, isA
 
   if (loading) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-gray-900">
+      <div className="flex-1 flex items-center justify-center bg-sunken">
         <div className="text-center">
-          <RefreshCw className="w-8 h-8 text-blue-400 animate-spin mx-auto mb-3" />
-          <p className="text-gray-400 text-lg mb-2">Loading work history...</p>
+          <RefreshCw className="w-8 h-8 text-accent animate-spin mx-auto mb-3" />
+          <p className="text-ink-muted text-lg mb-2">Loading work history...</p>
           <p className="text-gray-500 text-sm">Initializing tracking if needed</p>
         </div>
       </div>
@@ -332,14 +332,14 @@ export default function WorkTree({ sessionName, agentId, agentAlias, hostId, isA
 
   if (error) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-gray-900">
+      <div className="flex-1 flex items-center justify-center bg-sunken">
         <div className="text-center max-w-md">
           <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-3" />
           <p className="text-gray-300 font-medium mb-2">Failed to load work tree</p>
           <p className="text-gray-500 text-sm mb-4">{error}</p>
           <button
             onClick={() => fetchWorkTree(true)}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+            className="px-4 py-2 bg-accent-fill hover:bg-accent-fill/90 text-white rounded-lg transition-colors"
           >
             Initialize & Retry
           </button>
@@ -351,21 +351,21 @@ export default function WorkTree({ sessionName, agentId, agentAlias, hostId, isA
 
   if (!workData) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-gray-900">
+      <div className="flex-1 flex items-center justify-center bg-sunken">
         <div className="text-center">
           <GitBranch className="w-12 h-12 text-gray-600 mx-auto mb-3" />
-          <p className="text-gray-400">No work data available</p>
+          <p className="text-ink-muted">No work data available</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="flex-1 flex flex-col bg-gray-900 overflow-hidden">
+    <div className="flex-1 flex flex-col bg-sunken overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-hairline">
         <div className="flex items-center gap-3">
-          <GitBranch className="w-5 h-5 text-blue-400" />
+          <GitBranch className="w-5 h-5 text-accent" />
           <h2 className="text-lg font-semibold text-white">Work Tree</h2>
           <span className="text-sm text-gray-500">Agent: {agentAlias || sessionName}</span>
         </div>
@@ -376,7 +376,7 @@ export default function WorkTree({ sessionName, agentId, agentAlias, hostId, isA
                 ? 'text-red-400'
                 : rebuildStatus.startsWith('✓')
                   ? 'text-green-400'
-                  : 'text-blue-400'
+                  : 'text-accent'
             }`}>
               {rebuildStatus}
             </span>
@@ -384,7 +384,7 @@ export default function WorkTree({ sessionName, agentId, agentAlias, hostId, isA
           <button
             onClick={rebuildMemory}
             disabled={rebuilding}
-            className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-300 hover:text-white hover:bg-gray-800 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-300 hover:text-white hover:bg-raised rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             title="Rebuild memory from conversation files"
           >
             <Database className={`w-4 h-4 ${rebuilding ? 'animate-spin' : ''}`} />
@@ -392,7 +392,7 @@ export default function WorkTree({ sessionName, agentId, agentAlias, hostId, isA
           </button>
           <button
             onClick={() => fetchWorkTree()}
-            className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-300 hover:text-white hover:bg-gray-800 rounded transition-colors"
+            className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-300 hover:text-white hover:bg-raised rounded transition-colors"
           >
             <RefreshCw className="w-4 h-4" />
             Refresh
@@ -405,7 +405,7 @@ export default function WorkTree({ sessionName, agentId, agentAlias, hostId, isA
         {/* Work Sessions Section */}
         {workData.sessions.length > 0 && (
           <div className="mb-8">
-            <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+            <h3 className="text-sm font-semibold text-ink-muted uppercase tracking-wider mb-3 flex items-center gap-2">
               <Activity className="w-4 h-4" />
               Work Sessions ({workData.sessions.length})
             </h3>
@@ -413,17 +413,17 @@ export default function WorkTree({ sessionName, agentId, agentAlias, hostId, isA
               {workData.sessions.map((session) => (
                 <div
                   key={session.session_id}
-                  className="bg-gray-800/50 border border-gray-700 rounded-lg p-4 hover:bg-gray-800/70 transition-colors"
+                  className="bg-raised/50 border border-hairline rounded-lg p-4 hover:bg-raised/70 transition-colors"
                 >
                   <div className="flex items-start justify-between mb-2">
                     <div>
                       <h4 className="text-white font-medium">{session.session_name}</h4>
-                      <p className="text-sm text-gray-400 mt-1">ID: {session.session_id}</p>
+                      <p className="text-sm text-ink-muted mt-1">ID: {session.session_id}</p>
                     </div>
                     <span className={`px-2 py-1 text-xs font-medium rounded-full ${
                       session.status === 'active'
                         ? 'bg-green-500/20 text-green-400'
-                        : 'bg-gray-500/20 text-gray-400'
+                        : 'bg-gray-500/20 text-ink-muted'
                     }`}>
                       {session.status}
                     </span>
@@ -445,7 +445,7 @@ export default function WorkTree({ sessionName, agentId, agentAlias, hostId, isA
         {/* Projects Section */}
         {workData.projects.length > 0 && (
           <div>
-            <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+            <h3 className="text-sm font-semibold text-ink-muted uppercase tracking-wider mb-3 flex items-center gap-2">
               <Folder className="w-4 h-4" />
               Projects ({workData.projects.length})
             </h3>
@@ -453,19 +453,19 @@ export default function WorkTree({ sessionName, agentId, agentAlias, hostId, isA
               {workData.projects.map((project) => (
                 <div
                   key={project.project_id}
-                  className="bg-gray-800/50 border border-gray-700 rounded-lg overflow-hidden"
+                  className="bg-raised/50 border border-hairline rounded-lg overflow-hidden"
                 >
                   <div
-                    className="p-4 hover:bg-gray-800/70 transition-colors cursor-pointer"
+                    className="p-4 hover:bg-raised/70 transition-colors cursor-pointer"
                     onClick={() => toggleProject(project.project_id)}
                   >
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex-1">
                         <h4 className="text-white font-medium flex items-center gap-2">
-                          <Folder className="w-4 h-4 text-blue-400" />
+                          <Folder className="w-4 h-4 text-accent" />
                           {project.project_name}
                         </h4>
-                        <p className="text-sm text-gray-400 mt-1 font-mono text-xs">
+                        <p className="text-sm text-ink-muted mt-1 font-mono text-xs">
                           {project.project_path}
                         </p>
                       </div>
@@ -481,8 +481,8 @@ export default function WorkTree({ sessionName, agentId, agentAlias, hostId, isA
 
                   {/* Claude Sessions */}
                   {expandedProjects.has(project.project_id) && project.claude_sessions && (
-                    <div className="border-t border-gray-700 bg-gray-900/50 p-4">
-                      <h5 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+                    <div className="border-t border-hairline bg-sunken/50 p-4">
+                      <h5 className="text-xs font-semibold text-ink-muted uppercase tracking-wider mb-3">
                         Claude Sessions ({project.claude_sessions.length})
                       </h5>
                       <div className="space-y-2">
@@ -499,7 +499,7 @@ export default function WorkTree({ sessionName, agentId, agentAlias, hostId, isA
                           return (
                             <div
                               key={claudeSession.claude_session_id}
-                              className="bg-gray-800/30 border border-gray-700/50 rounded p-3 hover:bg-gray-800/50 transition-colors cursor-pointer"
+                              className="bg-raised/30 border border-hairline/50 rounded p-3 hover:bg-raised/50 transition-colors cursor-pointer"
                               onClick={() => setSelectedConversation({
                                 file: claudeSession.jsonl_file,
                                 projectPath: project.project_path,
@@ -509,7 +509,7 @@ export default function WorkTree({ sessionName, agentId, agentAlias, hostId, isA
                               {/* Date and Models */}
                               <div className="flex items-start justify-between mb-2">
                                 <div className="flex items-center gap-2">
-                                  <Clock className="w-3.5 h-3.5 text-blue-400 flex-shrink-0" />
+                                  <Clock className="w-3.5 h-3.5 text-accent flex-shrink-0" />
                                   {claudeSession.first_message_at && (
                                     <span className="text-sm text-gray-300">
                                       {new Date(claudeSession.first_message_at).toLocaleDateString('en-US', {
@@ -521,7 +521,7 @@ export default function WorkTree({ sessionName, agentId, agentAlias, hostId, isA
                                   )}
                                 </div>
                                 {claudeSession.model_names && (
-                                  <span className="text-xs text-blue-400 font-medium">
+                                  <span className="text-xs text-accent font-medium">
                                     {claudeSession.model_names}
                                   </span>
                                 )}

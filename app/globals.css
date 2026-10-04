@@ -10,15 +10,10 @@
    never a hex literal.
 
    ADDING A THEME is one block of variables; no component edits, no sweeps. Put
-   the class on the app shell to switch. Worked example, complete and usable:
-
-     .theme-paper {
-       --g-900: 255 255 255; --g-800: 243 244 246; --g-700: 229 231 235;
-       --g-400: 107 114 128; --g-300: 55 65 81;    --g-100: 17 24 39;
-       --fg-white: 17 24 39;
-       --c-surface: 255 255 255; --c-raised: 249 250 251;
-       --c-hairline: 229 231 235; --c-ink: 17 24 39; --c-ink-muted: 107 114 128;
-     }
+   the class on <body> to switch (components/ThemeApplier does, from the
+   aimaestro-theme preference). A complete, shipped example is .theme-paper
+   below: every channel, the gray/slate/blue ramps, status colours and the
+   shadcn bridge, each re-resolved for a light ground.
 
    THE ONE TRAP: `text-white` does not mean white in this codebase — it means
    "foreground", in roughly 278 places. A theme that inverts the ground without
@@ -126,16 +121,112 @@
   --c-warn-surface: 22 19 13;   --c-warn-border: 42 35 20;
 }
 
+/* ══ PAPER THEME ═════════════════════════════════════════════════════════════
+   The light counterpart of Ink: warm off-white ground, near-black ink, the SAME
+   accent channels. Surfaces invert (sunken = page ground, surface = cards,
+   raised = hover/selected, which is darker than surface in light mode). The
+   gray ramp is inverted step for step (900 = ground ... 100 = primary text), so
+   every bg-gray-* / text-gray-* / border-gray-* in components follows without
+   an edit. Status colours are darkened to clear 4.5:1 on paper.
+
+   --fg-white is the one that matters: text-white means "foreground", so here it
+   is near-black. Things that really need white-on-fill (accent buttons, toggle
+   thumbs) get it back from the .bg-accent-fill override further down. */
+.theme-paper {
+  color-scheme: light;
+  --font-sans: 'Stack Sans Text', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
+
+  /* Neutrals, inverted: 900 = page ground, 800 = hover/selected, 700 = border,
+     500 = dim, 400 = muted, 100 = primary text */
+  --g-50: 13 13 16;     --g-100: 24 24 27;    --g-200: 48 48 54;
+  --g-300: 74 74 82;    --g-400: 100 100 110; --g-500: 118 118 128;
+  --g-600: 176 176 184; --g-700: 222 222 218; --g-800: 236 236 232;
+  --g-900: 244 244 241; --g-950: 232 232 228;
+
+  --s-50: 13 13 16;     --s-100: 24 24 27;    --s-200: 48 48 54;
+  --s-300: 74 74 82;    --s-400: 100 100 110; --s-500: 118 118 128;
+  --s-600: 176 176 184; --s-700: 222 222 218; --s-800: 236 236 232;
+  --s-900: 244 244 241; --s-950: 232 232 228;
+
+  /* Accent ramp. Fills (500-700) are the Ink values, white text still reads on
+     them. The pale text steps (50-400) become deep blues for text on paper, and
+     the dark tint steps (800-950) become pale tints for chip backgrounds. */
+  --a-50: 13 18 80;     --a-100: 20 30 130;   --a-200: 26 42 214;
+  --a-300: 34 54 255;   --a-400: 34 54 255;   --a-500: 47 75 255;
+  --a-600: 34 54 255;   --a-700: 26 42 214;   --a-800: 191 200 255;
+  --a-900: 222 227 255; --a-950: 238 241 255;
+
+  --fg-white: 24 24 27;
+
+  --c-surface: 251 251 249; --c-raised: 236 236 232; --c-sunken: 244 244 241;
+  --c-hairline: 222 222 218; --c-ink: 24 24 27;      --c-ink-muted: 100 100 110;
+  /* --c-accent is the text/focus tint: Ink's pale periwinkle is unreadable on
+     paper, so it takes the brand blue (6.9:1 on white). The fill is unchanged. */
+  --c-accent: 34 54 255;    --c-accent-fill: 47 75 255;
+  /* Status, darkened for light surfaces (all >= 4.5:1 on --c-surface) */
+  --c-ok: 21 128 61;        --c-warn: 161 98 7;      --c-danger: 220 38 38;
+  --c-control-border: 200 200 206; --c-control-off: 208 208 214;
+  --c-warn-surface: 255 247 224;   --c-warn-border: 240 220 160;
+
+  /* Category identity: the Ink -text/-icon tints are pale-on-dark; here they are
+     the 700/600 steps of the same hue. -primary (fills) is unchanged. */
+  --cat-0-text: 29 78 216;   --cat-0-icon: 37 99 235;
+  --cat-1-text: 126 34 206;  --cat-1-icon: 147 51 234;
+  --cat-2-text: 21 128 61;   --cat-2-icon: 22 163 74;
+  --cat-3-text: 161 98 7;    --cat-3-icon: 202 138 4;
+  --cat-4-text: 190 24 93;   --cat-4-icon: 219 39 119;
+  --cat-5-text: 15 118 110;  --cat-5-icon: 13 148 136;
+  --cat-6-text: 194 65 12;   --cat-6-icon: 234 88 12;
+  --cat-7-text: 185 28 28;   --cat-7-icon: 220 38 38;
+
+  /* The shadcn bridge below re-resolves from the channels above; only the
+     destructive button text needs to stay literally white on the red fill. */
+  --destructive-foreground: 255 255 255;
+}
+
+/* White-on-fill: text-white is "foreground" (near-black) under Paper, so a solid
+   brand/danger fill gives the variable back locally. Custom properties inherit,
+   so toggle thumbs and icons inside the fill follow. */
+.theme-paper :is(.bg-accent-fill, .bg-blue-500, .bg-blue-600, .bg-blue-700, .bg-primary, .bg-red-600, .bg-red-700, .bg-green-600, .bg-green-700, .bg-emerald-600, .bg-emerald-700) {
+  --fg-white: 255 255 255;
+}
+
+/* Raw Tailwind status hues have no variable behind them; on paper their pale
+   200-500 text steps are swapped for the 700 step so they stay legible. */
+.theme-paper :is(.text-red-100, .text-red-200, .text-red-300, .text-red-400, .text-red-500) { color: rgb(185 28 28 / var(--tw-text-opacity, 1)); }
+.theme-paper :is(.text-green-100, .text-green-200, .text-green-300, .text-green-400, .text-green-500) { color: rgb(21 128 61 / var(--tw-text-opacity, 1)); }
+.theme-paper :is(.text-emerald-100, .text-emerald-200, .text-emerald-300, .text-emerald-400, .text-emerald-500) { color: rgb(4 120 87 / var(--tw-text-opacity, 1)); }
+.theme-paper :is(.text-yellow-100, .text-yellow-200, .text-yellow-300, .text-yellow-400, .text-yellow-500) { color: rgb(161 98 7 / var(--tw-text-opacity, 1)); }
+.theme-paper :is(.text-amber-100, .text-amber-200, .text-amber-300, .text-amber-400, .text-amber-500) { color: rgb(180 83 9 / var(--tw-text-opacity, 1)); }
+.theme-paper :is(.text-orange-100, .text-orange-200, .text-orange-300, .text-orange-400, .text-orange-500) { color: rgb(194 65 12 / var(--tw-text-opacity, 1)); }
+.theme-paper :is(.text-purple-100, .text-purple-200, .text-purple-300, .text-purple-400, .text-purple-500) { color: rgb(126 34 206 / var(--tw-text-opacity, 1)); }
+.theme-paper :is(.text-violet-100, .text-violet-200, .text-violet-300, .text-violet-400, .text-violet-500) { color: rgb(109 40 217 / var(--tw-text-opacity, 1)); }
+.theme-paper :is(.text-pink-100, .text-pink-200, .text-pink-300, .text-pink-400, .text-pink-500) { color: rgb(190 24 93 / var(--tw-text-opacity, 1)); }
+.theme-paper :is(.text-cyan-100, .text-cyan-200, .text-cyan-300, .text-cyan-400, .text-cyan-500) { color: rgb(14 116 144 / var(--tw-text-opacity, 1)); }
+.theme-paper :is(.text-teal-100, .text-teal-200, .text-teal-300, .text-teal-400, .text-teal-500) { color: rgb(15 118 110 / var(--tw-text-opacity, 1)); }
+.theme-paper :is(.text-sky-100, .text-sky-200, .text-sky-300, .text-sky-400, .text-sky-500) { color: rgb(3 105 161 / var(--tw-text-opacity, 1)); }
+
+/* Floating windows: the Ink shadow is near-opaque black; on paper it is a soft lift */
+.theme-paper .shadow-window {
+  --tw-shadow: 0 1px 2px rgba(24,24,27,0.10), 0 8px 24px rgba(24,24,27,0.12);
+  --tw-shadow-colored: 0 1px 2px var(--tw-shadow-color), 0 8px 24px var(--tw-shadow-color);
+}
+.theme-paper .shadow-window-titlebar {
+  --tw-shadow: inset 0 1px 0 0 rgba(255,255,255,0.7);
+  --tw-shadow-colored: inset 0 1px 0 0 var(--tw-shadow-color);
+}
+
 /* ══ SHADCN/UI BRIDGE ════════════════════════════════════════════════════════
    shadcn's variables are DERIVED from the semantic channels above (one source
    of truth). Each holds an RGB channel triple, consumed in tailwind.config.ts
-   as rgb(var(--x) / <alpha-value>). Declared on `:root, .theme-ink` so a theme
+   as rgb(var(--x) / <alpha-value>). Declared on `:root, .theme-ink, .theme-paper` so a theme
    class re-resolves them against its own --c-* values (var() substitutes at the
    element that declares it, so a :root-only copy would never follow a theme).
    shadcn's `accent`/`accent-foreground` are deliberately absent: `accent` is
    already the brand accent here. */
 :root,
-.theme-ink {
+.theme-ink,
+.theme-paper {
   --background: var(--c-surface);
   --foreground: var(--c-ink);
   --card: var(--c-raised);
@@ -205,6 +296,10 @@ body {
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #4e4e4e;
 }
+
+.theme-paper .custom-scrollbar::-webkit-scrollbar-track { background: rgb(var(--g-800)); }
+.theme-paper .custom-scrollbar::-webkit-scrollbar-thumb { background: rgb(var(--g-600)); }
+.theme-paper .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgb(var(--g-500)); }
 
 /* xterm.js container styles */
 .xterm {
@@ -327,6 +422,9 @@ body {
 .scrollbar-thin::-webkit-scrollbar-thumb:hover {
   background: #4b5563;
 }
+
+.theme-paper .scrollbar-thin::-webkit-scrollbar-thumb { background: rgb(var(--g-600)); }
+.theme-paper .scrollbar-thin::-webkit-scrollbar-thumb:hover { background: rgb(var(--g-500)); }
 
 /* ── Living avatars (components/LiveAvatar.tsx) ─────────────────────────────
    A still portrait kept alive while it has no video loop: a slow breath when

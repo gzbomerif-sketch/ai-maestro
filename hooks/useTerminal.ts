@@ -17,6 +17,7 @@ export interface UseTerminalOptions {
 
 import { debounce } from '@/lib/utils'
 import { buildTerminalTheme } from '@/lib/terminal-theme'
+import { THEME_APPLIED_EVENT } from '@/lib/theme'
 
 export function useTerminal(options: UseTerminalOptions = {}) {
   const terminalRef = useRef<Terminal | null>(null)
@@ -314,8 +315,18 @@ export function useTerminal(options: UseTerminalOptions = {}) {
     }
     container.addEventListener('wheel', handleWheel, { passive: false, capture: true })
 
+    // Live theme switch (Settings > Appearance): re-derive colours from the tokens now on the
+    // host surface. A caller-supplied theme is fixed and is left alone.
+    const handleThemeApplied = () => {
+      if (optionsRef.current.theme) return
+      const next = getComputedStyle(container)
+      terminal.options.theme = buildTerminalTheme(name => next.getPropertyValue(name))
+    }
+    window.addEventListener(THEME_APPLIED_EVENT, handleThemeApplied)
+
     // Cleanup function
     return () => {
+      window.removeEventListener(THEME_APPLIED_EVENT, handleThemeApplied)
       container.removeEventListener('wheel', handleWheel, { capture: true } as EventListenerOptions)
       resizeObserver.disconnect()
       // Dispose WebGL addon before terminal to free GPU context cleanly

@@ -6,9 +6,9 @@ import { SETTINGS_SECTIONS, parseSection, filterSections } from '@/lib/settings-
 const q = (s: string) => new URLSearchParams(s)
 
 describe('SETTINGS_SECTIONS', () => {
-  it('lists the 10 sections in nav order', () => {
+  it('lists the 11 sections in nav order', () => {
     expect(SETTINGS_SECTIONS.map(s => s.id)).toEqual([
-      'hosts', 'domains', 'webhooks', 'memory', 'terminal', 'marketplace', 'experiments', 'onboarding', 'help', 'about',
+      'hosts', 'domains', 'webhooks', 'memory', 'appearance', 'terminal', 'marketplace', 'experiments', 'onboarding', 'help', 'about',
     ])
   })
 })
@@ -32,9 +32,10 @@ describe('parseSection', () => {
 
 describe('filterSections', () => {
   it('matches labels and keywords, case-insensitive; empty returns all', () => {
-    expect(filterSections('').length).toBe(10)
+    expect(filterSections('').length).toBe(11)
     expect(filterSections('HOOK').map(s => s.id)).toEqual(['webhooks'])
     expect(filterSections('machines').map(s => s.id)).toContain('hosts')
+    expect(filterSections('dark').map(s => s.id)).toEqual(['appearance'])
     expect(filterSections('zzz')).toEqual([])
   })
 })

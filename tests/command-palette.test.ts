@@ -48,7 +48,7 @@ describe('shouldOpenPalette', () => {
 describe('settings commands', () => {
   it('offers every settings section as a ⌘K destination', async () => {
     const { SETTINGS_COMMANDS } = await import('@/lib/command-palette')
-    expect(SETTINGS_COMMANDS).toHaveLength(10)
+    expect(SETTINGS_COMMANDS).toHaveLength(11)
     const hit = rankCommandResults('webhooks', SETTINGS_COMMANDS)[0]
     expect(hit).toMatchObject({ id: 'screen:/settings?section=webhooks', label: 'Settings · Webhooks', kind: 'screen' })
   })

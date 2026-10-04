@@ -9,10 +9,10 @@ const INK: Record<string, string> = {
   '--c-accent-fill': '47 75 255',
 }
 const PAPER: Record<string, string> = {
-  '--c-sunken': '255 255 255',
-  '--c-ink': '17 24 39',
-  '--c-ink-muted': '107 114 128',
-  '--c-accent-fill': '37 99 235',
+  '--c-sunken': '244 244 241',
+  '--c-ink': '24 24 27',
+  '--c-ink-muted': '100 100 110',
+  '--c-accent-fill': '47 75 255',
 }
 const reader = (vars: Record<string, string>) => (name: string) => vars[name]
 
@@ -55,8 +55,8 @@ describe('buildTerminalTheme', () => {
   it('picks a dark ANSI palette on a dark surface and a light one on a light surface', () => {
     const dark = buildTerminalTheme(reader(INK))
     const light = buildTerminalTheme(reader(PAPER))
-    expect(light.background).toBe('#ffffff')
-    expect(light.foreground).toBe('#111827')
+    expect(light.background).toBe('#f4f4f1')
+    expect(light.foreground).toBe('#18181b')
     // white text must stay readable: dark-mode "white" is light, paper-mode "white" is dark
     expect(dark.white).not.toBe(light.white)
     expect(luma(dark.white!)).toBeGreaterThan(0.5)

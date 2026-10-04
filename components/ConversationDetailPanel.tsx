@@ -307,7 +307,7 @@ export default function ConversationDetailPanel({ conversationFile, projectPath,
               const commandMatch = line.match(/<command-message>(.*?)<\/command-message>/)
               if (commandMatch) {
                 return (
-                  <div key={idx} className="bg-gray-900/50 p-2 rounded border-l-2 border-gray-600">
+                  <div key={idx} className="bg-sunken/50 p-2 rounded border-l-2 border-gray-600">
                     {commandMatch[1]}
                   </div>
                 )
@@ -326,7 +326,7 @@ export default function ConversationDetailPanel({ conversationFile, projectPath,
               if (reminderMatch) {
                 const text = reminderMatch[1].substring(0, 200)
                 return (
-                  <div key={idx} className="bg-gray-900/30 p-2 rounded text-xs text-gray-400 italic">
+                  <div key={idx} className="bg-sunken/30 p-2 rounded text-xs text-ink-muted italic">
                     {text}{reminderMatch[1].length > 200 ? '...' : ''}
                   </div>
                 )
@@ -368,8 +368,8 @@ export default function ConversationDetailPanel({ conversationFile, projectPath,
               }
               if (block.type === 'tool_use') {
                 return (
-                  <div key={idx} className="text-xs bg-gray-900/50 p-3 rounded">
-                    <div className="text-gray-400 mb-1">Tool: {block.name || 'unknown'}</div>
+                  <div key={idx} className="text-xs bg-sunken/50 p-3 rounded">
+                    <div className="text-ink-muted mb-1">Tool: {block.name || 'unknown'}</div>
                     <pre className="text-gray-300 overflow-x-auto">
                       {JSON.stringify(block.input || block, null, 2)}
                     </pre>
@@ -391,7 +391,7 @@ export default function ConversationDetailPanel({ conversationFile, projectPath,
               }
               // Other block types
               return (
-                <div key={idx} className="text-xs bg-gray-900/50 p-3 rounded overflow-x-auto">
+                <div key={idx} className="text-xs bg-sunken/50 p-3 rounded overflow-x-auto">
                   <pre className="text-gray-300">
                     {JSON.stringify(block, null, 2)}
                   </pre>
@@ -612,17 +612,17 @@ export default function ConversationDetailPanel({ conversationFile, projectPath,
   }
 
   return (
-    <div className="fixed right-0 top-0 bottom-0 w-[800px] bg-gray-900 border-l border-gray-700 shadow-2xl z-50 flex flex-col">
+    <div className="fixed right-0 top-0 bottom-0 w-[800px] bg-sunken border-l border-hairline shadow-2xl z-50 flex flex-col">
       {/* Header */}
-      <div className="px-6 py-4 border-b border-gray-800 flex-shrink-0 space-y-3">
+      <div className="px-6 py-4 border-b border-hairline flex-shrink-0 space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex-1 min-w-0">
             <h2 className="text-lg font-semibold text-white truncate">Conversation Details</h2>
-            <p className="text-sm text-gray-400 truncate font-mono">{getFileName()}</p>
+            <p className="text-sm text-ink-muted truncate font-mono">{getFileName()}</p>
           </div>
           <button
             onClick={onClose}
-            className="ml-4 p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors flex-shrink-0"
+            className="ml-4 p-2 text-ink-muted hover:text-white hover:bg-raised rounded-lg transition-colors flex-shrink-0"
           >
             <X className="w-5 h-5" />
           </button>
@@ -637,7 +637,7 @@ export default function ConversationDetailPanel({ conversationFile, projectPath,
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={useSemanticSearch ? "AI semantic search..." : "Search in conversation..."}
-              className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-2 bg-raised border border-hairline rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-accent-fill focus:border-transparent"
             />
             {isSearching && (
               <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
@@ -651,7 +651,7 @@ export default function ConversationDetailPanel({ conversationFile, projectPath,
               className={`px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 flex items-center gap-1.5 ${
                 useSemanticSearch
                   ? 'bg-purple-600 text-white hover:bg-purple-700'
-                  : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white'
+                  : 'bg-raised text-ink-muted hover:bg-gray-700 hover:text-white'
               }`}
               title={useSemanticSearch ? "Using AI semantic search" : "Using text search"}
             >
@@ -661,7 +661,7 @@ export default function ConversationDetailPanel({ conversationFile, projectPath,
           )}
           {searchQuery && (
             <>
-              <div className="flex items-center gap-1 text-xs text-gray-400 min-w-[80px] justify-end">
+              <div className="flex items-center gap-1 text-xs text-ink-muted min-w-[80px] justify-end">
                 {totalMatches > 0 ? (
                   <span>{currentMatchIndex + 1} of {totalMatches}</span>
                 ) : (
@@ -672,7 +672,7 @@ export default function ConversationDetailPanel({ conversationFile, projectPath,
                 <button
                   onClick={goToPrevMatch}
                   disabled={totalMatches === 0}
-                  className="p-1.5 text-gray-400 hover:text-white hover:bg-gray-700 rounded disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  className="p-1.5 text-ink-muted hover:text-white hover:bg-raised rounded disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                   title="Previous match"
                 >
                   <ChevronUp className="w-4 h-4" />
@@ -680,7 +680,7 @@ export default function ConversationDetailPanel({ conversationFile, projectPath,
                 <button
                   onClick={goToNextMatch}
                   disabled={totalMatches === 0}
-                  className="p-1.5 text-gray-400 hover:text-white hover:bg-gray-700 rounded disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  className="p-1.5 text-ink-muted hover:text-white hover:bg-raised rounded disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                   title="Next match"
                 >
                   <ChevronDown className="w-4 h-4" />
@@ -693,45 +693,45 @@ export default function ConversationDetailPanel({ conversationFile, projectPath,
 
       {/* Metadata */}
       {metadata && !loading && (
-        <div className="px-6 py-4 border-b border-gray-800 bg-gray-900/50 flex-shrink-0">
+        <div className="px-6 py-4 border-b border-hairline bg-sunken/50 flex-shrink-0">
           <div className="flex items-center justify-between mb-4">
             <div className="grid grid-cols-2 gap-4 text-sm flex-1">
               <div className="flex items-center gap-2">
-                <MessageSquare className="w-4 h-4 text-blue-400" />
-                <span className="text-gray-400">Messages:</span>
+                <MessageSquare className="w-4 h-4 text-accent" />
+                <span className="text-ink-muted">Messages:</span>
                 <span className="text-white font-medium">{metadata.totalMessages}</span>
               </div>
               {metadata.model && (
                 <div className="flex items-center gap-2">
                   <Bot className="w-4 h-4 text-purple-400" />
-                  <span className="text-gray-400">Model:</span>
+                  <span className="text-ink-muted">Model:</span>
                   <span className="text-white font-medium">{metadata.model}</span>
                 </div>
               )}
               {metadata.gitBranch && (
                 <div className="flex items-center gap-2">
                   <GitBranch className="w-4 h-4 text-green-400" />
-                  <span className="text-gray-400">Branch:</span>
+                  <span className="text-ink-muted">Branch:</span>
                   <span className="text-white font-medium">{metadata.gitBranch}</span>
                 </div>
               )}
               {metadata.toolsUsed.length > 0 && (
                 <div className="flex items-center gap-2">
                   <Wrench className="w-4 h-4 text-orange-400" />
-                  <span className="text-gray-400">Tools:</span>
+                  <span className="text-ink-muted">Tools:</span>
                   <span className="text-white font-medium">{metadata.toolsUsed.length}</span>
                 </div>
               )}
             </div>
 
             {/* View Mode Toggle */}
-            <div className="flex items-center gap-1 bg-gray-800 rounded-lg p-1">
+            <div className="flex items-center gap-1 bg-raised rounded-lg p-1">
               <button
                 onClick={() => setViewMode('list')}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded transition-colors ${
                   viewMode === 'list'
-                    ? 'bg-blue-600 text-white'
-                    : 'text-gray-400 hover:text-white hover:bg-gray-700'
+                    ? 'bg-accent-fill text-white'
+                    : 'text-ink-muted hover:text-white hover:bg-raised'
                 }`}
               >
                 <List className="w-4 h-4" />
@@ -741,8 +741,8 @@ export default function ConversationDetailPanel({ conversationFile, projectPath,
                 onClick={() => setViewMode('chat')}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded transition-colors ${
                   viewMode === 'chat'
-                    ? 'bg-blue-600 text-white'
-                    : 'text-gray-400 hover:text-white hover:bg-gray-700'
+                    ? 'bg-accent-fill text-white'
+                    : 'text-ink-muted hover:text-white hover:bg-raised'
                 }`}
               >
                 <MessageCircle className="w-4 h-4" />
@@ -764,8 +764,8 @@ export default function ConversationDetailPanel({ conversationFile, projectPath,
         {loading && (
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
-              <div className="w-8 h-8 border-4 border-blue-400 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
-              <p className="text-gray-400">Loading conversation...</p>
+              <div className="w-8 h-8 border-4 border-accent-fill border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+              <p className="text-ink-muted">Loading conversation...</p>
             </div>
           </div>
         )}
@@ -777,7 +777,7 @@ export default function ConversationDetailPanel({ conversationFile, projectPath,
               <p className="text-sm text-gray-500">{error}</p>
               <button
                 onClick={loadConversation}
-                className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                className="mt-4 px-4 py-2 bg-accent-fill hover:bg-accent-fill/90 text-white rounded-lg transition-colors"
               >
                 Retry
               </button>
@@ -819,7 +819,7 @@ export default function ConversationDetailPanel({ conversationFile, projectPath,
 
                   chatBubbles.push(
                     <div key={index} ref={(el) => { messageRefs.current[index] = el }} className="flex justify-center my-3">
-                      <div className={`max-w-[90%] bg-gray-800/50 border border-gray-700 rounded-lg px-4 py-3 ${
+                      <div className={`max-w-[90%] bg-raised/50 border border-hairline rounded-lg px-4 py-3 ${
                         isCurrentMatch
                           ? 'ring-2 ring-blue-500 shadow-lg shadow-blue-500/20'
                           : isMatch
@@ -827,7 +827,7 @@ export default function ConversationDetailPanel({ conversationFile, projectPath,
                           : ''
                       }`}>
                         <div className="flex items-center gap-2 mb-2">
-                          <Terminal className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                          <Terminal className="w-4 h-4 text-ink-muted flex-shrink-0" />
                           <span className="text-xs font-medium text-gray-300">System Message</span>
                           {message.timestamp && (
                             <span className="ml-auto text-xs text-gray-500">
@@ -839,7 +839,7 @@ export default function ConversationDetailPanel({ conversationFile, projectPath,
                               e.stopPropagation()
                               copyMessageToClipboard(message, index)
                             }}
-                            className="p-1 rounded transition-colors hover:bg-gray-700 text-gray-400"
+                            className="p-1 rounded transition-colors hover:bg-raised text-ink-muted"
                             title="Copy message to clipboard"
                           >
                             {copiedMessageIndex === index ? (
@@ -1038,7 +1038,7 @@ export default function ConversationDetailPanel({ conversationFile, projectPath,
                       {/* Message bubble */}
                       <div
                         className={`rounded-2xl px-4 py-3 ${
-                          isUser ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-200'
+                          isUser ? 'bg-accent-fill text-white' : 'bg-raised text-gray-200'
                         } ${
                           isCurrentMatch
                             ? 'ring-2 ring-blue-500 shadow-lg shadow-blue-500/20'
@@ -1091,7 +1091,7 @@ export default function ConversationDetailPanel({ conversationFile, projectPath,
                         {/* Timestamp and Copy Button */}
                         <div className="flex items-center justify-between mt-2">
                           {message.timestamp && (
-                            <div className={`text-xs ${isUser ? 'text-blue-200' : 'text-gray-500'}`}>
+                            <div className={`text-xs ${isUser ? 'text-accent' : 'text-gray-500'}`}>
                               {formatTimestamp(message.timestamp)}
                             </div>
                           )}
@@ -1102,8 +1102,8 @@ export default function ConversationDetailPanel({ conversationFile, projectPath,
                             }}
                             className={`p-1 rounded transition-colors ${
                               isUser
-                                ? 'hover:bg-blue-700/50 text-blue-200'
-                                : 'hover:bg-gray-700 text-gray-400'
+                                ? 'hover:bg-accent-fill/90/50 text-accent'
+                                : 'hover:bg-raised text-ink-muted'
                             }`}
                             title="Copy message to clipboard"
                           >
@@ -1128,9 +1128,9 @@ export default function ConversationDetailPanel({ conversationFile, projectPath,
                           if (!isExpanded) return null
 
                           return (
-                            <div key={toolIdx} className="bg-gray-900/95 rounded-lg p-5 border-2 border-orange-700/60 shadow-lg">
+                            <div key={toolIdx} className="bg-sunken/95 rounded-lg p-5 border-2 border-orange-700/60 shadow-lg">
                               {/* Header */}
-                              <div className="flex items-center gap-3 mb-4 pb-3 border-b border-gray-700/50">
+                              <div className="flex items-center gap-3 mb-4 pb-3 border-b border-hairline/50">
                                 <div className="bg-orange-900/40 p-2 rounded-lg">
                                   <Wrench className="w-5 h-5 text-orange-400" />
                                 </div>
@@ -1164,10 +1164,10 @@ export default function ConversationDetailPanel({ conversationFile, projectPath,
                                   return toolInput ? (
                                     <div>
                                       <div className="flex items-center gap-2 mb-2 pb-2 border-b border-orange-700/30">
-                                        <Terminal className="w-4 h-4 text-blue-400" />
-                                        <span className="text-sm font-semibold text-blue-300">Input</span>
+                                        <Terminal className="w-4 h-4 text-accent" />
+                                        <span className="text-sm font-semibold text-accent">Input</span>
                                       </div>
-                                      <pre className="text-xs bg-gray-950/70 p-3 rounded border border-gray-800 overflow-x-auto text-gray-300 max-h-64 overflow-y-auto whitespace-pre-wrap break-words">
+                                      <pre className="text-xs bg-gray-950/70 p-3 rounded border border-hairline overflow-x-auto text-gray-300 max-h-64 overflow-y-auto whitespace-pre-wrap break-words">
                                         {JSON.stringify(toolInput, null, 2)}
                                       </pre>
                                     </div>
@@ -1200,7 +1200,7 @@ export default function ConversationDetailPanel({ conversationFile, projectPath,
                                                   <FileCode className="w-4 h-4 text-green-400" />
                                                   <span className="text-sm font-semibold text-green-300">Result</span>
                                                 </div>
-                                                <pre className="text-xs bg-gray-950/70 p-3 rounded border border-gray-800 overflow-x-auto text-gray-300 max-h-96 overflow-y-auto whitespace-pre-wrap break-words">
+                                                <pre className="text-xs bg-gray-950/70 p-3 rounded border border-hairline overflow-x-auto text-gray-300 max-h-96 overflow-y-auto whitespace-pre-wrap break-words">
                                                   {typeof block.content === 'string'
                                                     ? block.content
                                                     : JSON.stringify(block.content, null, 2)}
@@ -1249,7 +1249,7 @@ export default function ConversationDetailPanel({ conversationFile, projectPath,
                   hasToolResults(message)
                     ? 'bg-yellow-900/20 border-yellow-800/50'
                     : isSystemMessage(message)
-                    ? 'bg-gray-800/50 border-gray-700/50'
+                    ? 'bg-raised/50 border-hairline/50'
                     : message.type === 'skill'
                     ? 'bg-cyan-900/20 border-cyan-800/50'
                     : message.type === 'thinking'
@@ -1262,7 +1262,7 @@ export default function ConversationDetailPanel({ conversationFile, projectPath,
                     ? 'bg-purple-900/20 border-purple-800/50'
                     : message.type === 'tool_result'
                     ? 'bg-yellow-900/20 border-yellow-800/50'
-                    : 'bg-gray-800/50 border-gray-700/50'
+                    : 'bg-raised/50 border-hairline/50'
                 }`}
               >
                 <div
@@ -1280,7 +1280,7 @@ export default function ConversationDetailPanel({ conversationFile, projectPath,
                         </>
                       ) : isSystemMessage(message) ? (
                         <>
-                          <Terminal className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                          <Terminal className="w-4 h-4 text-ink-muted flex-shrink-0" />
                           <span className="text-sm font-medium text-gray-300">System</span>
                         </>
                       ) : message.type === 'skill' ? (
@@ -1290,7 +1290,7 @@ export default function ConversationDetailPanel({ conversationFile, projectPath,
                         </>
                       ) : message.type === 'user' ? (
                         <>
-                          <User className="w-4 h-4 text-blue-400 flex-shrink-0" />
+                          <User className="w-4 h-4 text-accent flex-shrink-0" />
                           <span className="text-sm font-medium text-white">User</span>
                         </>
                       ) : message.type === 'assistant' && hasTools(message) ? (
@@ -1319,7 +1319,7 @@ export default function ConversationDetailPanel({ conversationFile, projectPath,
                         </>
                       ) : (
                         <>
-                          <Clock className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                          <Clock className="w-4 h-4 text-ink-muted flex-shrink-0" />
                           <span className="text-sm font-medium text-white capitalize">{message.type}</span>
                         </>
                       )}
@@ -1335,7 +1335,7 @@ export default function ConversationDetailPanel({ conversationFile, projectPath,
                           e.stopPropagation()
                           copyMessageToClipboard(message, index)
                         }}
-                        className="p-1 rounded transition-colors hover:bg-gray-700 text-gray-400"
+                        className="p-1 rounded transition-colors hover:bg-raised text-ink-muted"
                         title="Copy message to clipboard"
                       >
                         {copiedMessageIndex === index ? (
@@ -1369,9 +1369,9 @@ export default function ConversationDetailPanel({ conversationFile, projectPath,
                     {/* Tool Use Details */}
                     {message.type === 'tool_use' && message.toolName && (
                       <div className="space-y-2">
-                        <div className="text-xs text-gray-400 font-semibold">Tool: {message.toolName}</div>
+                        <div className="text-xs text-ink-muted font-semibold">Tool: {message.toolName}</div>
                         {message.toolInput && (
-                          <pre className="text-xs bg-gray-900/50 p-3 rounded overflow-x-auto text-gray-300">
+                          <pre className="text-xs bg-sunken/50 p-3 rounded overflow-x-auto text-gray-300">
                             {JSON.stringify(message.toolInput, null, 2)}
                           </pre>
                         )}
@@ -1381,8 +1381,8 @@ export default function ConversationDetailPanel({ conversationFile, projectPath,
                     {/* Tool Result */}
                     {message.type === 'tool_result' && message.toolResult && (
                       <div className="space-y-2">
-                        <div className="text-xs text-gray-400 font-semibold">Result:</div>
-                        <pre className="text-xs bg-gray-900/50 p-3 rounded overflow-x-auto text-gray-300 max-h-64">
+                        <div className="text-xs text-ink-muted font-semibold">Result:</div>
+                        <pre className="text-xs bg-sunken/50 p-3 rounded overflow-x-auto text-gray-300 max-h-64">
                           {typeof message.toolResult === 'string'
                             ? message.toolResult
                             : JSON.stringify(message.toolResult, null, 2)}

@@ -4,12 +4,12 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 import Link from 'next/link'
 import {
   PanelLeft, Search, Server, Globe, Webhook, Brain, SquareTerminal, ShoppingBag,
-  FlaskConical, Rocket, HelpCircle, Info, ArrowLeft, type LucideIcon,
+  FlaskConical, Rocket, HelpCircle, Info, ArrowLeft, Palette, type LucideIcon,
 } from 'lucide-react'
 import { filterSections, sectionLabel, type SettingsSectionId } from '@/lib/settings-sections'
 
 const ICONS: Record<SettingsSectionId, LucideIcon> = {
-  hosts: Server, domains: Globe, webhooks: Webhook, memory: Brain, terminal: SquareTerminal,
+  hosts: Server, domains: Globe, webhooks: Webhook, memory: Brain, appearance: Palette, terminal: SquareTerminal,
   marketplace: ShoppingBag, experiments: FlaskConical, onboarding: Rocket, help: HelpCircle, about: Info,
 }
 
