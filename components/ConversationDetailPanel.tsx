@@ -1091,7 +1091,7 @@ export default function ConversationDetailPanel({ conversationFile, projectPath,
                         {/* Timestamp and Copy Button */}
                         <div className="flex items-center justify-between mt-2">
                           {message.timestamp && (
-                            <div className={`text-xs ${isUser ? 'text-accent' : 'text-gray-500'}`}>
+                            <div className={`text-xs ${isUser ? 'text-white/70' : 'text-gray-500'}`}>
                               {formatTimestamp(message.timestamp)}
                             </div>
                           )}
@@ -1102,7 +1102,7 @@ export default function ConversationDetailPanel({ conversationFile, projectPath,
                             }}
                             className={`p-1 rounded transition-colors ${
                               isUser
-                                ? 'hover:bg-accent-fill/90/50 text-accent'
+                                ? 'hover:bg-white/10 text-white/70'
                                 : 'hover:bg-raised text-ink-muted'
                             }`}
                             title="Copy message to clipboard"

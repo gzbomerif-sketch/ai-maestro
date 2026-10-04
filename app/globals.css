@@ -178,16 +178,21 @@
   --cat-5-text: 15 118 110;  --cat-5-icon: 13 148 136;
   --cat-6-text: 194 65 12;   --cat-6-icon: 234 88 12;
   --cat-7-text: 185 28 28;   --cat-7-icon: 220 38 38;
-
-  /* The shadcn bridge below re-resolves from the channels above; only the
-     destructive button text needs to stay literally white on the red fill. */
-  --destructive-foreground: 255 255 255;
 }
 
-/* White-on-fill: text-white is "foreground" (near-black) under Paper, so a solid
-   brand/danger fill gives the variable back locally. Custom properties inherit,
+/* White-on-fill: text-white is "foreground" (near-black) under Paper, so any solid
+   saturated fill (brand, status and category hues, 500-700) gives the variable
+   back locally. Custom properties inherit,
    so toggle thumbs and icons inside the fill follow. */
-.theme-paper :is(.bg-accent-fill, .bg-blue-500, .bg-blue-600, .bg-blue-700, .bg-primary, .bg-red-600, .bg-red-700, .bg-green-600, .bg-green-700, .bg-emerald-600, .bg-emerald-700) {
+.theme-paper :is(
+  .bg-accent-fill, .bg-primary, .bg-red-500, .bg-green-500, .bg-emerald-500, .bg-blue-500,
+  .bg-blue-600, .bg-blue-700, .bg-red-600, .bg-red-700, .bg-green-600, .bg-green-700,
+  .bg-emerald-600, .bg-emerald-700, .bg-purple-500, .bg-purple-600, .bg-purple-700, .bg-violet-500,
+  .bg-violet-600, .bg-violet-700, .bg-indigo-500, .bg-indigo-600, .bg-indigo-700, .bg-orange-500,
+  .bg-orange-600, .bg-orange-700, .bg-cyan-500, .bg-cyan-600, .bg-cyan-700, .bg-teal-500,
+  .bg-teal-600, .bg-teal-700, .bg-pink-500, .bg-pink-600, .bg-pink-700, .bg-sky-500,
+  .bg-sky-600, .bg-sky-700
+) {
   --fg-white: 255 255 255;
 }
 
@@ -246,7 +251,8 @@
   --input: var(--c-control-border);
   --ring: var(--c-accent);
   --destructive: var(--c-danger);
-  --destructive-foreground: var(--fg-white);
+  /* Literal white, like --primary-foreground: it sits on a solid red fill in every theme */
+  --destructive-foreground: 255 255 255;
   --radius: 0.5rem;
 }
 

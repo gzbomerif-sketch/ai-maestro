@@ -550,7 +550,7 @@ export default function AgentProfile({ isOpen, onClose, agentId, sessionStatus, 
                                 index === 0
                                   ? 'bg-purple-500/20 text-purple-300 border-purple-500/30 hover:bg-purple-500/30'
                                   : index === 1
-                                  ? 'bg-accent-fill/20 text-accent border-accent-fill/30 hover:bg-accent-fill/90/30'
+                                  ? 'bg-accent-fill/20 text-accent border-accent-fill/30 hover:bg-accent-fill/30'
                                   : 'bg-gray-500/20 text-gray-300 border-gray-500/30 hover:bg-gray-500/30'
                               }`}
                             >
