@@ -65,7 +65,7 @@ export default function TeamWorkspace({ teamId, sidebarCollapsed, onToggleSideba
   return (
     <WorkArea
       scopeId={scope} isStale={isStale}
-      keyToTool={key => teamTabForKey(key, team.agentIds)}
+      keyToTool={key => teamTabForKey(key, members.map(m => m.id))}
       titleFor={w => toolLabel(w.tool, nameOf)}
       iconFor={w => { const Icon = iconForTool(w.tool); return <Icon strokeWidth={1.5} className="w-3.5 h-3.5" /> }}
       renderContent={w => renderTool(w.tool, {

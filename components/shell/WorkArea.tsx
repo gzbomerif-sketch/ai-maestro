@@ -27,7 +27,7 @@ export interface WorkAreaApi {
 const MODAL = '[role="dialog"],[aria-modal="true"],[role="menu"]'
 
 /**
- * Chat (the base layer) under a layer of floating tool windows. Shared by the agent and team views.
+ * Chat (the base layer) under a layer of floating tool windows that covers only the chat region (the top bar stays clear). Shared by the agent and team views.
  * Owns the area measurement (one observer feeds both useWindows and the layer) and the window shortcuts.
  */
 export default function WorkArea({ scopeId, keyToTool, renderContent, titleFor, iconFor, isStale, top, center, overlay }: {
@@ -124,22 +124,23 @@ export default function WorkArea({ scopeId, keyToTool, renderContent, titleFor, 
   }, [])
 
   return (
-    <div ref={workRef} className="flex-1 min-w-0 flex relative">
-      <section className="relative flex-1 min-w-0 flex flex-col">
-        {top(api)}
-        <div className="flex-1 min-h-0 flex relative border-t border-hairline/70">{center}</div>
+    <section className="flex-1 min-w-0 flex flex-col relative">
+      {top(api)}
+      {/* The windows' area: everything below the top bar, so the launcher and agent controls stay reachable */}
+      <div ref={workRef} className="flex-1 min-h-0 flex relative border-t border-hairline/70">
+        {center}
         {overlay?.(api)}
-      </section>
-      {mounted && area && (
-        // Own stacking context: window z-order never competes with menus, dialogs or the colony frame
-        <div className="pointer-events-none absolute inset-0 z-20">
-          <WindowLayer
-            windows={windows} dispatch={dispatch} area={area}
-            titleFor={titleFor} iconFor={iconFor}
-            renderContent={w => <div className="absolute inset-0 flex min-h-0 min-w-0">{renderContent(w)}</div>}
-          />
-        </div>
-      )}
-    </div>
+        {mounted && area && (
+          // Own stacking context: window z-order never competes with menus, dialogs or the colony frame
+          <div className="pointer-events-none absolute inset-0 z-20">
+            <WindowLayer
+              windows={windows} dispatch={dispatch} area={area}
+              titleFor={titleFor} iconFor={iconFor}
+              renderContent={w => <div className="absolute inset-0 flex min-h-0 min-w-0">{renderContent(w)}</div>}
+            />
+          </div>
+        )}
+      </div>
+    </section>
   )
 }
