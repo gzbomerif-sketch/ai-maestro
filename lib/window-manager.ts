@@ -12,7 +12,7 @@ export interface ManagedWindow {
   /** windowId(tool, agentId) */
   id: string
   tool: WindowTool
-  /** undefined = global window (colony) */
+  /** undefined = global window */
   agentId?: string
   x: number
   y: number
@@ -81,8 +81,7 @@ function patch(s: WindowState, id: string, fn: (w: ManagedWindow) => ManagedWind
 
 /**
  * Renumber z to 1..n in the current stacking order (ties keep array order), optionally lifting `topId`
- * to the top. Array order and untouched objects are kept. z stays small this way: the colony frame,
- * menus (z-30/40) and dialogs (z-50) all share one stacking context with windows at 10 + z.
+ * to the top. Array order and untouched objects are kept. z stays small this way: menus (z-30/40) and dialogs (z-50) all share one stacking context with windows at 10 + z.
  */
 function compact(windows: ManagedWindow[], topId?: string): WindowState {
   const order = [...windows].sort((a, b) => a.z - b.z)

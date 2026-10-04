@@ -24,14 +24,14 @@ describe('window-manager', () => {
   })
   it('scopes ids by agent', () => {
     expect(windowId('terminal', 'a1')).toBe('a1:terminal')
-    expect(windowId('colony')).toBe('_:colony')
+    expect(windowId('browser')).toBe('_:browser')
   })
   it('visibleWindows returns globals plus the active agent’s windows only', () => {
-    let s = open(EMPTY_WINDOWS, 'colony')            // global
+    let s = open(EMPTY_WINDOWS, 'browser')            // global
     s = open(s, 'terminal', 'a1')
     s = open(s, 'terminal', 'a2')
-    expect(visibleWindows(s, 'a1').map(w => w.id).sort()).toEqual(['_:colony', 'a1:terminal'])
-    expect(visibleWindows(s, null).map(w => w.id)).toEqual(['_:colony'])
+    expect(visibleWindows(s, 'a1').map(w => w.id).sort()).toEqual(['_:browser', 'a1:terminal'])
+    expect(visibleWindows(s, null).map(w => w.id)).toEqual(['_:browser'])
   })
   it('move clamps inside the area', () => {
     let s = open()
@@ -68,9 +68,9 @@ describe('window-manager', () => {
     expect(s.windows[0]).toMatchObject({ x: before.x, y: before.y, w: before.w, h: before.h, maximized: false })
   })
   it('closeAgent removes that agent’s windows and keeps globals', () => {
-    let s = open(open(EMPTY_WINDOWS, 'colony'), 'terminal', 'a1')
+    let s = open(open(EMPTY_WINDOWS, 'browser'), 'terminal', 'a1')
     s = windowReducer(s, { type: 'closeAgent', agentId: 'a1' })
-    expect(s.windows.map(w => w.id)).toEqual(['_:colony'])
+    expect(s.windows.map(w => w.id)).toEqual(['_:browser'])
   })
   it('parseWindows rejects garbage and filters bad entries', () => {
     expect(parseWindows(null)).toBeNull()
@@ -93,9 +93,9 @@ describe('window-manager', () => {
     expect(EMPTY_WINDOWS).toEqual({ windows: [], nextZ: 1 })
   })
   it('open with agentId undefined creates a global window; with agentId scopes it', () => {
-    const g = open(EMPTY_WINDOWS, 'colony').windows[0]
+    const g = open(EMPTY_WINDOWS, 'browser').windows[0]
     expect(g.agentId).toBeUndefined()
-    expect(g.id).toBe('_:colony')
+    expect(g.id).toBe('_:browser')
     const a = open(EMPTY_WINDOWS, 'terminal', 'a1').windows[0]
     expect(a.agentId).toBe('a1')
     expect(a.id).toBe('a1:terminal')
@@ -227,6 +227,15 @@ describe('window-manager', () => {
     s = windowReducer(s, { type: 'minimize', id: '_:terminal' })
     expect(visibleWindows(s, null)).toHaveLength(1)
   })
+  it('parseWindows drops a stored colony window now that the colony is gone', () => {
+    const back = parseWindows(JSON.stringify({
+      windows: [
+        { id: '_:colony', tool: 'colony', x: 0, y: 0, w: 500, h: 400, z: 2, minimized: false, maximized: false },
+        { id: 'a1:terminal', tool: 'terminal', agentId: 'a1', x: 0, y: 0, w: 500, h: 400, z: 1, minimized: false, maximized: false },
+      ],
+    }))!
+    expect(back.windows.map(w => w.id)).toEqual(['a1:terminal'])
+  })
   it('parseWindows round-trips a reducer state including prev, and recomputes nextZ when invalid', () => {
     let s = open(open(), 'inbox', 'a1')
     s = windowReducer(s, { type: 'toggleMaximize', id: '_:terminal' })
@@ -260,12 +269,12 @@ describe('window-manager', () => {
     expect(ok?.windows.map(w => w.id)).toEqual(['team:t1:kanban', 'team:t1:term:a1'])
   })
 
-  // ---- z compaction (the colony frame and menus compare against 10 + z, so z must stay small) ----
+  // ---- z compaction (menus compare against 10 + z, so z must stay small) ----
   const zOf = (s: WindowState, id: string) => s.windows.find(w => w.id === id)!.z
   it('z stays bounded by the window count after 100 focus toggles', () => {
-    let s = open(open(open(EMPTY_WINDOWS, 'colony'), 'terminal', 'a1'), 'inbox', 'a1')
+    let s = open(open(open(EMPTY_WINDOWS, 'browser'), 'terminal', 'a1'), 'inbox', 'a1')
     for (let i = 0; i < 100; i++) {
-      s = windowReducer(s, { type: 'focus', id: i % 2 ? 'a1:terminal' : '_:colony' })
+      s = windowReducer(s, { type: 'focus', id: i % 2 ? 'a1:terminal' : '_:browser' })
       for (const w of s.windows) expect(w.z).toBeLessThanOrEqual(s.windows.length)
       expect(s.nextZ).toBe(s.windows.length + 1)
     }
@@ -316,11 +325,11 @@ describe('window-manager', () => {
     expect(s.nextZ).toBe(4)
   })
   it('stackRanks renumbers a visible subset 1..k in z order, reusing unchanged objects', () => {
-    let s = open(EMPTY_WINDOWS, 'colony')
+    let s = open(EMPTY_WINDOWS, 'browser')
     for (const a of ['a1', 'a2', 'a3']) s = open(open(s, 'terminal', a), 'inbox', a)
-    s = windowReducer(s, { type: 'focus', id: '_:colony' })
+    s = windowReducer(s, { type: 'focus', id: '_:browser' })
     const ranked = stackRanks(visibleWindows(s, 'a3'))
-    expect(Object.fromEntries(ranked.map(w => [w.id, w.z]))).toEqual({ 'a3:terminal': 1, 'a3:inbox': 2, '_:colony': 3 })
+    expect(Object.fromEntries(ranked.map(w => [w.id, w.z]))).toEqual({ 'a3:terminal': 1, 'a3:inbox': 2, '_:browser': 3 })
     const already = stackRanks(ranked)
     already.forEach((w, i) => expect(w).toBe(ranked[i]))
   })
@@ -331,9 +340,9 @@ describe('window-manager', () => {
     for (const t of ['terminal', 'inbox', 'files']) s = open(s, t, 'a1')
     s = open(s, 'terminal', 'a2')
     expect(s.windows.find(w => w.id === 'a2:terminal')).toMatchObject({ x: 48, y: 48 })
-    s = open(s, 'colony')
-    expect(s.windows.find(w => w.id === '_:colony')).toMatchObject({ x: 48, y: 48 })
-    s = open(s, 'inbox', 'a2')                         // a2 sees colony + its terminal
+    s = open(s, 'browser')
+    expect(s.windows.find(w => w.id === '_:browser')).toMatchObject({ x: 48, y: 48 })
+    s = open(s, 'inbox', 'a2')                         // a2 sees the global window + its terminal
     expect(s.windows.find(w => w.id === 'a2:inbox')).toMatchObject({ x: 48 + 64, y: 48 + 64 })
     let t = EMPTY_WINDOWS
     const tools = ['terminal', 'inbox', 'files', 'memory', 'graph', 'docs', 'canvas', 'search', 'playback'] as const

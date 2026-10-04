@@ -129,7 +129,7 @@ export default function WorkArea({ scopeId, keyToTool, renderContent, titleFor, 
         {center}
         {overlay?.(api)}
         {mounted && area && (
-          // No z-index here on purpose: windows (10 + z), the colony frame (ColonyFrame, 10 + its window's z),
+          // No z-index here on purpose: windows (10 + z),
           // menus (z-30/40) and dialogs (z-50) must all compare in the shell root's one stacking context
           <div className="pointer-events-none absolute inset-0">
             <WindowLayer

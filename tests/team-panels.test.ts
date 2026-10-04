@@ -11,7 +11,7 @@ describe('team tabs', () => {
     expect(teamScope('t1')).toBe('team:t1')
   })
   it('lists the team tools with their keys', () => {
-    expect(TEAM_TOOLS.map(t => `${t.id}:${t.key}`)).toEqual(['kanban:K', 'tasks:A', 'documents:D', 'instructions:N', 'members:E', 'browser:B', 'colony:O'])
+    expect(TEAM_TOOLS.map(t => `${t.id}:${t.key}`)).toEqual(['kanban:K', 'tasks:A', 'documents:D', 'instructions:N', 'members:E', 'browser:B'])
   })
   it('recognises tools and member terminals only', () => {
     expect(isTeamTab('kanban')).toBe(true)
@@ -24,11 +24,6 @@ describe('team tabs', () => {
     expect(termTab('abc')).toBe('term:abc')
     expect(termAgentId('term:abc')).toBe('abc')
     expect(termAgentId('kanban')).toBeNull()
-  })
-  it('O opens the Colony tool, same letter as the agent dock', () => {
-    expect(teamTabForKey('o', [])).toBe('colony')
-    expect(isTeamTab('colony')).toBe(true)
-    expect(TEAM_TOOLS.find(t => t.id === 'colony')?.label).toBe('Colony')
   })
 
   it('maps keys: letters to tools, digits to the first nine members', () => {

@@ -11,7 +11,6 @@ import TaskKanbanBoard from '@/components/team-meeting/TaskKanbanBoard'
 import TaskPanel from '@/components/team-meeting/TaskPanel'
 import TeamDocumentsSection from '@/components/teams/TeamDocumentsSection'
 import TeamInstructionsSection from '@/components/teams/TeamInstructionsSection'
-import ColonyPanel from '@/components/shell/ColonyPanel'
 import TeamOverviewSection from '@/components/teams/TeamOverviewSection'
 import AgentTabContent from './AgentTabContent'
 import BrowserPanel from './BrowserPanel'
@@ -42,7 +41,7 @@ export interface TeamToolData {
   updateTeam: UpdateTeam
 }
 
-/** One team tool's content inside a window: Kanban, Tasks, Documents, Instructions, Members, Browser, Colony, or a member's terminal. */
+/** One team tool's content inside a window: Kanban, Tasks, Documents, Instructions, Members, Browser, or a member's terminal. */
 export function renderTeamTool(tool: WindowTool, d: TeamToolData, env: ToolEnv): ReactNode {
   const { team } = d
   const memberId = termAgentId(tool)
@@ -59,7 +58,6 @@ export function renderTeamTool(tool: WindowTool, d: TeamToolData, env: ToolEnv):
     case 'instructions': return <div className="flex-1 min-w-0 overflow-auto p-4"><TeamInstructionsSection instructions={team.instructions || ''} onSave={s => d.updateTeam({ instructions: s })} /></div>
     case 'members': return <MembersBody team={team} allAgents={d.allAgents} updateTeam={d.updateTeam} />
     case 'browser': return <BrowserPanel />
-    case 'colony': return <ColonyPanel hidden={env.minimized} z={env.z} />
     default: return null
   }
 }

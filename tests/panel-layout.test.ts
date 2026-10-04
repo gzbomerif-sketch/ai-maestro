@@ -59,10 +59,6 @@ describe('keys and shortcuts', () => {
     expect(panelForKey('b')).toBe('browser')
     expect(panelForKey('z')).toBeNull()
   })
-  it('O opens the Colony panel', () => {
-    expect(panelForKey('o')).toBe('colony')
-    expect(panelForKey('O')).toBe('colony')
-  })
   it('layoutShortcut: Cmd on Mac, Ctrl elsewhere', () => {
     const e = (o: object) => ({ key: 'j', metaKey: false, ctrlKey: false, shiftKey: false, ...o })
     expect(layoutShortcut(e({ metaKey: true }), true)).toBe('togglePanel')

@@ -3,7 +3,7 @@
  * workspace builds on. Pure (no React, no storage) so it can be unit-tested.
  * Window geometry and z-order live in lib/window-manager.ts.
  */
-export type PanelType = 'terminal' | 'inbox' | 'files' | 'memory' | 'graph' | 'docs' | 'canvas' | 'search' | 'playback' | 'export' | 'browser' | 'colony'
+export type PanelType = 'terminal' | 'inbox' | 'files' | 'memory' | 'graph' | 'docs' | 'canvas' | 'search' | 'playback' | 'export' | 'browser'
 
 export const PANEL_TYPES: { id: PanelType; label: string; key: string }[] = [
   { id: 'terminal', label: 'Terminal', key: 'T' },
@@ -17,7 +17,6 @@ export const PANEL_TYPES: { id: PanelType; label: string; key: string }[] = [
   { id: 'playback', label: 'Playback', key: 'P' },
   { id: 'export', label: 'Export', key: 'X' },
   { id: 'browser', label: 'Browser', key: 'B' },
-  { id: 'colony', label: 'Colony', key: 'O' },
 ]
 
 export interface LayoutState {

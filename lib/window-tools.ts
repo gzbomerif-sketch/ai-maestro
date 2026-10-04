@@ -15,12 +15,12 @@ export const AGENT_TOOLS: { id: WindowTool; label: string; key: string }[] = [
 
 /**
  * Something modal has the keyboard: a dialog, a menu, or a listbox/combobox (Radix Select type-ahead).
- * Single-key window shortcuts and the colony card's Esc yield while focus is inside one.
+ * Single-key window shortcuts yield while focus is inside one.
  */
 export const MODAL_SELECTOR = '[role="dialog"],[aria-modal="true"],[role="menu"],[role="listbox"],[role="combobox"]'
 
 /** Windows that follow the user across agents and teams instead of belonging to one. */
-const GLOBAL_TOOLS = new Set<WindowTool>(['colony'])
+const GLOBAL_TOOLS = new Set<WindowTool>([])
 
 /** The agentId a window of `tool` opened from `scope` carries (undefined = global). */
 export function windowScopeFor(tool: WindowTool, scope: string): string | undefined {

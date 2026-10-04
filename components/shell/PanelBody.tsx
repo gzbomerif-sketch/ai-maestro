@@ -10,11 +10,10 @@ import type { PanelType } from '@/lib/panel-layout'
 import type { WindowTool } from '@/lib/window-manager'
 import AgentTabContent, { type AgentTab } from './AgentTabContent'
 import BrowserPanel from './BrowserPanel'
-import ColonyPanel from './ColonyPanel'
 import { renderTeamTool, type TeamToolData } from './TeamTools'
 import AgentTaskList from '@/components/tasks/AgentTaskList'
 
-const TAB_FOR: Record<Exclude<PanelType, 'inbox' | 'browser' | 'colony'>, AgentTab> = {
+const TAB_FOR: Record<Exclude<PanelType, 'inbox' | 'browser'>, AgentTab> = {
   terminal: 'terminal', files: 'worktree', memory: 'memory', graph: 'graph', docs: 'docs',
   canvas: 'canvas', search: 'search', playback: 'playback', export: 'export',
 }
@@ -39,7 +38,7 @@ export interface ToolEnv {
   onShowProfile: (a: Agent) => void
   /** The window is minimized: still mounted (terminals keep their size and scrollback), just hidden */
   minimized: boolean
-  /** The window's stack position (ManagedWindow.z); the colony frame mirrors it */
+  /** The window's stack position (ManagedWindow.z) */
   z: number
 }
 
@@ -56,7 +55,6 @@ export function renderTool(tool: WindowTool, ctx: ToolContext): ReactNode {
   const { agent } = ctx
   if (!agent) return null
   if (tool === 'browser') return <BrowserPanel />
-  if (tool === 'colony') return <ColonyPanel hidden={ctx.minimized} z={ctx.z} />
   if (tool === 'tasks') {
     return (
       <div className="flex-1 min-h-0 overflow-auto bg-sunken">

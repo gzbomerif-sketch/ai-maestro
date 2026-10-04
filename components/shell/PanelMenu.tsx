@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
-  SquareTerminal, Inbox, FolderTree, Brain, GitBranch, FileText, LayoutPanelTop, Search, PlayCircle, Download, Globe, Orbit,
+  SquareTerminal, Inbox, FolderTree, Brain, GitBranch, FileText, LayoutPanelTop, Search, PlayCircle, Download, Globe,
   ListChecks, Sparkles, Columns3, ScrollText, Users, Plus, PanelBottomClose, PanelBottomOpen, type LucideIcon,
 } from 'lucide-react'
 import type { PanelType } from '@/lib/panel-layout'
@@ -12,7 +12,6 @@ import { IconButton } from './ui'
 export const PANEL_ICONS: Record<PanelType, LucideIcon> = {
   terminal: SquareTerminal, inbox: Inbox, files: FolderTree, memory: Brain, graph: GitBranch,
   docs: FileText, canvas: LayoutPanelTop, search: Search, playback: PlayCircle, export: Download, browser: Globe,
-  colony: Orbit,
 }
 
 /** Icons for every window tool: dock tools, the Tasks/Skills launcher entries, team tools and member terminals. */

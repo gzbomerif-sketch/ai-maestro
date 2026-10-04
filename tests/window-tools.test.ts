@@ -7,20 +7,18 @@ const win = (id: string, o: Partial<ManagedWindow> = {}): ManagedWindow =>
 
 describe('window tools', () => {
   it('launcher lists every dock tool plus Tasks (A) and Skills (L)', () => {
-    expect(AGENT_TOOLS.map(t => t.id)).toEqual(['terminal', 'inbox', 'files', 'memory', 'graph', 'docs', 'canvas', 'search', 'playback', 'export', 'browser', 'colony', 'tasks', 'skills'])
+    expect(AGENT_TOOLS.map(t => t.id)).toEqual(['terminal', 'inbox', 'files', 'memory', 'graph', 'docs', 'canvas', 'search', 'playback', 'export', 'browser', 'tasks', 'skills'])
     expect(new Set(AGENT_TOOLS.map(t => t.key)).size).toBe(AGENT_TOOLS.length)
   })
   it('agentToolForKey routes letters case-insensitively and ignores everything else', () => {
     expect(agentToolForKey('t')).toBe('terminal')
-    expect(agentToolForKey('O')).toBe('colony')
     expect(agentToolForKey('a')).toBe('tasks')
     expect(agentToolForKey('L')).toBe('skills')
     expect(agentToolForKey('z')).toBeNull()
     expect(agentToolForKey('Enter')).toBeNull()
     expect(agentToolForKey('1')).toBeNull()
   })
-  it('only the colony is global', () => {
-    expect(windowScopeFor('colony', 'a1')).toBeUndefined()
+  it('every tool belongs to the workspace it opened from', () => {
     expect(windowScopeFor('terminal', 'a1')).toBe('a1')
     expect(windowScopeFor('kanban', 'team:t1')).toBe('team:t1')
   })

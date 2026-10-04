@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { PanelLeft, Plus } from 'lucide-react'
 import type { Agent } from '@/types/agent'
 import { useSessionActivity } from '@/hooks/useSessionActivity'
@@ -12,14 +12,12 @@ import { useLayout } from '@/hooks/useLayout'
 import { useTeams, useActiveMeetings } from '@/hooks/useTeams'
 import { LIMITS } from '@/lib/panel-layout'
 import { AGENT_TOOLS, agentToolForKey, toolLabel } from '@/lib/window-tools'
-import { windowId, type ManagedWindow, type WindowTool } from '@/lib/window-manager'
+import type { ManagedWindow, WindowTool } from '@/lib/window-manager'
 import AgentCreationWizard from '@/components/AgentCreationWizard'
 import StatusSidebar from './StatusSidebar'
 import AgentTopBar from './AgentTopBar'
 import ResizeHandle from './ResizeHandle'
-import ColonyHost, { ColonyFrame } from './ColonyHost'
-import { ColonyCardEnvContext, type ColonyCardEnv } from './ColonyProfileCard'
-import WorkArea, { type WorkAreaApi } from './WorkArea'
+import WorkArea from './WorkArea'
 import TeamWorkspace from './TeamWorkspace'
 import MiniPreview from './MiniPreview'
 import { renderTool } from './PanelBody'
@@ -81,66 +79,11 @@ export default function AppShell(p: AppShellProps) {
     const id = new URLSearchParams(window.location.search).get('team')
     if (id) { setTeamId(id); p.onSelectHome(); window.history.replaceState(null, '', '/') }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
-  // A tool queued for an agent that is about to open (colony card) is dropped by any selection of someone else
-  const [pendingTool, setPendingTool] = useState<{ tool: WindowTool; agentId: string } | null>(null)
-  const selectAgent = (a: Agent) => { setPendingTool(cur => (cur && cur.agentId === a.id ? cur : null)); setTeamId(null); p.onSelectAgent(a) }
-  const selectHome = () => { setPendingTool(null); setTeamId(null); p.onSelectHome() }
-  const selectTeam = (id: string) => { setPendingTool(null); setTeamId(id); p.onSelectHome() }
-
-  // Colony profile card actions. A tool opens in the workspace of the agent it is for, so for any
-  // other agent we select it first and open the tool once its workspace (and its window API) is up.
-  const workApi = useRef<WorkAreaApi | null>(null)
-  const openToolFor = (tool: WindowTool, a: Agent) => {
-    if (!teamId && agent?.id === a.id && workApi.current) { workApi.current.openTool(tool); return }
-    selectAgent(a)
-    setPendingTool({ tool, agentId: a.id })
-  }
-  // Backstop: a select the page rejects never activates the agent, so a stale request expires
-  useEffect(() => {
-    if (!pendingTool) return
-    const t = setTimeout(() => setPendingTool(null), 3000)
-    return () => clearTimeout(t)
-  }, [pendingTool])
-  useEffect(() => {
-    if (!pendingTool || teamId || agent?.id !== pendingTool.agentId || !workApi.current) return
-    workApi.current.openTool(pendingTool.tool)
-    setPendingTool(null)
-  }, [pendingTool, teamId, agent?.id])
-  // Open workspace: select the agent, then minimize the colony window so its workspace is what you see.
-  // Queued rather than done inline because the workspace may not be up yet (a team view remounts WorkArea
-  // for the agent), and when the agent is already active selecting it changes nothing on its own.
-  const [pendingReveal, setPendingReveal] = useState<string | null>(null)
-  const openWorkspaceFor = (a: Agent) => { selectAgent(a); setPendingReveal(a.id) }
-  useEffect(() => {
-    if (!pendingReveal) return
-    const t = setTimeout(() => setPendingReveal(null), 3000)
-    return () => clearTimeout(t)
-  }, [pendingReveal])
-  useEffect(() => {
-    if (!pendingReveal || teamId || agent?.id !== pendingReveal || !workApi.current) return
-    // A no-op when the colony window is not open or already minimized
-    workApi.current.dispatch({ type: 'minimize', id: windowId('colony') })
-    setPendingReveal(null)
-  }, [pendingReveal, teamId, agent?.id])
-  // Same rule as the top bar's Wake button: not online (asleep or offline) means wake it
-  const needsWake = (a: Agent) => { const st = entryById[a.id]?.status ?? 'offline'; return st === 'asleep' || st === 'offline' }
-  const colonyCard: ColonyCardEnv = {
-    agents: p.agents, unread, wakingAgentId: p.wakingAgentId,
-    onOpenWorkspace: openWorkspaceFor,
-    onOpenTerminal: a => openToolFor('terminal', a),
-    onOpenSkills: a => openToolFor('skills', a),
-    needsWake,
-    // Asleep/offline: a fresh session (New conversation). Online: just open its chat (Open chat).
-    onNewConversation: a => {
-      openWorkspaceFor(a)
-      if (needsWake(a)) p.onWake(a)
-    },
-    onAgentsChanged: p.onAgentsChanged,
-  }
+  const selectAgent = (a: Agent) => { setTeamId(null); p.onSelectAgent(a) }
+  const selectHome = () => { setTeamId(null); p.onSelectHome() }
+  const selectTeam = (id: string) => { setTeamId(id); p.onSelectHome() }
 
   return (
-    <ColonyHost agents={p.agents} onSelectAgent={selectAgent}>
-    <ColonyCardEnvContext.Provider value={colonyCard}>
     <div className="fixed inset-0 flex bg-sunken text-ink overflow-hidden">
       {!layout.sidebarCollapsed && (
         <>
@@ -175,9 +118,8 @@ export default function AppShell(p: AppShellProps) {
             agent, onlineAgents: p.onlineAgents, wakingAgentId: p.wakingAgentId, onWake: p.onWake, onShowProfile: p.onShowProfile, minimized: w.minimized, z: w.z,
           })}
           overlay={api => <MiniPreview hidden={api.isShowing('browser')} onOpen={() => api.openTool('browser')} />}
-          top={api => {
-            workApi.current = api
-            return <AgentTopBar
+          top={api => (
+            <AgentTopBar
               agent={agent} entry={entryById[agent.id]} now={now}
               busy={p.wakingAgentId === agent.id || sleepingId === agent.id}
               onSleep={() => sleep(agent)} onWake={() => p.onWake(agent)}
@@ -186,7 +128,7 @@ export default function AppShell(p: AppShellProps) {
               hasWindows={api.windows.length > 0} allMinimized={api.allMinimized} onToggleAll={api.toggleAll}
               sidebarCollapsed={layout.sidebarCollapsed} onToggleSidebar={() => dispatch({ type: 'toggleSidebar' })}
             />
-          }}
+          )}
           center={
             <AgentTabContent agent={agent} activeTab={resolveAgentTab('chat', getRuntimeMode(agent.id))} setActiveTab={p.setActiveTab}
               onlineAgents={p.onlineAgents} wakingAgentId={p.wakingAgentId} onWake={p.onWake} onShowProfile={p.onShowProfile}
@@ -196,9 +138,6 @@ export default function AppShell(p: AppShellProps) {
       ) : (
         <HomeScreen groups={groups} agents={p.agents} unread={unread} now={now} onSelectAgent={selectAgent} onNewAgent={() => setWizardOpen(true)} />
       )}
-
-      {/* Fixed slot, after the workspace: the frame ties with its own window's z and must paint over it */}
-      <ColonyFrame />
 
       {layout.sidebarCollapsed && (
         <div className="absolute top-3 left-3 z-10 flex items-center gap-2">
@@ -214,13 +153,7 @@ export default function AppShell(p: AppShellProps) {
         onCreateAgent={() => setWizardOpen(true)}
         teams={teams} onSelectTeam={selectTeam}
       />
-      {wizardOpen && <AgentCreationWizard onClose={() => setWizardOpen(false)} onComplete={() => {
-        setWizardOpen(false); p.onAgentsChanged()
-        // The colony hears this and rescans at once — the new bot walks out right away
-        window.dispatchEvent(new CustomEvent('aimaestro:colony-refresh'))
-      }} />}
+      {wizardOpen && <AgentCreationWizard onClose={() => setWizardOpen(false)} onComplete={() => { setWizardOpen(false); p.onAgentsChanged() }} />}
     </div>
-    </ColonyCardEnvContext.Provider>
-    </ColonyHost>
   )
 }
