@@ -134,6 +134,8 @@ import {
   removeSkill,
   getSkillSettings,
   saveSkillSettings,
+  getSkillContent,
+  updateSkillContent,
 } from '@/services/agents-skills-service'
 
 import {
@@ -925,6 +927,13 @@ const routes: Route[] = [
   { method: 'PUT', pattern: /^\/api\/agents\/([^/]+)\/skills\/settings$/, paramNames: ['id'], handler: async (req, res, params) => {
     const body = await readJsonBody(req)
     sendServiceResult(res, await saveSkillSettings(params.id, body))
+  }},
+  { method: 'GET', pattern: /^\/api\/agents\/([^/]+)\/skills\/custom\/([^/]+)$/, paramNames: ['id', 'name'], handler: async (_req, res, params) => {
+    sendServiceResult(res, getSkillContent(params.id, params.name))
+  }},
+  { method: 'PATCH', pattern: /^\/api\/agents\/([^/]+)\/skills\/custom\/([^/]+)$/, paramNames: ['id', 'name'], handler: async (req, res, params) => {
+    const body = await readJsonBody(req)
+    sendServiceResult(res, updateSkillContent(params.id, params.name, body))
   }},
   { method: 'GET', pattern: /^\/api\/agents\/([^/]+)\/skills$/, paramNames: ['id'], handler: async (_req, res, params) => {
     sendServiceResult(res, getSkillsConfig(params.id))

@@ -2177,6 +2177,79 @@ export function addCustomSkill(
 }
 
 /**
+ * Resolve the SKILL.md path for a registered custom skill, or null.
+ * Defense in depth: the service layer already validates the name against
+ * SKILL_NAME; this also refuses any name whose resolved path would fall
+ * outside the agent's skills directory.
+ */
+function resolveCustomSkillFile(agentId: string, skillName: string): string | null {
+  if (typeof skillName !== 'string' || skillName.length === 0) return null
+  const skillsRoot = path.resolve(AGENTS_DIR, agentId, 'skills')
+  const skillFile = path.resolve(skillsRoot, skillName, 'SKILL.md')
+  if (!skillFile.startsWith(skillsRoot + path.sep)) return null
+  return skillFile
+}
+
+/**
+ * Read the SKILL.md content of a registered custom skill
+ * Path: ~/.aimaestro/agents/{id}/skills/{name}/SKILL.md
+ * @returns The file content, or null if agent/skill is unknown or the file is unreadable
+ */
+export function getCustomSkillContent(agentId: string, name: string): string | null {
+  const agent = loadAgents().find(a => a.id === agentId)
+  const entry = agent?.skills?.custom?.find(s => s.name.toLowerCase() === String(name).toLowerCase())
+  if (!entry) return null
+
+  const skillFile = resolveCustomSkillFile(agentId, entry.name)
+  if (!skillFile) return null
+
+  try {
+    return fs.readFileSync(skillFile, 'utf-8')
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Overwrite the SKILL.md content of a registered custom skill and refresh its
+ * registry entry (updatedAt, and description when provided).
+ * @returns true on success; false if agent/skill is unknown or the write fails
+ */
+export function updateCustomSkill(
+  agentId: string,
+  name: string,
+  data: { content: string; description?: string }
+): boolean {
+  const agents = loadAgents()
+  const index = agents.findIndex(a => a.id === agentId)
+  if (index === -1) return false
+
+  const custom = agents[index].skills?.custom
+  const skillIndex = custom ? custom.findIndex(s => s.name.toLowerCase() === String(name).toLowerCase()) : -1
+  if (!custom || skillIndex === -1) return false
+
+  const skillFile = resolveCustomSkillFile(agentId, custom[skillIndex].name)
+  if (!skillFile) return false
+
+  try {
+    fs.mkdirSync(path.dirname(skillFile), { recursive: true })
+    fs.writeFileSync(skillFile, data.content, 'utf-8')
+  } catch (error) {
+    console.error('Failed to update custom skill file:', error)
+    return false
+  }
+
+  const now = new Date().toISOString()
+  custom[skillIndex] = {
+    ...custom[skillIndex],
+    ...(data.description !== undefined ? { description: data.description } : {}),
+    updatedAt: now,
+  }
+  agents[index].lastActive = now
+  return saveAgents(agents)
+}
+
+/**
  * Remove a custom skill from an agent
  * Also deletes the skill file from disk
  * @param agentId - Agent ID

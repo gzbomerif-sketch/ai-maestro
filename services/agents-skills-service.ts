@@ -12,6 +12,8 @@ import {
   removeMarketplaceSkills,
   addCustomSkill,
   removeCustomSkill,
+  getCustomSkillContent,
+  updateCustomSkill,
   updateAiMaestroSkills,
   getAgent,
 } from '@/lib/agent-registry'
@@ -20,6 +22,15 @@ import { agentRegistry } from '@/lib/agent'
 import fs from 'fs/promises'
 import path from 'path'
 import { type ServiceResult, missingField, notFound, invalidField, operationFailed } from '@/services/service-errors'
+
+/**
+ * Custom skill names become directory names under the agent's skills dir, so
+ * they must be a single safe path segment. Validate with this BEFORE any path
+ * construction or fs access.
+ */
+const SKILL_NAME = /^[a-zA-Z0-9_-]+$/
+
+const SKILL_NAME_ERROR = 'Invalid skill name. Use only alphanumeric characters, hyphens, and underscores.'
 
 // ── Public Functions ────────────────────────────────────────────────────────
 
@@ -119,8 +130,8 @@ export function addSkill(
     return missingField('content')
   }
 
-  if (!/^[a-zA-Z0-9_-]+$/.test(body.name)) {
-    return invalidField('name', 'Invalid skill name. Use only alphanumeric characters, hyphens, and underscores.')
+  if (!SKILL_NAME.test(body.name)) {
+    return invalidField('name', SKILL_NAME_ERROR)
   }
 
   const result = addCustomSkill(agentId, {
@@ -138,6 +149,71 @@ export function addSkill(
     data: { success: true, skills: updatedSkills },
     status: 200
   }
+}
+
+/**
+ * Read the SKILL.md content of one of an agent's custom skills.
+ */
+export function getSkillContent(
+  agentId: string,
+  name: string
+): ServiceResult<{ name: string; content: string }> {
+  // Security gate: validate before ANY fs/registry access.
+  if (typeof name !== 'string' || !SKILL_NAME.test(name)) {
+    return invalidField('name', SKILL_NAME_ERROR)
+  }
+
+  const agent = getAgent(agentId)
+  if (!agent) {
+    return notFound('Agent', agentId)
+  }
+
+  const content = getCustomSkillContent(agentId, name)
+  if (content === null) {
+    return notFound('Skill', name)
+  }
+
+  return { data: { name, content }, status: 200 }
+}
+
+/**
+ * Overwrite the SKILL.md content (and optionally the description) of one of an
+ * agent's custom skills.
+ */
+export function updateSkillContent(
+  agentId: string,
+  name: string,
+  body: { content?: string; description?: string }
+): ServiceResult<{ success: true }> {
+  // Security gate: validate before ANY fs/registry access.
+  if (typeof name !== 'string' || !SKILL_NAME.test(name)) {
+    return invalidField('name', SKILL_NAME_ERROR)
+  }
+
+  if (!body || typeof body.content !== 'string' || body.content.length === 0) {
+    return missingField('content')
+  }
+
+  if (body.description !== undefined && typeof body.description !== 'string') {
+    return invalidField('description', 'description must be a string')
+  }
+
+  const agent = getAgent(agentId)
+  if (!agent) {
+    return notFound('Agent', agentId)
+  }
+
+  const exists = agent.skills?.custom?.some(s => s.name.toLowerCase() === name.toLowerCase())
+  if (!exists) {
+    return notFound('Skill', name)
+  }
+
+  const ok = updateCustomSkill(agentId, name, { content: body.content, description: body.description })
+  if (!ok) {
+    return operationFailed('update custom skill')
+  }
+
+  return { data: { success: true }, status: 200 }
 }
 
 /**
