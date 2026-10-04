@@ -85,11 +85,12 @@ const config: Config = {
           raised: 'rgb(var(--room-raised) / <alpha-value>)',
           deep: 'rgb(var(--room-deep) / <alpha-value>)',
         },
+        // Terminal surfaces follow the theme tokens (see lib/terminal-theme.ts)
         terminal: {
-          bg: '#1e1e1e',
-          fg: '#d4d4d4',
-          selection: '#264f78',
-          cursor: '#aeafad',
+          bg: 'rgb(var(--c-sunken) / <alpha-value>)',
+          fg: 'rgb(var(--c-ink) / <alpha-value>)',
+          selection: 'rgb(var(--c-accent-fill) / <alpha-value>)',
+          cursor: 'rgb(var(--c-ink) / <alpha-value>)',
         },
         sidebar: {
           bg: '#252526',

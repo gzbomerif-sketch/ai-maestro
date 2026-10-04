@@ -752,7 +752,7 @@ export default function TerminalView({ session, isVisible: _isVisible = true, hi
               {!hideFooter && (
                 <button
                   onClick={() => setNotesCollapsed(!notesCollapsed)}
-                  className="md:hidden px-2 py-1 bg-gray-700 hover:bg-gray-600 text-gray-100 rounded text-xs"
+                  className="md:hidden px-2 h-7 rounded-md text-xs text-ink-muted hover:text-ink hover:bg-raised transition-colors"
                   title={notesCollapsed ? 'Show notes' : 'Hide notes'}
                 >
                   📝
@@ -762,7 +762,7 @@ export default function TerminalView({ session, isVisible: _isVisible = true, hi
               {globalLoggingEnabled && (
                 <button
                   onClick={toggleLogging}
-                  className={`px-2 py-1 rounded text-xs transition-colors ${loggingEnabled ? 'bg-green-700 hover:bg-green-600 text-white' : 'text-gray-300 hover:bg-gray-700'}`}
+                  className={`px-2 h-7 rounded-md text-xs transition-colors ${loggingEnabled ? 'bg-accent-fill/15 text-accent hover:bg-accent-fill/25' : 'text-ink-muted hover:text-ink hover:bg-raised'}`}
                   title={loggingEnabled ? 'Session logging on. Click to turn off' : 'Session logging off. Click to turn on'}
                 >
                   {loggingEnabled ? 'Logging' : 'No log'}
@@ -771,7 +771,7 @@ export default function TerminalView({ session, isVisible: _isVisible = true, hi
               {/* Selecting inside tmux does not always reach the clipboard */}
               <button
                 onClick={copySelection}
-                className="px-2.5 py-1 bg-gray-700 hover:bg-gray-600 text-gray-100 rounded-md text-xs font-medium"
+                className="px-2.5 h-7 rounded-md border border-control-border text-xs text-ink hover:bg-raised transition-colors"
                 title="Copy the selected text"
               >
                 Copy
@@ -780,7 +780,7 @@ export default function TerminalView({ session, isVisible: _isVisible = true, hi
               {isTouch && (
                 <button
                   onClick={pasteFromClipboard}
-                  className="px-2.5 py-1 bg-gray-700 hover:bg-gray-600 text-gray-100 rounded-md text-xs font-medium"
+                  className="px-2.5 h-7 rounded-md border border-control-border text-xs text-ink hover:bg-raised transition-colors"
                   title="Paste from the clipboard"
                 >
                   Paste
@@ -788,7 +788,7 @@ export default function TerminalView({ session, isVisible: _isVisible = true, hi
               )}
               <button
                 onClick={() => terminal.clear()}
-                className="px-2 py-1 text-gray-400 hover:text-gray-100 hover:bg-gray-700 rounded-md text-xs"
+                className="px-2 h-7 rounded-md text-xs text-ink-muted hover:text-ink hover:bg-raised transition-colors"
                 title="Clear this view's scrollback (removes duplicate lines from Claude Code redraws; does not touch the agent or tmux)"
               >
                 Clear
@@ -930,7 +930,7 @@ export default function TerminalView({ session, isVisible: _isVisible = true, hi
       {/* Notes / Prompt Builder Footer */}
       {!hideFooter && !notesCollapsed && (
         <div
-          className="border-t border-gray-700 bg-gray-900 flex flex-col"
+          className="border-t border-hairline/70 bg-sunken flex flex-col"
           style={{
             height: isMobile ? '40vh' : '220px',
             minHeight: isMobile ? '40vh' : '220px',
@@ -938,24 +938,26 @@ export default function TerminalView({ session, isVisible: _isVisible = true, hi
             flexShrink: 0
           }}
         >
-          <div className="px-4 py-2 border-b border-gray-700 bg-gray-800 flex items-center justify-between flex-shrink-0">
-            <div className="flex items-center gap-2">
+          <div className="px-3 py-2 border-b border-hairline/70 flex items-center justify-between flex-shrink-0">
+            <div role="tablist" aria-label="Footer" className="flex rounded-full bg-raised/70 p-0.5">
               <button
+                type="button"
+                role="tab"
+                aria-selected={footerTab === 'notes'}
                 onClick={() => setFooterTab('notes')}
-                className={`px-3 py-1.5 text-xs rounded-md transition-colors ${
-                  footerTab === 'notes'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                className={`px-3 h-[26px] rounded-full text-[13px] transition-colors ${
+                  footerTab === 'notes' ? 'bg-ink text-sunken' : 'text-ink-muted hover:text-ink'
                 }`}
               >
                 Notes
               </button>
               <button
+                type="button"
+                role="tab"
+                aria-selected={footerTab === 'prompt'}
                 onClick={() => setFooterTab('prompt')}
-                className={`px-3 py-1.5 text-xs rounded-md transition-colors ${
-                  footerTab === 'prompt'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                className={`px-3 h-[26px] rounded-full text-[13px] transition-colors ${
+                  footerTab === 'prompt' ? 'bg-ink text-sunken' : 'text-ink-muted hover:text-ink'
                 }`}
               >
                 Prompt Builder
@@ -963,7 +965,7 @@ export default function TerminalView({ session, isVisible: _isVisible = true, hi
             </div>
             <button
               onClick={() => setNotesCollapsed(true)}
-              className="text-gray-400 hover:text-gray-200 transition-colors"
+              className="grid place-items-center w-7 h-7 rounded-md text-ink-muted hover:text-ink hover:bg-raised transition-colors"
               title="Collapse footer"
             >
               <svg
@@ -975,7 +977,7 @@ export default function TerminalView({ session, isVisible: _isVisible = true, hi
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  strokeWidth={2}
+                  strokeWidth={1.5}
                   d="M19 9l-7 7-7-7"
                 />
               </svg>
@@ -988,7 +990,7 @@ export default function TerminalView({ session, isVisible: _isVisible = true, hi
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Take notes while working with your agent..."
-              className="flex-1 px-4 py-3 bg-gray-900 text-gray-200 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset font-mono overflow-y-auto"
+              className="flex-1 px-4 py-3 bg-sunken text-ink placeholder:text-gray-500 text-[13px] leading-relaxed resize-none focus:outline-none font-mono overflow-y-auto"
               style={{
                 minHeight: 0,
                 maxHeight: '100%',
@@ -1004,7 +1006,7 @@ export default function TerminalView({ session, isVisible: _isVisible = true, hi
                 onChange={(e) => setPromptDraft(e.target.value)}
                 onKeyDown={handlePromptKeyDown}
                 placeholder="Compose your prompt here. Enter = send • Ctrl/Cmd+Enter = insert only • Shift+Enter = new line"
-                className="flex-1 px-4 py-3 bg-gray-900 text-gray-200 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset font-mono overflow-y-auto"
+                className="flex-1 px-4 py-3 bg-sunken text-ink placeholder:text-gray-500 text-[13px] leading-relaxed resize-none focus:outline-none font-mono overflow-y-auto"
                 style={{
                   minHeight: 0,
                   maxHeight: '100%',
@@ -1012,27 +1014,27 @@ export default function TerminalView({ session, isVisible: _isVisible = true, hi
                   WebkitOverflowScrolling: 'touch'
                 }}
               />
-              <div className="px-4 py-2 border-t border-gray-800 bg-gray-800 flex items-center justify-between">
-                <p className="text-xs text-gray-400">
+              <div className="px-3 py-2 border-t border-hairline/70 flex items-center justify-between">
+                <p className="text-xs text-gray-500 tabular-nums">
                   {promptDraft.length} character{promptDraft.length === 1 ? '' : 's'}
                 </p>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setPromptDraft('')}
-                    className="rounded-md border border-gray-700 px-3 py-1.5 text-xs text-gray-300 hover:border-gray-600"
+                    className="h-7 rounded-md px-3 text-xs text-ink-muted hover:text-ink hover:bg-raised transition-colors"
                   >
                     Clear
                   </button>
                   <button
                     onClick={() => handlePromptSubmit('insert')}
-                    className="rounded-md border border-blue-500 px-3 py-1.5 text-xs font-medium text-blue-300 hover:bg-blue-500/10 disabled:opacity-50"
+                    className="h-7 rounded-md border border-control-border px-3 text-xs text-ink hover:bg-raised transition-colors disabled:opacity-40 disabled:hover:bg-transparent"
                     disabled={promptDraft.trim().length === 0}
                   >
                     Insert Only
                   </button>
                   <button
                     onClick={() => handlePromptSubmit('send')}
-                    className="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-500 disabled:opacity-50"
+                    className="h-7 rounded-md bg-accent-fill px-3 text-xs font-medium text-white hover:bg-accent-fill/90 transition-colors disabled:opacity-40"
                     disabled={promptDraft.trim().length === 0}
                   >
                     Send
@@ -1047,11 +1049,11 @@ export default function TerminalView({ session, isVisible: _isVisible = true, hi
       {!hideFooter && notesCollapsed && (
         <div
           onClick={() => setNotesCollapsed(false)}
-          className="border-t border-gray-700 bg-gray-800 px-4 py-2 cursor-pointer hover:bg-gray-750 transition-colors flex items-center gap-2"
+          className="border-t border-hairline/70 bg-sunken px-3 h-9 cursor-pointer hover:bg-raised/50 transition-colors flex items-center gap-2 flex-shrink-0"
           title="Click to expand footer"
         >
           <svg
-            className="w-4 h-4 text-gray-400"
+            className="w-4 h-4 text-ink-muted"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -1059,11 +1061,11 @@ export default function TerminalView({ session, isVisible: _isVisible = true, hi
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
-              strokeWidth={2}
+              strokeWidth={1.5}
               d="M5 15l7-7 7 7"
             />
           </svg>
-          <span className="text-sm text-gray-400">
+          <span className="text-[13px] text-ink-muted">
             {footerTab === 'prompt' ? 'Show Prompt Builder' : 'Show Agent Notes'}
           </span>
         </div>

@@ -16,6 +16,7 @@ export interface UseTerminalOptions {
 }
 
 import { debounce } from '@/lib/utils'
+import { buildTerminalTheme } from '@/lib/terminal-theme'
 
 export function useTerminal(options: UseTerminalOptions = {}) {
   const terminalRef = useRef<Terminal | null>(null)
@@ -48,41 +49,26 @@ export function useTerminal(options: UseTerminalOptions = {}) {
     const { FitAddon } = await import('@xterm/addon-fit')
     const { WebLinksAddon } = await import('@xterm/addon-web-links')
 
-    const fontSize = optionsRef.current.fontSize || 16
-    const fontFamily = optionsRef.current.fontFamily || '"SF Mono", "Monaco", "Cascadia Code", "Roboto Mono", "Courier New", monospace'
+    const fontSize = optionsRef.current.fontSize || 13
+    const fontFamily = optionsRef.current.fontFamily || '"SF Mono", "JetBrains Mono", Menlo, Monaco, "Cascadia Code", "Roboto Mono", monospace'
+
+    // Colours come from the design tokens on the host surface, so the terminal
+    // sits flush in the panel and follows the active theme (lib/terminal-theme).
+    const styles = getComputedStyle(container)
+    const theme = optionsRef.current.theme || buildTerminalTheme(name => styles.getPropertyValue(name))
 
     // Create terminal instance - let FitAddon handle sizing
     const terminal = new Terminal({
       cursorBlink: true,
+      cursorStyle: 'bar',
+      cursorWidth: 2,
+      cursorInactiveStyle: 'outline',
       fontSize,
       fontFamily,
       fontWeight: '400',
-      fontWeightBold: '700',
-      lineHeight: 1.2,
-      theme: optionsRef.current.theme || {
-        background: '#1e1e1e',
-        foreground: '#d4d4d4',
-        cursor: '#aeafad',
-        selectionBackground: '#3a3d41',    // Visible selection background
-        selectionForeground: '#ffffff',     // White text when selected
-        selectionInactiveBackground: '#3a3d41', // Selection when terminal not focused
-        black: '#000000',
-        red: '#cd3131',
-        green: '#0dbc79',
-        yellow: '#dcdcaa',  // Softer yellow (VS Code default)
-        blue: '#2472c8',
-        magenta: '#bc3fbc',
-        cyan: '#11a8cd',
-        white: '#e5e5e5',
-        brightBlack: '#666666',
-        brightRed: '#f14c4c',
-        brightGreen: '#23d18b',
-        brightYellow: '#dcdcaa',  // Match normal yellow for consistency
-        brightBlue: '#3b8eea',
-        brightMagenta: '#d670d6',
-        brightCyan: '#29b8db',
-        brightWhite: '#ffffff',
-      },
+      fontWeightBold: '600',
+      lineHeight: 1.3,
+      theme,
       scrollback: 10000,  // Reasonable buffer for conversation context
       // CRITICAL: Must be false for PTY connections
       // PTY and tmux handle line endings correctly - setting this to true causes
