@@ -5,6 +5,10 @@
  */
 export const COLONY_OPEN_AGENT = 'bot-crossing:open-agent'
 
+/** Host→colony nudge to rescan now (e.g. right after an agent is created). Bot Crossing's
+ * `isHostRefresh` checks this exact string. */
+export const COLONY_REFRESH = 'bot-crossing:refresh'
+
 export interface ColonyStatus {
   enabled: boolean
   running: boolean

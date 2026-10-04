@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { COLONY_OPEN_AGENT, colonyFrameUrl, colonyReachableFrom, findAgent, originOf, parseColonyMessage } from '@/lib/colony-message'
+import { COLONY_OPEN_AGENT, COLONY_REFRESH, colonyFrameUrl, colonyReachableFrom, findAgent, originOf, parseColonyMessage } from '@/lib/colony-message'
 
 const COLONY = 'http://localhost:23010'
 const msg = (data: unknown, origin = COLONY) => ({ origin, data })
@@ -49,5 +49,11 @@ describe('colonyReachableFrom', () => {
     for (const host of ['100.64.0.5', 'obres-macbook-air', 'obres-macbook-air.tail1234.ts.net', '192.168.1.20', '']) {
       expect(colonyReachableFrom(host)).toBe(false)
     }
+  })
+})
+
+describe('COLONY_REFRESH', () => {
+  it('is the exact string Bot Crossing listens for (isHostRefresh in its src/game/host.js)', () => {
+    expect(COLONY_REFRESH).toBe('bot-crossing:refresh')
   })
 })

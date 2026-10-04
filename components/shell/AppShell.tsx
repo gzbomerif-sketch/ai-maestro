@@ -16,6 +16,7 @@ import StatusSidebar from './StatusSidebar'
 import AgentTopBar from './AgentTopBar'
 import ResizeHandle from './ResizeHandle'
 import PanelDock from './PanelDock'
+import ColonyHost from './ColonyHost'
 import WorkArea from './WorkArea'
 import TeamWorkspace from './TeamWorkspace'
 import MiniPreview from './MiniPreview'
@@ -78,6 +79,7 @@ export default function AppShell(p: AppShellProps) {
   const selectTeam = (id: string) => { setTeamId(id); p.onSelectHome() }
 
   return (
+    <ColonyHost agents={p.agents} onSelectAgent={selectAgent}>
     <div className="fixed inset-0 flex bg-sunken text-ink overflow-hidden">
       {!layout.sidebarCollapsed && (
         <>
@@ -119,8 +121,8 @@ export default function AppShell(p: AppShellProps) {
               hideHeaders chatVariant="ink" />
           }
           dock={
-            <PanelDock layout={layout} dispatch={dispatch} agent={agent} agents={p.agents} onlineAgents={p.onlineAgents} unread={unread[agent.id] ?? 0}
-              wakingAgentId={p.wakingAgentId} onWake={p.onWake} onShowProfile={p.onShowProfile} onSelectAgent={selectAgent} />
+            <PanelDock layout={layout} dispatch={dispatch} agent={agent} onlineAgents={p.onlineAgents} unread={unread[agent.id] ?? 0}
+              wakingAgentId={p.wakingAgentId} onWake={p.onWake} onShowProfile={p.onShowProfile} />
           }
         />
       ) : (
@@ -139,7 +141,12 @@ export default function AppShell(p: AppShellProps) {
         onSelectAgent={selectAgent} onSelectHome={selectHome} onSwitchClassic={p.onSwitchClassic}
         teams={teams} onSelectTeam={selectTeam}
       />
-      {wizardOpen && <AgentCreationWizard onClose={() => setWizardOpen(false)} onComplete={() => { setWizardOpen(false); p.onAgentsChanged() }} />}
+      {wizardOpen && <AgentCreationWizard onClose={() => setWizardOpen(false)} onComplete={() => {
+        setWizardOpen(false); p.onAgentsChanged()
+        // The colony hears this and rescans at once — the new bot walks out right away
+        window.dispatchEvent(new CustomEvent('aimaestro:colony-refresh'))
+      }} />}
     </div>
+    </ColonyHost>
   )
 }

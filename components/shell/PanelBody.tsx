@@ -26,18 +26,16 @@ function toRecipients(onlineAgents: Agent[]) {
 }
 
 /** One tool's content inside the panel dock. */
-export default function PanelBody({ type, agent, agents, onlineAgents, wakingAgentId, onWake, onShowProfile, onSelectAgent }: {
+export default function PanelBody({ type, agent, onlineAgents, wakingAgentId, onWake, onShowProfile }: {
   type: PanelType
   agent: Agent
-  agents: Agent[]
   onlineAgents: Agent[]
   wakingAgentId: string | null
   onWake: (a: Agent) => void
   onShowProfile: (a: Agent) => void
-  onSelectAgent: (a: Agent) => void
 }) {
   if (type === 'browser') return <BrowserPanel />
-  if (type === 'colony') return <ColonyPanel agents={agents} onSelectAgent={onSelectAgent} />
+  if (type === 'colony') return <ColonyPanel />
   if (type === 'inbox') {
     return (
       <div className="flex-1 min-h-0 flex overflow-hidden">
