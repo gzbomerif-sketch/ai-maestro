@@ -137,6 +137,12 @@ import {
   getSkillContent,
   updateSkillContent,
 } from '@/services/agents-skills-service'
+import {
+  listAgentTasks,
+  createTask as createAgentPersonalTask,
+  patchTask as patchAgentPersonalTask,
+  removeTask as removeAgentPersonalTask,
+} from '@/services/agents-tasks-service'
 
 import {
   getSubconsciousStatus as getAgentSubconsciousStatus,
@@ -948,6 +954,22 @@ const routes: Route[] = [
   }},
   { method: 'DELETE', pattern: /^\/api\/agents\/([^/]+)\/skills$/, paramNames: ['id'], handler: async (_req, res, params, query) => {
     sendServiceResult(res, removeSkill(params.id, query.skill || ''))
+  }},
+
+  // Agent tasks (personal + assigned team tasks)
+  { method: 'PATCH', pattern: /^\/api\/agents\/([^/]+)\/tasks\/([^/]+)$/, paramNames: ['id', 'taskId'], handler: async (req, res, params) => {
+    const body = await readJsonBody(req)
+    sendServiceResult(res, patchAgentPersonalTask(params.id, params.taskId, body))
+  }},
+  { method: 'DELETE', pattern: /^\/api\/agents\/([^/]+)\/tasks\/([^/]+)$/, paramNames: ['id', 'taskId'], handler: async (_req, res, params) => {
+    sendServiceResult(res, removeAgentPersonalTask(params.id, params.taskId))
+  }},
+  { method: 'GET', pattern: /^\/api\/agents\/([^/]+)\/tasks$/, paramNames: ['id'], handler: async (_req, res, params) => {
+    sendServiceResult(res, listAgentTasks(params.id))
+  }},
+  { method: 'POST', pattern: /^\/api\/agents\/([^/]+)\/tasks$/, paramNames: ['id'], handler: async (req, res, params) => {
+    const body = await readJsonBody(req)
+    sendServiceResult(res, createAgentPersonalTask(params.id, body))
   }},
 
   // Schedules (per-agent)
