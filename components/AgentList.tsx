@@ -53,6 +53,7 @@ import MeetingListView from './sidebar/MeetingListView'
 import { useToast } from '@/contexts/ToastContext'
 import { getAgentBaseUrl } from '@/lib/agent-utils'
 import { computeHash, getAvatarUrl } from '@/lib/hash-utils'
+import { COLOR_PALETTE } from '@/lib/agent-colors'
 
 interface AgentListProps {
   agents: UnifiedAgent[]
@@ -74,27 +75,8 @@ interface AgentListProps {
   sidebarWidth?: number  // Current sidebar width for responsive grid
 }
 
-/**
- * DYNAMIC COLOR SYSTEM - Same as SessionList for consistency
- */
-const CATEGORY_COUNT = 8
-
-/**
- * Category identity.
- *
- * Values live in app/globals.css as CSS variables — one source of truth — so a
- * palette change is a stylesheet edit, not a sweep through component code. The
- * colours themselves are unchanged from the hardcoded table this replaced.
- */
-const COLOR_PALETTE = Array.from({ length: CATEGORY_COUNT }, (_, i) => ({
-  primary: `rgb(var(--cat-${i}-primary))`,
-  bg: `rgb(var(--cat-${i}-primary) / 0.05)`,
-  border: `rgb(var(--cat-${i}-primary))`,
-  icon: `rgb(var(--cat-${i}-icon))`,
-  hover: `rgb(var(--cat-${i}-primary) / 0.1)`,
-  active: `rgb(var(--cat-${i}-primary) / 0.15)`,
-  activeText: `rgb(var(--cat-${i}-text))`,
-}))
+// Category palette lives in lib/agent-colors.ts (shared with AgentAvatar); re-exported for existing imports.
+export { COLOR_PALETTE }
 
 const DEFAULT_ICON = Layers
 
