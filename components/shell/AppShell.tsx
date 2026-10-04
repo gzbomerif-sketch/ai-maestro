@@ -12,7 +12,7 @@ import { useLayout } from '@/hooks/useLayout'
 import { useTeams, useActiveMeetings } from '@/hooks/useTeams'
 import { LIMITS } from '@/lib/panel-layout'
 import { AGENT_TOOLS, agentToolForKey, toolLabel } from '@/lib/window-tools'
-import type { ManagedWindow, WindowTool } from '@/lib/window-manager'
+import { windowId, type ManagedWindow, type WindowTool } from '@/lib/window-manager'
 import AgentCreationWizard from '@/components/AgentCreationWizard'
 import StatusSidebar from './StatusSidebar'
 import AgentTopBar from './AgentTopBar'
@@ -106,11 +106,27 @@ export default function AppShell(p: AppShellProps) {
     workApi.current.openTool(pendingTool.tool)
     setPendingTool(null)
   }, [pendingTool, teamId, agent?.id])
+  // Open workspace: select the agent, then minimize the colony window so its workspace is what you see.
+  // Queued rather than done inline because the workspace may not be up yet (a team view remounts WorkArea
+  // for the agent), and when the agent is already active selecting it changes nothing on its own.
+  const [pendingReveal, setPendingReveal] = useState<string | null>(null)
+  const openWorkspaceFor = (a: Agent) => { selectAgent(a); setPendingReveal(a.id) }
+  useEffect(() => {
+    if (!pendingReveal) return
+    const t = setTimeout(() => setPendingReveal(null), 3000)
+    return () => clearTimeout(t)
+  }, [pendingReveal])
+  useEffect(() => {
+    if (!pendingReveal || teamId || agent?.id !== pendingReveal || !workApi.current) return
+    // A no-op when the colony window is not open or already minimized
+    workApi.current.dispatch({ type: 'minimize', id: windowId('colony') })
+    setPendingReveal(null)
+  }, [pendingReveal, teamId, agent?.id])
   // Same rule as the top bar's Wake button: not online (asleep or offline) means wake it
   const needsWake = (a: Agent) => { const st = entryById[a.id]?.status ?? 'offline'; return st === 'asleep' || st === 'offline' }
   const colonyCard: ColonyCardEnv = {
     agents: p.agents, unread, wakingAgentId: p.wakingAgentId,
-    onOpenWorkspace: selectAgent,
+    onOpenWorkspace: openWorkspaceFor,
     onOpenTerminal: a => openToolFor('terminal', a),
     onOpenSkills: a => openToolFor('skills', a),
     needsWake,
